@@ -14,7 +14,6 @@ import Login from "./pages/Login";
 import UserDashboard from "./pages/UserDashboard";
 import TradesPositions from "./pages/TradesPositions";
 import WalletHedge from "./pages/WalletHedge";
-import Staking from "./pages/Staking";
 import ProfileSettings from "./pages/ProfileSettings";
 import UserNotifications from "./pages/UserNotifications";
 import UserReports from "./pages/UserReports";
@@ -60,7 +59,6 @@ const App = () => (
                 <Route path="dashboard" element={<ErrorBoundary><UserDashboard /></ErrorBoundary>} />
                 <Route path="trades" element={<ErrorBoundary><TradesPositions /></ErrorBoundary>} />
                 <Route path="wallet" element={<ErrorBoundary><WalletHedge /></ErrorBoundary>} />
-                <Route path="staking" element={<ErrorBoundary><Staking /></ErrorBoundary>} />
                 <Route path="profile" element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
                 <Route path="notifications" element={<ErrorBoundary><UserNotifications /></ErrorBoundary>} />
                 <Route path="reports" element={<ErrorBoundary><UserReports /></ErrorBoundary>} />

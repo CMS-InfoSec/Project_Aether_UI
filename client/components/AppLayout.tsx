@@ -53,12 +53,6 @@ const userNavigationItems = [
     badge: null
   },
   {
-    title: 'Staking',
-    href: '/staking',
-    icon: Coins,
-    badge: null
-  },
-  {
     title: 'Profile & Settings',
     href: '/profile',
     icon: User,
