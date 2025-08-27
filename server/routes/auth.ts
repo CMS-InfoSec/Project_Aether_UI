@@ -20,7 +20,7 @@ export interface RefreshRequest {
 }
 
 // Mock user database
-const mockUsers = [
+export const mockUsers = [
   {
     id: '1',
     email: 'admin@projectaether.com',

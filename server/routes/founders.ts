@@ -90,13 +90,15 @@ export const handleCreateFounder: RequestHandler = (req, res) => {
     mockFounders.push(newFounder);
 
     // Also add to mock users for login purposes
-    const mockUsers = require('./auth').mockUsers || [];
-    mockUsers.push({
-      id: founderId,
-      email,
-      password, // In production, this would be hashed
-      role: 'admin' as const
-    });
+    const { mockUsers } = require('./auth');
+    if (mockUsers) {
+      mockUsers.push({
+        id: founderId,
+        email,
+        password, // In production, this would be hashed
+        role: 'admin' as const
+      });
+    }
 
     const response: CreateFounderResponse = {
       id: founderId
