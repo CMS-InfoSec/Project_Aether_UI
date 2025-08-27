@@ -593,15 +593,15 @@ export default function AdminPortfolio() {
 
   const getRiskBadge = (risk: string) => {
     const variants = {
-      'low': { variant: 'secondary' as const, color: 'text-green-600' },
-      'medium': { variant: 'outline' as const, color: 'text-yellow-600' },
-      'high': { variant: 'destructive' as const, color: 'text-red-600' }
+      'low': { variant: 'outline' as const, color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' },
+      'medium': { variant: 'outline' as const, color: 'text-yellow-600', bgColor: 'bg-yellow-50 border-yellow-200' },
+      'high': { variant: 'outline' as const, color: 'text-red-600', bgColor: 'bg-red-50 border-red-200' }
     };
-    
+
     const config = variants[risk as keyof typeof variants];
     return (
-      <Badge variant={config.variant}>
-        <span className={config.color}>{risk.toUpperCase()}</span>
+      <Badge variant={config.variant} className={`${config.bgColor} ${config.color} font-medium`}>
+        {risk.toUpperCase()}
       </Badge>
     );
   };
