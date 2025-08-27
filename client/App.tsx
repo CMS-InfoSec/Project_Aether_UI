@@ -50,7 +50,6 @@ const App = () => (
               <Route path="system/control" element={<SystemControl />} />
               <Route path="reports/*" element={<Reports />} />
               <Route path="notifications" element={<Notifications />} />
-              <Route path="builder" element={<Builder />} />
               <Route path="feedback" element={<Feedback />} />
               <Route path="placeholder/:section" element={<PlaceholderPage />} />
             </Route>
