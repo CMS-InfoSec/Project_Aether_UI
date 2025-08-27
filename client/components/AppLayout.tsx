@@ -190,11 +190,13 @@ export default function AppLayout() {
           {/* Header */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">A</span>
-              </div>
+              <img
+                src="https://cdn.builder.io/api/v1/image/assets%2Fd9af307b1ff14040a7ba27bfc11d5227%2Ffd066184d3bd44f2ab4e38cf3625b126?format=webp&width=800"
+                alt="Aether Logo"
+                className="w-8 h-8 object-contain"
+              />
               <div>
-                <h1 className="font-semibold text-sidebar-foreground">Project Aether</h1>
+                <h1 className="font-semibold text-sidebar-foreground">AETHER</h1>
                 <p className="text-xs text-sidebar-foreground/60">Trading Platform</p>
               </div>
             </div>
