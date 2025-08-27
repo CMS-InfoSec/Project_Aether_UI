@@ -201,7 +201,7 @@ export default function AdminPortfolio() {
   }, [filters]);
 
   // Fetch portfolio statistics
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/portfolio/stats');
 
@@ -224,10 +224,10 @@ export default function AdminPortfolio() {
         variant: "destructive"
       });
     }
-  };
+  }, []);
 
   // Fetch rebalance history
-  const fetchRebalanceHistory = async () => {
+  const fetchRebalanceHistory = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/portfolio/rebalance-history');
 
@@ -250,7 +250,7 @@ export default function AdminPortfolio() {
         variant: "destructive"
       });
     }
-  };
+  }, []);
 
   // Load all data
   const loadData = useCallback(async () => {
