@@ -314,22 +314,66 @@ export default function AdminPortfolio() {
     }
   }, []);
 
-  // Fetch rebalance history
+  // Fetch rebalance history (mock data)
   const fetchRebalanceHistory = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/portfolio/rebalance-history');
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 400));
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const mockHistory: RebalanceEvent[] = [
+        {
+          id: "rebal_001",
+          timestamp: "2024-01-16T10:30:00Z",
+          triggeredBy: "admin@example.com",
+          reason: "Scheduled weekly rebalance",
+          portfoliosAffected: 42,
+          totalValueRebalanced: 2650000,
+          status: "completed",
+          duration: 4500
+        },
+        {
+          id: "rebal_002",
+          timestamp: "2024-01-15T15:45:00Z",
+          triggeredBy: "system",
+          reason: "Market volatility threshold exceeded",
+          portfoliosAffected: 15,
+          totalValueRebalanced: 980000,
+          status: "completed",
+          duration: 2100
+        },
+        {
+          id: "rebal_003",
+          timestamp: "2024-01-14T09:15:00Z",
+          triggeredBy: "admin@example.com",
+          reason: "Manual rebalance - new asset allocation",
+          portfoliosAffected: 35,
+          totalValueRebalanced: 1850000,
+          status: "completed",
+          duration: 3800
+        },
+        {
+          id: "rebal_004",
+          timestamp: "2024-01-13T14:20:00Z",
+          triggeredBy: "system",
+          reason: "Risk threshold breach",
+          portfoliosAffected: 8,
+          totalValueRebalanced: 450000,
+          status: "failed",
+          duration: 1200
+        },
+        {
+          id: "rebal_005",
+          timestamp: "2024-01-12T11:00:00Z",
+          triggeredBy: "admin@example.com",
+          reason: "Quarterly strategy adjustment",
+          portfoliosAffected: 47,
+          totalValueRebalanced: 2800000,
+          status: "completed",
+          duration: 5200
+        }
+      ];
 
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        setRebalanceHistory(data.data);
-      } else {
-        throw new Error(data.message || 'Failed to fetch rebalance history');
-      }
+      setRebalanceHistory(mockHistory);
     } catch (error) {
       console.error('Failed to fetch rebalance history:', error);
       toast({
