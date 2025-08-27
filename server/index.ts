@@ -2,6 +2,7 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
+import { handleLogin, handleRefresh, handleLogout } from "./routes/auth";
 
 export function createServer() {
   const app = express();
@@ -10,6 +11,11 @@ export function createServer() {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Authentication routes
+  app.post("/api/auth/login", handleLogin);
+  app.post("/api/auth/refresh", handleRefresh);
+  app.post("/api/auth/logout", handleLogout);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
