@@ -167,6 +167,7 @@ export default function UserDashboard() {
   };
 
   const loadNotifications = async () => {
+    if (!mounted) return;
     setIsRefreshing(prev => ({ ...prev, notifications: true }));
     try {
       // Mock API call - replace with GET /notifications
@@ -175,7 +176,9 @@ export default function UserDashboard() {
     } catch (error) {
       console.error('Error loading notifications:', error);
     } finally {
-      setIsRefreshing(prev => ({ ...prev, notifications: false }));
+      if (mounted) {
+        setIsRefreshing(prev => ({ ...prev, notifications: false }));
+      }
     }
   };
 
