@@ -352,21 +352,21 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 lg:px-6">
+        <header className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-6" style={{ backgroundColor: '#10141D' }}>
           <Button
             variant="ghost"
             size="sm"
-            className="lg:hidden"
+            className="lg:hidden text-white hover:bg-white/10"
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-5 w-5" />
           </Button>
-          
+
           <div className="flex items-center space-x-4 ml-auto">
-            <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+            <Badge variant="outline" className="bg-accent/20 text-white border-accent/30">
               System Status: Active
             </Badge>
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            <div className="flex items-center space-x-2 text-sm text-white/90">
               <div className="w-2 h-2 bg-accent rounded-full"></div>
               <span>Live Trading</span>
             </div>
