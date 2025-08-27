@@ -55,6 +55,17 @@ import {
   handleGetRebalanceHistory,
   handleGetPortfolioStats
 } from "./routes/portfolio";
+import {
+  handleGetHedges,
+  handleGetBalances,
+  handleGetWithdrawable,
+  handleExecuteHedge,
+  handleGetHedgePercent,
+  handleUpdateHedgePercent,
+  handleGetMarketConditions,
+  handleUpdateMarketConditions,
+  handleCloseHedge
+} from "./routes/hedge";
 
 export function createServer() {
   const app = express();
@@ -120,6 +131,17 @@ export function createServer() {
   app.get("/api/admin/portfolio/rebalance/:rebalanceId", handleGetRebalanceStatus);
   app.get("/api/admin/portfolio/rebalance-history", handleGetRebalanceHistory);
   app.get("/api/admin/portfolio/stats", handleGetPortfolioStats);
+
+  // Hedge & Wallet routes
+  app.get("/api/wallet/hedges", handleGetHedges);
+  app.get("/api/wallet/balances", handleGetBalances);
+  app.get("/api/wallet/withdrawable", handleGetWithdrawable);
+  app.post("/api/hedge", handleExecuteHedge);
+  app.get("/api/hedge/percent", handleGetHedgePercent);
+  app.post("/api/hedge/percent", handleUpdateHedgePercent);
+  app.get("/api/hedge/market-conditions", handleGetMarketConditions);
+  app.post("/api/hedge/market-conditions", handleUpdateMarketConditions);
+  app.post("/api/hedge/close/:hedgeId", handleCloseHedge);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
