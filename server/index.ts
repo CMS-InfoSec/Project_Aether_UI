@@ -29,6 +29,19 @@ import {
   handleGetUserSettings,
   handleUpdateUserSettings
 } from "./routes/config";
+import {
+  handleStartTraining,
+  handleGetTrainingStatus,
+  handleGetAllTrainingJobs,
+  handleCancelTraining,
+  handleDeployModel,
+  handleGetAllModels,
+  handlePromoteModel,
+  handleStartShadow,
+  handleStopShadow,
+  handleRollbackModel,
+  handleGetShadowTests
+} from "./routes/models";
 
 export function createServer() {
   const app = express();
@@ -68,6 +81,19 @@ export function createServer() {
   app.delete("/api/config", handleResetSystemConfig);
   app.get("/api/config/users", handleGetUserSettings);
   app.post("/api/config/user", handleUpdateUserSettings);
+
+  // Models routes
+  app.post("/api/models/train", handleStartTraining);
+  app.get("/api/models/status/:jobId", handleGetTrainingStatus);
+  app.get("/api/models/jobs", handleGetAllTrainingJobs);
+  app.delete("/api/models/train/:jobId", handleCancelTraining);
+  app.post("/api/models/deploy/:modelId", handleDeployModel);
+  app.get("/api/models", handleGetAllModels);
+  app.post("/api/models/promote", handlePromoteModel);
+  app.post("/api/models/shadow/start", handleStartShadow);
+  app.post("/api/models/shadow/stop", handleStopShadow);
+  app.post("/api/models/rollback", handleRollbackModel);
+  app.get("/api/models/shadow", handleGetShadowTests);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
