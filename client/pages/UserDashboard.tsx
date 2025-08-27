@@ -142,10 +142,12 @@ export default function UserDashboard() {
   };
 
   const loadWeeklyReport = async () => {
+    if (!mounted) return;
     setIsRefreshing(prev => ({ ...prev, weekly: true }));
     try {
       // Mock API call - replace with GET /reports/weekly
       await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!mounted) return;
       setWeeklyReport({
         weeklyReturn: '+$3,750',
         weeklyReturnPercent: '+6.5%',
@@ -158,7 +160,9 @@ export default function UserDashboard() {
     } catch (error) {
       console.error('Error loading weekly report:', error);
     } finally {
-      setIsRefreshing(prev => ({ ...prev, weekly: false }));
+      if (mounted) {
+        setIsRefreshing(prev => ({ ...prev, weekly: false }));
+      }
     }
   };
 
