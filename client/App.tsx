@@ -43,49 +43,51 @@ import ErrorBoundary from "./components/ErrorBoundary";
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/" element={<AppLayout />}>
-              {/* Default redirect to dashboard */}
-              <Route index element={<UserDashboard />} />
-              
-              {/* User Pages (accessible to both USER and ADMIN) */}
-              <Route path="dashboard" element={<UserDashboard />} />
-              <Route path="trades" element={<TradesPositions />} />
-              <Route path="wallet" element={<WalletHedge />} />
-              <Route path="staking" element={<Staking />} />
-              <Route path="profile" element={<ProfileSettings />} />
-              <Route path="notifications" element={<UserNotifications />} />
-              <Route path="reports" element={<UserReports />} />
-              
-              {/* Admin Pages (ADMIN only) */}
-              <Route path="admin/dashboard" element={<AdminDashboard />} />
-              <Route path="admin/governance" element={<AdminGovernance />} />
-              <Route path="admin/users" element={<AdminUserManagement />} />
-              <Route path="admin/portfolio" element={<AdminPortfolio />} />
-              <Route path="admin/markets" element={<AdminMarkets />} />
-              <Route path="admin/models" element={<AdminModels />} />
-              <Route path="admin/system/config" element={<AdminSystemConfig />} />
-              <Route path="admin/system/control" element={<AdminSystemControl />} />
-              <Route path="admin/backtest" element={<AdminBacktest />} />
-              <Route path="admin/builder" element={<AdminBuilder />} />
-              <Route path="admin/feedback" element={<AdminFeedback />} />
-              
-              {/* Placeholder for unimplemented sections */}
-              <Route path="placeholder/:section" element={<PlaceholderPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/" element={<AppLayout />}>
+                {/* Default redirect to dashboard */}
+                <Route index element={<ErrorBoundary><UserDashboard /></ErrorBoundary>} />
+
+                {/* User Pages (accessible to both USER and ADMIN) */}
+                <Route path="dashboard" element={<ErrorBoundary><UserDashboard /></ErrorBoundary>} />
+                <Route path="trades" element={<ErrorBoundary><TradesPositions /></ErrorBoundary>} />
+                <Route path="wallet" element={<ErrorBoundary><WalletHedge /></ErrorBoundary>} />
+                <Route path="staking" element={<ErrorBoundary><Staking /></ErrorBoundary>} />
+                <Route path="profile" element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
+                <Route path="notifications" element={<ErrorBoundary><UserNotifications /></ErrorBoundary>} />
+                <Route path="reports" element={<ErrorBoundary><UserReports /></ErrorBoundary>} />
+
+                {/* Admin Pages (ADMIN only) */}
+                <Route path="admin/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
+                <Route path="admin/governance" element={<ErrorBoundary><AdminGovernance /></ErrorBoundary>} />
+                <Route path="admin/users" element={<ErrorBoundary><AdminUserManagement /></ErrorBoundary>} />
+                <Route path="admin/portfolio" element={<ErrorBoundary><AdminPortfolio /></ErrorBoundary>} />
+                <Route path="admin/markets" element={<ErrorBoundary><AdminMarkets /></ErrorBoundary>} />
+                <Route path="admin/models" element={<ErrorBoundary><AdminModels /></ErrorBoundary>} />
+                <Route path="admin/system/config" element={<ErrorBoundary><AdminSystemConfig /></ErrorBoundary>} />
+                <Route path="admin/system/control" element={<ErrorBoundary><AdminSystemControl /></ErrorBoundary>} />
+                <Route path="admin/backtest" element={<ErrorBoundary><AdminBacktest /></ErrorBoundary>} />
+                <Route path="admin/builder" element={<ErrorBoundary><AdminBuilder /></ErrorBoundary>} />
+                <Route path="admin/feedback" element={<ErrorBoundary><AdminFeedback /></ErrorBoundary>} />
+
+                {/* Placeholder for unimplemented sections */}
+                <Route path="placeholder/:section" element={<ErrorBoundary><PlaceholderPage /></ErrorBoundary>} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 createRoot(document.getElementById("root")!).render(<App />);
