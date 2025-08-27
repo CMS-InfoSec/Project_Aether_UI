@@ -16,11 +16,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { 
-  RefreshCw, 
-  TrendingUp, 
-  TrendingDown, 
-  DollarSign, 
+import {
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
   Activity,
   AlertTriangle,
   CheckCircle,
@@ -33,7 +33,9 @@ import {
   BarChart3,
   LineChart as LineChartIcon,
   Eye,
-  EyeOff
+  EyeOff,
+  Download,
+  FileText
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from '@/hooks/use-toast';
@@ -184,6 +186,7 @@ export default function AdminDashboard() {
   // State
   const [dailyReport, setDailyReport] = useState<DailyReport | null>(null);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
+  const [perAssetReport, setPerAssetReport] = useState<PerAssetReport | null>(null);
   const [notificationData, setNotificationData] = useState<NotificationData | null>(null);
   const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   
@@ -191,8 +194,12 @@ export default function AdminDashboard() {
   const [isRefreshing, setIsRefreshing] = useState({
     daily: false,
     weekly: false,
-    notifications: false
+    perAsset: false,
+    notifications: false,
+    csv: false,
+    backtest: false
   });
+  const [backtestProgress, setBacktestProgress] = useState(0);
 
   // Auto-refresh settings
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
