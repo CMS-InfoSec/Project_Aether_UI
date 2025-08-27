@@ -423,18 +423,90 @@ export default function AdminPortfolio() {
     loadData();
   }, [loadData]);
 
-  // Handle row click to show details
+  // Handle row click to show details (mock data)
   const handleRowClick = async (userId: string) => {
     try {
-      const response = await fetch(`/api/admin/portfolio/${userId}`);
-      const data = await response.json();
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (data.status === 'success') {
-        setSelectedPortfolio(data.data);
-        setIsDetailsDialogOpen(true);
-      } else {
-        throw new Error(data.message || 'Failed to fetch portfolio details');
-      }
+      // Find the portfolio from our current data
+      const portfolio = portfolios.find(p => p.userId === userId);
+      if (!portfolio) return;
+
+      // Mock detailed portfolio data
+      const mockDetails: PortfolioDetails = {
+        userId: portfolio.userId,
+        userName: portfolio.userName,
+        email: portfolio.email,
+        totalValue: portfolio.totalValue,
+        assetsCount: portfolio.assetsCount,
+        lastRebalanced: portfolio.lastRebalanced,
+        performance24h: portfolio.performance24h,
+        performance7d: portfolio.performance7d,
+        performance30d: portfolio.performance7d * 1.8,
+        riskLevel: portfolio.riskLevel,
+        assets: [
+          {
+            symbol: "BTC",
+            name: "Bitcoin",
+            quantity: 2.5,
+            currentPrice: 43500,
+            value: 108750,
+            allocation: 0.35,
+            targetAllocation: 0.30,
+            performance24h: 0.0245,
+            lastUpdated: "2024-01-16T14:30:00Z"
+          },
+          {
+            symbol: "ETH",
+            name: "Ethereum",
+            quantity: 45.8,
+            currentPrice: 2650,
+            value: 121370,
+            allocation: 0.32,
+            targetAllocation: 0.35,
+            performance24h: 0.0189,
+            lastUpdated: "2024-01-16T14:30:00Z"
+          },
+          {
+            symbol: "ADA",
+            name: "Cardano",
+            quantity: 15000,
+            currentPrice: 0.48,
+            value: 7200,
+            allocation: 0.15,
+            targetAllocation: 0.15,
+            performance24h: -0.0123,
+            lastUpdated: "2024-01-16T14:30:00Z"
+          },
+          {
+            symbol: "SOL",
+            name: "Solana",
+            quantity: 180,
+            currentPrice: 98.5,
+            value: 17730,
+            allocation: 0.18,
+            targetAllocation: 0.20,
+            performance24h: 0.0456,
+            lastUpdated: "2024-01-16T14:30:00Z"
+          }
+        ],
+        rebalanceHistory: [
+          {
+            id: "rebal_usr_001",
+            timestamp: portfolio.lastRebalanced,
+            triggeredBy: "system",
+            reason: "Weekly rebalance",
+            portfoliosAffected: 1,
+            totalValueRebalanced: portfolio.totalValue,
+            status: "completed",
+            duration: 850
+          }
+        ]
+      };
+
+      setSelectedPortfolio(mockDetails);
+      setIsDetailsDialogOpen(true);
     } catch (error) {
       toast({
         title: "Error",
