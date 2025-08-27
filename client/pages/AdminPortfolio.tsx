@@ -267,7 +267,7 @@ export default function AdminPortfolio() {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPortfolios]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, isLoading, isRefreshing]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
@@ -284,7 +284,7 @@ export default function AdminPortfolio() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchPortfolios, isLoading, isRefreshing]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, isLoading, isRefreshing]);
 
   // Initial data load
   useEffect(() => {
