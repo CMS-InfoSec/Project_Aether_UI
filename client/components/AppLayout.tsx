@@ -128,12 +128,6 @@ const adminNavigationItems = [
     badge: null
   },
   {
-    title: 'Builder.io Editor',
-    href: '/admin/builder',
-    icon: FileEdit,
-    badge: null
-  },
-  {
     title: 'Feedback',
     href: '/admin/feedback',
     icon: MessageSquare,
