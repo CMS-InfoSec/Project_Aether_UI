@@ -82,8 +82,16 @@ const AppRouter = () => {
         navigate('/login');
         return true;
       } else {
-        const errorData = await response.json();
-        console.error('Bootstrap failed:', errorData.error);
+        // Handle error response safely
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (jsonError) {
+          // If we can't parse JSON, use the status text or a generic message
+          errorMessage = response.statusText || errorMessage;
+        }
+        console.error('Bootstrap failed:', errorMessage);
         return false;
       }
     } catch (error) {
