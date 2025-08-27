@@ -75,6 +75,14 @@ import {
   handleSubmitFeedback,
   handleGetAllFeedback
 } from "./routes/governance";
+import {
+  handleGetDailyReport,
+  handleGetWeeklyReport,
+  handleGetNotifications,
+  handleMarkNotificationRead,
+  handleMarkAllNotificationsRead,
+  handleCreateNotification
+} from "./routes/reports";
 
 export function createServer() {
   const app = express();
@@ -160,6 +168,14 @@ export function createServer() {
   app.get("/api/admin/feedback", handleGetFeedbackSummary);
   app.post("/api/feedback", handleSubmitFeedback);
   app.get("/api/admin/feedback/all", handleGetAllFeedback);
+
+  // Reports and notifications routes
+  app.get("/api/reports/daily", handleGetDailyReport);
+  app.get("/api/reports/weekly", handleGetWeeklyReport);
+  app.get("/api/notifications", handleGetNotifications);
+  app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
+  app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
+  app.post("/api/notifications", handleCreateNotification);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
