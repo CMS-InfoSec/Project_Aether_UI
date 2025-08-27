@@ -392,52 +392,40 @@ export default function AdminPortfolio() {
     setIsLoading(true);
     try {
       // Load data sequentially to prevent potential race conditions
-      await fetchPortfolios(filters);
       await fetchStats();
       await fetchRebalanceHistory();
+      await fetchPortfolios();
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, filters]);
+  }, [fetchStats, fetchRebalanceHistory, fetchPortfolios]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       // Load data sequentially to prevent potential race conditions
-      await fetchPortfolios(filters);
       await fetchStats();
       await fetchRebalanceHistory();
+      await fetchPortfolios();
     } catch (error) {
       console.error('Error refreshing data:', error);
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, filters]);
+  }, [fetchStats, fetchRebalanceHistory, fetchPortfolios]);
 
   // Initial data load
   useEffect(() => {
-    const initialLoad = async () => {
-      setIsLoading(true);
-      try {
-        await fetchStats();
-        await fetchRebalanceHistory();
-        await fetchPortfolios();
-      } catch (error) {
-        console.error('Error loading initial data:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    initialLoad();
+    loadData();
   }, []); // Only run once on mount
 
   // Handle filter changes
   useEffect(() => {
     fetchPortfolios();
-  }, [fetchPortfolios]);
+  }, [filters.search, filters.sort, filters.order, filters.limit, filters.offset]);
 
   // Handle row click to show details (mock data)
   const handleRowClick = async (userId: string) => {
