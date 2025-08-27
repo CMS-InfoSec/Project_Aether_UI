@@ -129,7 +129,7 @@ export const handleDeleteFounder: RequestHandler = (req, res) => {
   try {
     // This would require admin authentication in production
     const { founderId } = req.params;
-    
+
     const index = mockFounders.findIndex(f => f.id === founderId);
     if (index === -1) {
       return res.status(404).json({
@@ -141,6 +141,40 @@ export const handleDeleteFounder: RequestHandler = (req, res) => {
     res.json({ message: 'Founder deleted successfully' });
   } catch (error) {
     console.error('Delete founder error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+};
+
+export const handleResetFounders: RequestHandler = (req, res) => {
+  try {
+    // This is for testing purposes only - clear all founders
+    mockFounders.length = 0;
+
+    // Also reset mock users to default state
+    const { mockUsers } = require('./auth');
+    if (mockUsers) {
+      mockUsers.length = 0;
+      mockUsers.push(
+        {
+          id: '1',
+          email: 'admin@projectaether.com',
+          password: 'admin123',
+          role: 'admin' as const
+        },
+        {
+          id: '2',
+          email: 'user@projectaether.com',
+          password: 'user123',
+          role: 'user' as const
+        }
+      );
+    }
+
+    res.json({ message: 'Founders reset successfully' });
+  } catch (error) {
+    console.error('Reset founders error:', error);
     res.status(500).json({
       error: 'Internal server error'
     });

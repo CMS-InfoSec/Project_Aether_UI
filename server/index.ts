@@ -96,7 +96,8 @@ import {
   handleGetBootstrapStatus,
   handleCreateFounder,
   handleGetFounders,
-  handleDeleteFounder
+  handleDeleteFounder,
+  handleResetFounders
 } from "./routes/founders";
 
 export function createServer() {
@@ -117,6 +118,7 @@ export function createServer() {
   app.post("/api/founders/bootstrap", handleCreateFounder);
   app.get("/api/founders", handleGetFounders);
   app.delete("/api/founders/:founderId", handleDeleteFounder);
+  app.post("/api/founders/reset", handleResetFounders); // For testing only
 
   // User management routes
   app.post("/api/users/invite", handleInviteUser);
