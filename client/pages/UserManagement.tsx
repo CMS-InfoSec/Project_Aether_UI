@@ -99,7 +99,7 @@ export default function UserManagement() {
   const [isInviting, setIsInviting] = useState(false);
   
   // Approve Users State
-  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>(mockPendingUsers);
+  const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
@@ -129,11 +129,14 @@ export default function UserManagement() {
   // Invite User Functions
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!inviteForm.email || inviteForm.founderApprovals.length < 3) {
+
+    // Validation - check approval quorum
+    const requiredApprovals = inviteForm.role === 'admin' ? 5 : 3;
+
+    if (!inviteForm.email || inviteForm.founderApprovals.length < requiredApprovals) {
       toast({
         title: "Validation Error",
-        description: "Email is required and minimum 3 founder approvals needed.",
+        description: `Email is required and ${requiredApprovals} founder approvals needed for ${inviteForm.role} role.`,
         variant: "destructive"
       });
       return;
@@ -141,24 +144,38 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
-      // Mock API call - replace with POST /users/invite
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Invitation Sent",
-        description: `Invitation sent to ${inviteForm.email} successfully.`,
+      const response = await fetch('/api/users/invite', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(inviteForm),
       });
-      
-      // Reset form
-      setInviteForm({
-        email: '',
-        role: 'user',
-        founderApprovals: []
-      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Invitation Sent",
+          description: `Invitation sent to ${inviteForm.email} successfully.`,
+        });
+
+        // Reset form
+        setInviteForm({
+          email: '',
+          role: 'user',
+          founderApprovals: []
+        });
+
+        // Refresh pending users
+        await fetchPendingUsers();
+      } else {
+        throw new Error(data.error || 'Failed to send invitation');
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to send invitation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to send invitation. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -175,23 +192,65 @@ export default function UserManagement() {
     }));
   };
 
+  // Fetch pending users from API
+  const fetchPendingUsers = async () => {
+    try {
+      const params = new URLSearchParams({
+        limit: '100', // Get all for local filtering
+        offset: '0',
+        search: searchTerm
+      });
+
+      const response = await fetch(`/api/users/pending?${params}`);
+      const data = await response.json();
+
+      if (response.ok) {
+        setPendingUsers(data.users || []);
+      } else {
+        console.error('Failed to fetch pending users:', data.error);
+      }
+    } catch (error) {
+      console.error('Failed to fetch pending users:', error);
+    }
+  };
+
+  // Load pending users on component mount and when search changes
+  useEffect(() => {
+    fetchPendingUsers();
+  }, [searchTerm]);
+
   // Approve User Functions
   const handleApproveUser = async (userId: string) => {
     try {
-      // Mock API call - replace with POST /users/approve
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Remove from pending list
-      setPendingUsers(prev => prev.filter(user => user.id !== userId));
-      
-      toast({
-        title: "User Approved",
-        description: "User has been successfully approved and activated.",
+      const response = await fetch('/api/users/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId,
+          assignedRole
+        }),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "User Approved",
+          description: "User has been successfully approved and activated.",
+        });
+
+        // Refresh pending users list
+        await fetchPendingUsers();
+        setSelectedUser('');
+      } else {
+        throw new Error(data.error || 'Failed to approve user');
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to approve user. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to approve user. Please try again.",
         variant: "destructive"
       });
     }
@@ -199,29 +258,54 @@ export default function UserManagement() {
 
   const handleRejectUser = async (userId: string) => {
     try {
-      // Mock API call - replace with DELETE /users/pending/{userId}
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Remove from pending list
-      setPendingUsers(prev => prev.filter(user => user.id !== userId));
-      
-      toast({
-        title: "User Rejected",
-        description: "User invitation has been rejected.",
+      const response = await fetch(`/api/users/pending/${userId}`, {
+        method: 'DELETE',
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "User Rejected",
+          description: "User invitation has been rejected.",
+        });
+
+        // Refresh pending users list
+        await fetchPendingUsers();
+      } else {
+        throw new Error(data.error || 'Failed to reject user');
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to reject user. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to reject user. Please try again.",
         variant: "destructive"
       });
     }
   };
 
+  // Load user settings on component mount
+  useEffect(() => {
+    const fetchUserSettings = async () => {
+      try {
+        const response = await fetch('/api/users/settings');
+        const data = await response.json();
+
+        if (response.ok) {
+          setUserSettings(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch user settings:', error);
+      }
+    };
+
+    fetchUserSettings();
+  }, []);
+
   // User Settings Functions
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     if (userSettings.stopLossMultiplier < 0.1 || userSettings.stopLossMultiplier > 1.0) {
       toast({
@@ -231,7 +315,16 @@ export default function UserManagement() {
       });
       return;
     }
-    
+
+    if (userSettings.takeProfitMultiplier < 1.0) {
+      toast({
+        title: "Validation Error",
+        description: "Take-profit multiplier must be at least 1.0.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     if (userSettings.trailingStop <= 0) {
       toast({
         title: "Validation Error",
@@ -243,17 +336,28 @@ export default function UserManagement() {
 
     setIsUpdatingSettings(true);
     try {
-      // Mock API call - replace with PATCH /users/settings
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      toast({
-        title: "Settings Saved",
-        description: "Your trading preferences have been updated successfully.",
+      const response = await fetch('/api/users/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userSettings),
       });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({
+          title: "Settings Saved",
+          description: "Your trading preferences have been updated successfully.",
+        });
+      } else {
+        throw new Error(data.error || 'Failed to save settings');
+      }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save settings. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to save settings. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -343,10 +447,18 @@ export default function UserManagement() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <Label>Founder Approvals ({inviteForm.founderApprovals.length}/5 selected)</Label>
-                    <Badge variant={inviteForm.founderApprovals.length >= 3 ? "default" : "secondary"}>
-                      {inviteForm.founderApprovals.length >= 3 ? "Valid" : "Need 3 minimum"}
+                    <Badge variant={inviteForm.founderApprovals.length >= 3 ? "default" : "destructive"}>
+                      {inviteForm.founderApprovals.length >= 3 ? "Valid Quorum" : "Need 3 minimum"}
                     </Badge>
                   </div>
+                  {inviteForm.role === 'admin' && inviteForm.founderApprovals.length < 5 && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription>
+                        Admin role requires all 5 founder approvals. Currently selected: {inviteForm.founderApprovals.length}/5
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <div className="grid gap-3 md:grid-cols-2">
                     {mockFounders.map((founder) => (
                       <div key={founder.id} className="flex items-center space-x-3 p-3 border rounded-lg">
@@ -365,10 +477,10 @@ export default function UserManagement() {
                   </div>
                 </div>
 
-                <Button 
-                  type="submit" 
-                  className="w-full" 
-                  disabled={isInviting || !inviteForm.email || inviteForm.founderApprovals.length < 3}
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isInviting || !inviteForm.email || inviteForm.founderApprovals.length < (inviteForm.role === 'admin' ? 5 : 3)}
                 >
                   {isInviting ? (
                     <>
