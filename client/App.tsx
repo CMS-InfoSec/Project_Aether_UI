@@ -19,7 +19,6 @@ import SystemConfig from "./pages/SystemConfig";
 import SystemControl from "./pages/SystemControl";
 import Reports from "./pages/Reports";
 import Notifications from "./pages/Notifications";
-import Builder from "./pages/Builder";
 import Feedback from "./pages/Feedback";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
