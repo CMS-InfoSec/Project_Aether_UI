@@ -23,7 +23,6 @@ import {
   FileEdit,
   CandlestickChart,
   Wallet,
-  Coins,
   User,
   PieChart,
   Shield,
