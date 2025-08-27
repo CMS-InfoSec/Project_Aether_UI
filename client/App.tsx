@@ -38,6 +38,7 @@ import NotFound from "./pages/NotFound";
 // Layout
 import AppLayout from "./components/AppLayout";
 import { AuthProvider } from "./contexts/AuthContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
