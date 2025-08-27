@@ -171,10 +171,13 @@ export default function AdminPortfolio() {
   });
 
   // Fetch portfolios (mock data)
-  const fetchPortfolios = useCallback(async () => {
+  const fetchPortfolios = useCallback(async (currentFilters?: typeof filters) => {
     try {
       // Simulate API delay
       await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Use passed filters or current state
+      const activeFilters = currentFilters || filters;
 
       // Mock portfolio data
       const mockPortfolios: PortfolioOverview[] = [
@@ -237,18 +240,18 @@ export default function AdminPortfolio() {
 
       // Filter and sort mock data
       let filteredPortfolios = mockPortfolios.filter(p =>
-        filters.search === '' ||
-        p.userName.toLowerCase().includes(filters.search.toLowerCase()) ||
-        p.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-        p.userId.toLowerCase().includes(filters.search.toLowerCase())
+        activeFilters.search === '' ||
+        p.userName.toLowerCase().includes(activeFilters.search.toLowerCase()) ||
+        p.email.toLowerCase().includes(activeFilters.search.toLowerCase()) ||
+        p.userId.toLowerCase().includes(activeFilters.search.toLowerCase())
       );
 
       // Sort
       filteredPortfolios.sort((a, b) => {
-        let aVal: any = a[filters.sort as keyof PortfolioOverview];
-        let bVal: any = b[filters.sort as keyof PortfolioOverview];
+        let aVal: any = a[activeFilters.sort as keyof PortfolioOverview];
+        let bVal: any = b[activeFilters.sort as keyof PortfolioOverview];
 
-        if (filters.order === 'asc') {
+        if (activeFilters.order === 'asc') {
           return aVal > bVal ? 1 : -1;
         } else {
           return aVal < bVal ? 1 : -1;
@@ -257,13 +260,13 @@ export default function AdminPortfolio() {
 
       // Paginate
       const total = filteredPortfolios.length;
-      const paginatedPortfolios = filteredPortfolios.slice(filters.offset, filters.offset + filters.limit);
+      const paginatedPortfolios = filteredPortfolios.slice(activeFilters.offset, activeFilters.offset + activeFilters.limit);
 
       setPortfolios(paginatedPortfolios);
       setMetadata({
         total,
-        limit: filters.limit,
-        offset: filters.offset,
+        limit: activeFilters.limit,
+        offset: activeFilters.offset,
         summary: {
           totalPortfolios: total,
           totalValue: mockPortfolios.reduce((sum, p) => sum + p.totalValue, 0),
@@ -279,7 +282,7 @@ export default function AdminPortfolio() {
         variant: "destructive"
       });
     }
-  }, [filters]);
+  }, []);
 
   // Fetch portfolio statistics (mock data)
   const fetchStats = useCallback(async () => {
