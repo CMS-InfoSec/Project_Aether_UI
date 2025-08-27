@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,267 +10,248 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { 
   User, 
-  Settings, 
-  Shield,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Bell,
-  Eye,
-  EyeOff,
+  Settings,
   Save,
   RefreshCw,
-  Info,
+  AlertTriangle,
   CheckCircle,
-  AlertTriangle
+  TrendingUp,
+  TrendingDown,
+  Shield
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 // Types
 interface UserProfile {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  timezone: string;
-  language: string;
-  twoFactorEnabled: boolean;
+  risk_tier: 'aggressive' | 'balanced' | 'conservative';
 }
 
 interface TradingSettings {
-  riskTier: 'aggressive' | 'balanced' | 'conservative';
-  stopLossPercentage: number;
-  takeProfitPercentage: number;
-  maxPositionSize: number;
-  autoTradingEnabled: boolean;
-  newsAnalysisEnabled: boolean;
-  maxDailyLoss: number;
-  trailingStopEnabled: boolean;
-  trailingStopPercentage: number;
+  sl_multiplier: number;
+  tp_multiplier: number;
+  use_news_analysis: boolean;
+  trailing_stop: number;
 }
 
-interface NotificationSettings {
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  tradingAlerts: boolean;
-  priceAlerts: boolean;
-  portfolioAlerts: boolean;
-  systemAlerts: boolean;
-  weeklyReports: boolean;
-  monthlyReports: boolean;
+interface ValidationErrors {
+  sl_multiplier?: string;
+  tp_multiplier?: string;
+  trailing_stop?: string;
 }
-
-// Mock data
-const mockUserProfile: UserProfile = {
-  firstName: 'John',
-  lastName: 'Doe',
-  email: 'john.doe@example.com',
-  phone: '+1 (555) 123-4567',
-  timezone: 'America/New_York',
-  language: 'en',
-  twoFactorEnabled: true
-};
-
-const mockTradingSettings: TradingSettings = {
-  riskTier: 'balanced',
-  stopLossPercentage: 5,
-  takeProfitPercentage: 15,
-  maxPositionSize: 10000,
-  autoTradingEnabled: true,
-  newsAnalysisEnabled: true,
-  maxDailyLoss: 1000,
-  trailingStopEnabled: false,
-  trailingStopPercentage: 2
-};
-
-const mockNotificationSettings: NotificationSettings = {
-  emailNotifications: true,
-  pushNotifications: true,
-  tradingAlerts: true,
-  priceAlerts: true,
-  portfolioAlerts: true,
-  systemAlerts: true,
-  weeklyReports: true,
-  monthlyReports: false
-};
 
 export default function ProfileSettings() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('profile');
-  const [userProfile, setUserProfile] = useState<UserProfile>(mockUserProfile);
-  const [tradingSettings, setTradingSettings] = useState<TradingSettings>(mockTradingSettings);
-  const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>(mockNotificationSettings);
-  const [isUpdating, setIsUpdating] = useState({
-    profile: false,
-    trading: false,
-    notifications: false,
-    security: false
+  
+  // State
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [selectedRiskTier, setSelectedRiskTier] = useState<'aggressive' | 'balanced' | 'conservative'>('balanced');
+  const [tradingSettings, setTradingSettings] = useState<TradingSettings>({
+    sl_multiplier: 0.5,
+    tp_multiplier: 2.0,
+    use_news_analysis: true,
+    trailing_stop: 0.1
   });
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
+  
+  // Loading and error states
+  const [isLoading, setIsLoading] = useState({
+    profile: true,
+    settings: false,
+    saveProfile: false,
+    saveSettings: false
   });
+  const [errors, setErrors] = useState<ValidationErrors>({});
+  const [apiError, setApiError] = useState<string>('');
 
+  // Risk tier descriptions
   const riskTierDescriptions = {
     aggressive: {
-      description: 'High risk, high reward trading with larger position sizes',
-      color: 'bg-destructive/10 text-destructive border-destructive/20',
-      icon: TrendingUp
+      description: 'High risk, high reward trading with maximum position sizes',
+      icon: TrendingUp,
+      color: 'text-red-600'
     },
     balanced: {
       description: 'Moderate risk approach balancing growth and safety',
-      color: 'bg-primary/10 text-primary border-primary/20',
-      icon: DollarSign
+      icon: Settings,
+      color: 'text-blue-600'
     },
     conservative: {
       description: 'Low risk strategy focusing on capital preservation',
-      color: 'bg-accent/10 text-accent border-accent/20',
-      icon: Shield
+      icon: Shield,
+      color: 'text-green-600'
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+  // Load user profile on component mount
+  useEffect(() => {
+    loadUserProfile();
+    loadTradingSettings();
+  }, []);
 
-  const formatPercentage = (value: number) => {
-    return `${value}%`;
-  };
-
-  const handleProfileUpdate = async () => {
-    setIsUpdating(prev => ({ ...prev, profile: true }));
+  const loadUserProfile = async () => {
     try {
-      // Mock API call - replace with PATCH /user/profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/user/profile');
+      const data = await response.json();
       
-      toast({
-        title: "Profile Updated",
-        description: "Your profile information has been updated successfully.",
-      });
+      if (data.status === 'success') {
+        setUserProfile(data.data);
+        setSelectedRiskTier(data.data.risk_tier);
+      } else {
+        throw new Error(data.error || 'Failed to load profile');
+      }
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: "Failed to update profile. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Load profile error:', error);
+      setApiError('Failed to load user profile');
     } finally {
-      setIsUpdating(prev => ({ ...prev, profile: false }));
+      setIsLoading(prev => ({ ...prev, profile: false }));
     }
   };
 
-  const handleTradingSettingsUpdate = async () => {
+  const loadTradingSettings = async () => {
+    try {
+      const response = await fetch('/api/user/trading-settings');
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setTradingSettings(data.data.settings);
+      } else {
+        // If no settings exist, use defaults (as specified in requirements)
+        console.log('No existing settings found, using defaults');
+      }
+    } catch (error) {
+      console.error('Load trading settings error:', error);
+      // Don't show error for missing settings, use defaults
+    }
+  };
+
+  const validateTradingSettings = (): boolean => {
+    const newErrors: ValidationErrors = {};
+    
+    // Validate sl_multiplier (0.1 - 1.0)
+    if (tradingSettings.sl_multiplier < 0.1 || tradingSettings.sl_multiplier > 1.0) {
+      newErrors.sl_multiplier = 'Stop-Loss Multiplier must be between 0.1 and 1.0';
+    }
+    
+    // Validate tp_multiplier (> 0)
+    if (tradingSettings.tp_multiplier <= 0) {
+      newErrors.tp_multiplier = 'Take-Profit Multiplier must be greater than 0';
+    }
+    
+    // Validate trailing_stop (> 0)
+    if (tradingSettings.trailing_stop <= 0) {
+      newErrors.trailing_stop = 'Trailing Stop must be greater than 0';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSaveRiskTier = async () => {
     // Validation
-    if (tradingSettings.stopLossPercentage < 1 || tradingSettings.stopLossPercentage > 50) {
-      toast({
-        title: "Validation Error",
-        description: "Stop loss percentage must be between 1% and 50%.",
-        variant: "destructive"
-      });
+    if (!['aggressive', 'balanced', 'conservative'].includes(selectedRiskTier)) {
+      setApiError('Invalid risk tier selection');
       return;
     }
 
-    if (tradingSettings.takeProfitPercentage < 5 || tradingSettings.takeProfitPercentage > 100) {
-      toast({
-        title: "Validation Error",
-        description: "Take profit percentage must be between 5% and 100%.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsUpdating(prev => ({ ...prev, trading: true }));
+    setIsLoading(prev => ({ ...prev, saveProfile: true }));
+    setApiError('');
+    
     try {
-      // Mock API call - replace with PATCH /user/profile
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          risk_tier: selectedRiskTier
+        })
+      });
       
-      toast({
-        title: "Trading Settings Updated",
-        description: "Your trading preferences have been updated successfully.",
-      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setUserProfile(data.data);
+        toast({
+          title: "Risk Tier Updated",
+          description: "Your risk profile has been updated successfully.",
+        });
+      } else {
+        throw new Error(data.error || 'Failed to update risk tier');
+      }
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: "Failed to update trading settings. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Save risk tier error:', error);
+      setApiError(error instanceof Error ? error.message : 'Failed to update risk tier');
     } finally {
-      setIsUpdating(prev => ({ ...prev, trading: false }));
+      setIsLoading(prev => ({ ...prev, saveProfile: false }));
     }
   };
 
-  const handleNotificationSettingsUpdate = async () => {
-    setIsUpdating(prev => ({ ...prev, notifications: true }));
-    try {
-      // Mock API call - replace with PATCH /user/profile
-      await new Promise(resolve => setTimeout(resolve, 800));
-      
-      toast({
-        title: "Notification Settings Updated",
-        description: "Your notification preferences have been updated successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: "Failed to update notification settings. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsUpdating(prev => ({ ...prev, notifications: false }));
-    }
-  };
-
-  const handlePasswordChange = async () => {
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast({
-        title: "Password Mismatch",
-        description: "New password and confirmation do not match.",
-        variant: "destructive"
-      });
+  const handleSaveTradingSettings = async () => {
+    if (!validateTradingSettings()) {
       return;
     }
 
-    if (passwordForm.newPassword.length < 8) {
-      toast({
-        title: "Password Too Short",
-        description: "Password must be at least 8 characters long.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsUpdating(prev => ({ ...prev, security: true }));
+    setIsLoading(prev => ({ ...prev, saveSettings: true }));
+    setApiError('');
+    
     try {
-      // Mock API call - replace with PATCH /user/password
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setPasswordForm({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
+      const response = await fetch('/api/users/settings', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          settings: tradingSettings
+        })
       });
       
-      toast({
-        title: "Password Changed",
-        description: "Your password has been updated successfully.",
-      });
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        // Update form values with response (merged settings)
+        setTradingSettings(data.data.settings);
+        toast({
+          title: "Trading Settings Updated",
+          description: "Your trading preferences have been updated successfully.",
+        });
+      } else {
+        throw new Error(data.error || 'Failed to update trading settings');
+      }
     } catch (error) {
-      toast({
-        title: "Password Change Failed",
-        description: "Failed to change password. Please try again.",
-        variant: "destructive"
-      });
+      console.error('Save trading settings error:', error);
+      setApiError(error instanceof Error ? error.message : 'Failed to update trading settings');
     } finally {
-      setIsUpdating(prev => ({ ...prev, security: false }));
+      setIsLoading(prev => ({ ...prev, saveSettings: false }));
     }
   };
 
-  const RiskTierIcon = riskTierDescriptions[tradingSettings.riskTier].icon;
+  const handleResetToLastSaved = () => {
+    // Reset to last loaded values
+    if (userProfile) {
+      setSelectedRiskTier(userProfile.risk_tier);
+    }
+    loadTradingSettings();
+    setErrors({});
+    setApiError('');
+  };
+
+  // Check if risk tier has changed
+  const riskTierChanged = userProfile && selectedRiskTier !== userProfile.risk_tier;
+  
+  // Check if all trading settings are valid
+  const tradingSettingsValid = Object.keys(errors).length === 0 && 
+    tradingSettings.sl_multiplier >= 0.1 && tradingSettings.sl_multiplier <= 1.0 &&
+    tradingSettings.tp_multiplier > 0 &&
+    tradingSettings.trailing_stop > 0;
+
+  if (isLoading.profile) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-48">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -280,665 +259,254 @@ export default function ProfileSettings() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Profile & Settings</h1>
           <p className="text-muted-foreground">
-            Manage your account settings and trading preferences
+            Manage your personal risk profile and trading preferences
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-            <User className="h-3 w-3 mr-1" />
-            {user?.role === 'admin' ? 'Admin' : 'User'} Account
-          </Badge>
+          <Button variant="outline" onClick={handleResetToLastSaved}>
+            Reset
+          </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="trading">Trading</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="security">Security</TabsTrigger>
-        </TabsList>
+      {/* API Error Display */}
+      {apiError && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>{apiError}</AlertDescription>
+        </Alert>
+      )}
 
-        {/* Profile Tab */}
-        <TabsContent value="profile" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Personal Information</CardTitle>
-              <CardDescription>
-                Update your personal details and account information
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input
-                    id="firstName"
-                    value={userProfile.firstName}
-                    onChange={(e) => setUserProfile(prev => ({ ...prev, firstName: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={userProfile.lastName}
-                    onChange={(e) => setUserProfile(prev => ({ ...prev, lastName: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={userProfile.email}
-                    onChange={(e) => setUserProfile(prev => ({ ...prev, email: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input
-                    id="phone"
-                    value={userProfile.phone}
-                    onChange={(e) => setUserProfile(prev => ({ ...prev, phone: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Timezone</Label>
-                  <Select 
-                    value={userProfile.timezone} 
-                    onValueChange={(value) => setUserProfile(prev => ({ ...prev, timezone: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="America/New_York">Eastern Time (ET)</SelectItem>
-                      <SelectItem value="America/Chicago">Central Time (CT)</SelectItem>
-                      <SelectItem value="America/Denver">Mountain Time (MT)</SelectItem>
-                      <SelectItem value="America/Los_Angeles">Pacific Time (PT)</SelectItem>
-                      <SelectItem value="Europe/London">London (GMT)</SelectItem>
-                      <SelectItem value="Europe/Paris">Paris (CET)</SelectItem>
-                      <SelectItem value="Asia/Tokyo">Tokyo (JST)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Language</Label>
-                  <Select 
-                    value={userProfile.language} 
-                    onValueChange={(value) => setUserProfile(prev => ({ ...prev, language: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="en">English</SelectItem>
-                      <SelectItem value="es">Spanish</SelectItem>
-                      <SelectItem value="fr">French</SelectItem>
-                      <SelectItem value="de">German</SelectItem>
-                      <SelectItem value="ja">Japanese</SelectItem>
-                      <SelectItem value="zh">Chinese</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleProfileUpdate}
-                disabled={isUpdating.profile}
-                className="w-full md:w-auto"
+      {/* Risk Profile Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <User className="h-5 w-5" />
+            <span>Risk Profile</span>
+          </CardTitle>
+          <CardDescription>
+            Set your trading risk tolerance level
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="riskTier">Risk Tier</Label>
+              <Select 
+                value={selectedRiskTier} 
+                onValueChange={(value: 'aggressive' | 'balanced' | 'conservative') => setSelectedRiskTier(value)}
               >
-                {isUpdating.profile ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Update Profile
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="aggressive">Aggressive</SelectItem>
+                  <SelectItem value="balanced">Balanced</SelectItem>
+                  <SelectItem value="conservative">Conservative</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-        {/* Trading Settings Tab */}
-        <TabsContent value="trading" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Risk Management</CardTitle>
-              <CardDescription>
-                Configure your trading risk profile and position management
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-4">
+            {/* Risk Tier Description */}
+            <div className="p-4 border rounded-lg bg-muted/20">
+              <div className="flex items-center space-x-3">
+                {React.createElement(riskTierDescriptions[selectedRiskTier].icon, {
+                  className: `h-5 w-5 ${riskTierDescriptions[selectedRiskTier].color}`
+                })}
                 <div>
-                  <Label className="text-base font-medium">Risk Tier</Label>
-                  <div className="grid gap-3 mt-3">
-                    {Object.entries(riskTierDescriptions).map(([tier, config]) => {
-                      const Icon = config.icon;
-                      return (
-                        <div
-                          key={tier}
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                            tradingSettings.riskTier === tier 
-                              ? 'border-primary bg-primary/5' 
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => setTradingSettings(prev => ({ 
-                            ...prev, 
-                            riskTier: tier as 'aggressive' | 'balanced' | 'conservative' 
-                          }))}
-                        >
-                          <div className="flex items-center space-x-3">
-                            <Icon className="h-5 w-5" />
-                            <div className="flex-1">
-                              <div className="font-medium capitalize">{tier}</div>
-                              <div className="text-sm text-muted-foreground">{config.description}</div>
-                            </div>
-                            {tradingSettings.riskTier === tier && (
-                              <CheckCircle className="h-5 w-5 text-primary" />
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="stopLoss">Stop Loss Percentage</Label>
-                    <Input
-                      id="stopLoss"
-                      type="number"
-                      min="1"
-                      max="50"
-                      value={tradingSettings.stopLossPercentage}
-                      onChange={(e) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        stopLossPercentage: parseInt(e.target.value) || 0 
-                      }))}
-                    />
-                    <p className="text-xs text-muted-foreground">Range: 1% - 50%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="takeProfit">Take Profit Percentage</Label>
-                    <Input
-                      id="takeProfit"
-                      type="number"
-                      min="5"
-                      max="100"
-                      value={tradingSettings.takeProfitPercentage}
-                      onChange={(e) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        takeProfitPercentage: parseInt(e.target.value) || 0 
-                      }))}
-                    />
-                    <p className="text-xs text-muted-foreground">Range: 5% - 100%</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="maxPosition">Max Position Size</Label>
-                    <Input
-                      id="maxPosition"
-                      type="number"
-                      min="100"
-                      value={tradingSettings.maxPositionSize}
-                      onChange={(e) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        maxPositionSize: parseInt(e.target.value) || 0 
-                      }))}
-                    />
-                    <p className="text-xs text-muted-foreground">Maximum USD per position</p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="dailyLoss">Max Daily Loss</Label>
-                    <Input
-                      id="dailyLoss"
-                      type="number"
-                      min="100"
-                      value={tradingSettings.maxDailyLoss}
-                      onChange={(e) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        maxDailyLoss: parseInt(e.target.value) || 0 
-                      }))}
-                    />
-                    <p className="text-xs text-muted-foreground">Daily loss limit in USD</p>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Auto Trading</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enable automated trading based on signals
-                      </p>
-                    </div>
-                    <Switch
-                      checked={tradingSettings.autoTradingEnabled}
-                      onCheckedChange={(checked) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        autoTradingEnabled: checked 
-                      }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>News Analysis</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Include sentiment analysis in trading decisions
-                      </p>
-                    </div>
-                    <Switch
-                      checked={tradingSettings.newsAnalysisEnabled}
-                      onCheckedChange={(checked) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        newsAnalysisEnabled: checked 
-                      }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-0.5">
-                      <Label>Trailing Stop</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Enable trailing stop-loss orders
-                      </p>
-                    </div>
-                    <Switch
-                      checked={tradingSettings.trailingStopEnabled}
-                      onCheckedChange={(checked) => setTradingSettings(prev => ({ 
-                        ...prev, 
-                        trailingStopEnabled: checked 
-                      }))}
-                    />
-                  </div>
-
-                  {tradingSettings.trailingStopEnabled && (
-                    <div className="ml-4 space-y-2">
-                      <Label htmlFor="trailingPercent">Trailing Stop Percentage</Label>
-                      <Input
-                        id="trailingPercent"
-                        type="number"
-                        min="0.5"
-                        max="10"
-                        step="0.5"
-                        value={tradingSettings.trailingStopPercentage}
-                        onChange={(e) => setTradingSettings(prev => ({ 
-                          ...prev, 
-                          trailingStopPercentage: parseFloat(e.target.value) || 0 
-                        }))}
-                      />
-                      <p className="text-xs text-muted-foreground">Range: 0.5% - 10%</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <Button 
-                onClick={handleTradingSettingsUpdate}
-                disabled={isUpdating.trading}
-                className="w-full md:w-auto"
-              >
-                {isUpdating.trading ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Update Trading Settings
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Notifications Tab */}
-        <TabsContent value="notifications" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Notification Preferences</CardTitle>
-              <CardDescription>
-                Control what notifications you receive and how
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Delivery Methods</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Email Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive notifications via email
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.emailNotifications}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          emailNotifications: checked 
-                        }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Push Notifications</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Receive browser push notifications
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.pushNotifications}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          pushNotifications: checked 
-                        }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Alert Types</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Trading Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Trade executions, stop-loss triggers, etc.
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.tradingAlerts}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          tradingAlerts: checked 
-                        }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Price Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Significant price movements and market changes
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.priceAlerts}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          priceAlerts: checked 
-                        }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Portfolio Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Portfolio performance and rebalancing updates
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.portfolioAlerts}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          portfolioAlerts: checked 
-                        }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>System Alerts</Label>
-                        <p className="text-sm text-muted-foreground">
-                          System maintenance and important updates
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.systemAlerts}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          systemAlerts: checked 
-                        }))}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Reports</h3>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Weekly Reports</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Weekly performance summary and insights
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.weeklyReports}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          weeklyReports: checked 
-                        }))}
-                      />
-                    </div>
-
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label>Monthly Reports</Label>
-                        <p className="text-sm text-muted-foreground">
-                          Comprehensive monthly portfolio analysis
-                        </p>
-                      </div>
-                      <Switch
-                        checked={notificationSettings.monthlyReports}
-                        onCheckedChange={(checked) => setNotificationSettings(prev => ({ 
-                          ...prev, 
-                          monthlyReports: checked 
-                        }))}
-                      />
-                    </div>
+                  <div className="font-medium capitalize">{selectedRiskTier}</div>
+                  <div className="text-sm text-muted-foreground">
+                    {riskTierDescriptions[selectedRiskTier].description}
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
 
-              <Button 
-                onClick={handleNotificationSettingsUpdate}
-                disabled={isUpdating.notifications}
-                className="w-full md:w-auto"
-              >
-                {isUpdating.notifications ? (
-                  <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Update Notification Settings
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          <Button 
+            onClick={handleSaveRiskTier}
+            disabled={!riskTierChanged || isLoading.saveProfile}
+            className="w-full md:w-auto"
+          >
+            {isLoading.saveProfile ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Risk Tier
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
-        {/* Security Tab */}
-        <TabsContent value="security" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Security Settings</CardTitle>
-              <CardDescription>
-                Manage your account security and authentication
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-3">
-                      <Shield className="h-5 w-5 text-accent" />
-                      <div>
-                        <div className="font-medium">Two-Factor Authentication</div>
-                        <div className="text-sm text-muted-foreground">
-                          {userProfile.twoFactorEnabled ? 'Enabled' : 'Disabled'}
-                        </div>
-                      </div>
-                    </div>
-                    <Badge variant={userProfile.twoFactorEnabled ? "default" : "secondary"}>
-                      {userProfile.twoFactorEnabled ? 'Active' : 'Inactive'}
-                    </Badge>
-                  </div>
-                  {userProfile.twoFactorEnabled && (
-                    <Alert>
-                      <CheckCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        Your account is protected with two-factor authentication.
-                      </AlertDescription>
-                    </Alert>
-                  )}
+      {/* Trading Preferences Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Settings className="h-5 w-5" />
+            <span>Trading Preferences</span>
+          </CardTitle>
+          <CardDescription>
+            Configure your trading parameters and risk management settings
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2">
+            {/* Stop-Loss Multiplier */}
+            <div className="space-y-2">
+              <Label htmlFor="slMultiplier">Stop-Loss Multiplier</Label>
+              <Input
+                id="slMultiplier"
+                type="number"
+                step="0.1"
+                min="0.1"
+                max="1.0"
+                value={tradingSettings.sl_multiplier}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setTradingSettings(prev => ({ ...prev, sl_multiplier: isNaN(value) ? 0 : value }));
+                }}
+                className={errors.sl_multiplier ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-muted-foreground">
+                Valid Range: 0.1 - 1.0
+              </p>
+              {errors.sl_multiplier && (
+                <p className="text-xs text-red-500">{errors.sl_multiplier}</p>
+              )}
+            </div>
+
+            {/* Take-Profit Multiplier */}
+            <div className="space-y-2">
+              <Label htmlFor="tpMultiplier">Take-Profit Multiplier</Label>
+              <Input
+                id="tpMultiplier"
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={tradingSettings.tp_multiplier}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setTradingSettings(prev => ({ ...prev, tp_multiplier: isNaN(value) ? 0 : value }));
+                }}
+                className={errors.tp_multiplier ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-muted-foreground">
+                Must be greater than 0
+              </p>
+              {errors.tp_multiplier && (
+                <p className="text-xs text-red-500">{errors.tp_multiplier}</p>
+              )}
+            </div>
+
+            {/* Trailing Stop */}
+            <div className="space-y-2">
+              <Label htmlFor="trailingStop">Trailing Stop</Label>
+              <Input
+                id="trailingStop"
+                type="number"
+                step="0.01"
+                min="0.01"
+                value={tradingSettings.trailing_stop}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  setTradingSettings(prev => ({ ...prev, trailing_stop: isNaN(value) ? 0 : value }));
+                }}
+                className={errors.trailing_stop ? 'border-red-500' : ''}
+              />
+              <p className="text-xs text-muted-foreground">
+                Percentage for trailing stop trigger (e.g., 0.1 for 10%)
+              </p>
+              {errors.trailing_stop && (
+                <p className="text-xs text-red-500">{errors.trailing_stop}</p>
+              )}
+            </div>
+
+            {/* Use News Analysis */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label>Use News Analysis</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Enable/disable use of news sentiment in trading signals
+                  </p>
                 </div>
-
-                <Separator />
-
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Change Password</h3>
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="currentPassword">Current Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="currentPassword"
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          value={passwordForm.currentPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ 
-                            ...prev, 
-                            currentPassword: e.target.value 
-                          }))}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="newPassword">New Password</Label>
-                      <div className="relative">
-                        <Input
-                          id="newPassword"
-                          type={showNewPassword ? 'text' : 'password'}
-                          value={passwordForm.newPassword}
-                          onChange={(e) => setPasswordForm(prev => ({ 
-                            ...prev, 
-                            newPassword: e.target.value 
-                          }))}
-                        />
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                          onClick={() => setShowNewPassword(!showNewPassword)}
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        type="password"
-                        value={passwordForm.confirmPassword}
-                        onChange={(e) => setPasswordForm(prev => ({ 
-                          ...prev, 
-                          confirmPassword: e.target.value 
-                        }))}
-                      />
-                    </div>
-
-                    {passwordForm.newPassword && passwordForm.newPassword.length < 8 && (
-                      <Alert>
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertDescription>
-                          Password must be at least 8 characters long.
-                        </AlertDescription>
-                      </Alert>
-                    )}
-
-                    <Button 
-                      onClick={handlePasswordChange}
-                      disabled={
-                        isUpdating.security || 
-                        !passwordForm.currentPassword || 
-                        !passwordForm.newPassword || 
-                        !passwordForm.confirmPassword ||
-                        passwordForm.newPassword !== passwordForm.confirmPassword ||
-                        passwordForm.newPassword.length < 8
-                      }
-                    >
-                      {isUpdating.security ? (
-                        <>
-                          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                          Changing Password...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="h-4 w-4 mr-2" />
-                          Change Password
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
+                <Switch
+                  checked={tradingSettings.use_news_analysis}
+                  onCheckedChange={(checked) => setTradingSettings(prev => ({ 
+                    ...prev, 
+                    use_news_analysis: checked 
+                  }))}
+                />
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Validation Summary */}
+          {Object.keys(errors).length > 0 && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                Please fix the validation errors above before saving.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          <Button 
+            onClick={handleSaveTradingSettings}
+            disabled={!tradingSettingsValid || isLoading.saveSettings}
+            className="w-full md:w-auto"
+          >
+            {isLoading.saveSettings ? (
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Trading Settings
+              </>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Current Settings Summary */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Current Settings Summary</CardTitle>
+          <CardDescription>Review your current configuration</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <h4 className="font-medium">Risk Profile</h4>
+              <div className="flex items-center space-x-2">
+                {React.createElement(riskTierDescriptions[selectedRiskTier].icon, {
+                  className: `h-4 w-4 ${riskTierDescriptions[selectedRiskTier].color}`
+                })}
+                <span className="capitalize">{selectedRiskTier}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium">Trading Settings</h4>
+              <div className="text-sm space-y-1">
+                <div>Stop-Loss: {tradingSettings.sl_multiplier}x</div>
+                <div>Take-Profit: {tradingSettings.tp_multiplier}x</div>
+                <div>Trailing Stop: {(tradingSettings.trailing_stop * 100).toFixed(1)}%</div>
+                <div>News Analysis: {tradingSettings.use_news_analysis ? 'Enabled' : 'Disabled'}</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
