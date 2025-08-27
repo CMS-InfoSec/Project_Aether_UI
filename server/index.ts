@@ -12,6 +12,14 @@ import {
   handleUpdateUserSettings,
   handleGetUserStats
 } from "./routes/users";
+import {
+  handleGetSystemStatus,
+  handlePauseSystem,
+  handleResumeSystem,
+  handleGetTradingMode,
+  handleSetTradingMode,
+  handleGetAuditLog
+} from "./routes/system";
 
 export function createServer() {
   const app = express();
@@ -34,6 +42,14 @@ export function createServer() {
   app.get("/api/users/settings", handleGetUserSettings);
   app.patch("/api/users/settings", handleUpdateUserSettings);
   app.get("/api/users/stats", handleGetUserStats);
+
+  // System control routes
+  app.get("/api/system/status", handleGetSystemStatus);
+  app.post("/api/system/pause", handlePauseSystem);
+  app.post("/api/system/resume", handleResumeSystem);
+  app.get("/api/system/mode", handleGetTradingMode);
+  app.post("/api/system/mode", handleSetTradingMode);
+  app.get("/api/system/audit", handleGetAuditLog);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
