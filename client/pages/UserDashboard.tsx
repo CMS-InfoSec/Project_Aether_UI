@@ -102,12 +102,18 @@ export default function UserDashboard() {
     weekly: false,
     notifications: false
   });
+  const [mounted, setMounted] = useState(true);
 
   useEffect(() => {
     // Load initial data
     loadDailyReport();
     loadWeeklyReport();
     loadNotifications();
+
+    // Cleanup function
+    return () => {
+      setMounted(false);
+    };
   }, []);
 
   const loadDailyReport = async () => {
