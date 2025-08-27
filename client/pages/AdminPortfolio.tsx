@@ -156,16 +156,13 @@ export default function AdminPortfolio() {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Table controls
-  const [filtersState, setFilters] = useState({
+  const [filters, setFilters] = useState({
     search: '',
     sort: 'totalValue',
     order: 'desc' as 'asc' | 'desc',
     limit: 20,
     offset: 0
   });
-
-  // Memoized filters to prevent unnecessary re-renders
-  const filters = useMemo(() => filtersState, [filtersState]);
 
   // Rebalance form
   const [rebalanceForm, setRebalanceForm] = useState({
