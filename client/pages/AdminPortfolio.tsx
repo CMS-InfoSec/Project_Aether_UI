@@ -289,7 +289,7 @@ export default function AdminPortfolio() {
   // Initial data load
   useEffect(() => {
     loadData();
-  }, [loadData]);
+  }, [filters]); // Only re-run when filters change
 
   // Handle row click to show details
   const handleRowClick = async (userId: string) => {
