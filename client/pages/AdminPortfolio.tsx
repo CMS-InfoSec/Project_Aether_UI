@@ -386,8 +386,6 @@ export default function AdminPortfolio() {
 
   // Load all data
   const loadData = useCallback(async () => {
-    if (isLoading || isRefreshing) return; // Prevent concurrent calls
-
     setIsLoading(true);
     try {
       // Load data sequentially to prevent potential race conditions
@@ -399,12 +397,10 @@ export default function AdminPortfolio() {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, isLoading, isRefreshing]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
-    if (isLoading || isRefreshing) return; // Prevent concurrent calls
-
     setIsRefreshing(true);
     try {
       // Load data sequentially to prevent potential race conditions
@@ -416,7 +412,7 @@ export default function AdminPortfolio() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, isLoading, isRefreshing]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory]);
 
   // Initial data load
   useEffect(() => {
