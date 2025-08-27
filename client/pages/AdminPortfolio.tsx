@@ -392,7 +392,7 @@ export default function AdminPortfolio() {
     setIsLoading(true);
     try {
       // Load data sequentially to prevent potential race conditions
-      await fetchPortfolios();
+      await fetchPortfolios(filters);
       await fetchStats();
       await fetchRebalanceHistory();
     } catch (error) {
@@ -400,14 +400,14 @@ export default function AdminPortfolio() {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, filters]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
     setIsRefreshing(true);
     try {
       // Load data sequentially to prevent potential race conditions
-      await fetchPortfolios();
+      await fetchPortfolios(filters);
       await fetchStats();
       await fetchRebalanceHistory();
     } catch (error) {
@@ -415,7 +415,7 @@ export default function AdminPortfolio() {
     } finally {
       setIsRefreshing(false);
     }
-  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory]);
+  }, [fetchPortfolios, fetchStats, fetchRebalanceHistory, filters]);
 
   // Initial data load
   useEffect(() => {
