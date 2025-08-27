@@ -117,10 +117,12 @@ export default function UserDashboard() {
   }, []);
 
   const loadDailyReport = async () => {
+    if (!mounted) return;
     setIsRefreshing(prev => ({ ...prev, daily: true }));
     try {
       // Mock API call - replace with GET /reports/daily
       await new Promise(resolve => setTimeout(resolve, 1000));
+      if (!mounted) return;
       setDailyReport({
         portfolioValue: '$61,150',
         dailyChange: '+$1,245',
@@ -133,7 +135,9 @@ export default function UserDashboard() {
     } catch (error) {
       console.error('Error loading daily report:', error);
     } finally {
-      setIsRefreshing(prev => ({ ...prev, daily: false }));
+      if (mounted) {
+        setIsRefreshing(prev => ({ ...prev, daily: false }));
+      }
     }
   };
 
