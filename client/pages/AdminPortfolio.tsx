@@ -544,7 +544,7 @@ export default function AdminPortfolio() {
     }
   };
 
-  // Handle global rebalance
+  // Handle global rebalance (mock simulation)
   const handleGlobalRebalance = async () => {
     // Validate JSON
     try {
@@ -563,59 +563,65 @@ export default function AdminPortfolio() {
     setRebalanceProgress(0);
 
     try {
-      const response = await fetch('/api/admin/portfolio/rebalance', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pricesJson: rebalanceForm.pricesJson,
-          returnsJson: rebalanceForm.returnsJson,
-          actor: 'admin@example.com'
-        }),
-      });
+      // Mock rebalance response
+      const mockResponse = {
+        status: 'success',
+        data: {
+          rebalanceId: `rebal_${Date.now()}`,
+          portfoliosAffected: stats?.totalPortfolios || 47,
+          estimatedDuration: 5000
+        }
+      };
 
-      const data = await response.json();
+      setCurrentRebalanceId(mockResponse.data.rebalanceId);
 
-      if (data.status === 'success') {
-        setCurrentRebalanceId(data.data.rebalanceId);
-        
-        // Simulate progress updates
-        const progressInterval = setInterval(() => {
-          setRebalanceProgress(prev => {
-            if (prev >= 95) {
-              clearInterval(progressInterval);
-              return 95;
-            }
-            return prev + Math.random() * 15;
-          });
-        }, 500);
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setRebalanceProgress(prev => {
+          if (prev >= 95) {
+            clearInterval(progressInterval);
+            return 95;
+          }
+          return prev + Math.random() * 15;
+        });
+      }, 500);
 
-        // Check for completion
-        setTimeout(async () => {
-          clearInterval(progressInterval);
-          setRebalanceProgress(100);
+      // Check for completion
+      setTimeout(async () => {
+        clearInterval(progressInterval);
+        setRebalanceProgress(100);
 
-          // Refresh data
-          await refreshData();
+        // Add new rebalance event to history
+        const newRebalanceEvent: RebalanceEvent = {
+          id: mockResponse.data.rebalanceId,
+          timestamp: new Date().toISOString(),
+          triggeredBy: "admin@example.com",
+          reason: "Manual global rebalance",
+          portfoliosAffected: mockResponse.data.portfoliosAffected,
+          totalValueRebalanced: stats?.totalValue || 2850000,
+          status: "completed",
+          duration: 5000
+        };
 
-          setIsRebalancing(false);
-          setRebalanceProgress(0);
-          setCurrentRebalanceId(null);
+        setRebalanceHistory(prev => [newRebalanceEvent, ...prev]);
 
-          toast({
-            title: "Rebalance Complete",
-            description: `Successfully rebalanced ${data.data.portfoliosAffected} portfolios`,
-          });
-        }, 5000);
+        // Refresh data
+        await refreshData();
+
+        setIsRebalancing(false);
+        setRebalanceProgress(0);
+        setCurrentRebalanceId(null);
 
         toast({
-          title: "Rebalance Started",
-          description: `Rebalancing ${data.data.portfoliosAffected} portfolios`,
+          title: "Rebalance Complete",
+          description: `Successfully rebalanced ${mockResponse.data.portfoliosAffected} portfolios`,
         });
-      } else {
-        throw new Error(data.message);
-      }
+      }, 5000);
+
+      toast({
+        title: "Rebalance Started",
+        description: `Rebalancing ${mockResponse.data.portfoliosAffected} portfolios`,
+      });
     } catch (error) {
       setIsRebalancing(false);
       setRebalanceProgress(0);
