@@ -416,8 +416,25 @@ export default function AdminPortfolio() {
 
   // Initial data load
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    const initialLoad = async () => {
+      setIsLoading(true);
+      try {
+        await fetchStats();
+        await fetchRebalanceHistory();
+        await fetchPortfolios();
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    initialLoad();
+  }, []); // Only run once on mount
+
+  // Handle filter changes
+  useEffect(() => {
+    fetchPortfolios();
+  }, [fetchPortfolios]);
 
   // Handle row click to show details (mock data)
   const handleRowClick = async (userId: string) => {
