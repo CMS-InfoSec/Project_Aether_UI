@@ -203,13 +203,25 @@ export default function AdminPortfolio() {
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/admin/portfolio/stats');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.status === 'success') {
         setStats(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch stats');
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch portfolio statistics",
+        variant: "destructive"
+      });
     }
   };
 
@@ -217,13 +229,25 @@ export default function AdminPortfolio() {
   const fetchRebalanceHistory = async () => {
     try {
       const response = await fetch('/api/admin/portfolio/rebalance-history');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (data.status === 'success') {
         setRebalanceHistory(data.data);
+      } else {
+        throw new Error(data.message || 'Failed to fetch rebalance history');
       }
     } catch (error) {
       console.error('Failed to fetch rebalance history:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fetch rebalance history",
+        variant: "destructive"
+      });
     }
   };
 
