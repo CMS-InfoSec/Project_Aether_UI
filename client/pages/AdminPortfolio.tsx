@@ -153,7 +153,8 @@ export default function AdminPortfolio() {
   const [isRebalancing, setIsRebalancing] = useState(false);
   const [rebalanceProgress, setRebalanceProgress] = useState(0);
   const [currentRebalanceId, setCurrentRebalanceId] = useState<string | null>(null);
-  
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
   // Table controls
   const [filters, setFilters] = useState({
     search: '',
