@@ -170,261 +170,200 @@ export default function AdminPortfolio() {
     returnsJson: '{\n  "BTC": 0.028,\n  "ETH": 0.015,\n  "ADA": -0.005,\n  "SOL": 0.042\n}'
   });
 
-  // Fetch portfolios (mock data)
-  const fetchPortfolios = useCallback(async (currentFilters?: typeof filters) => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+  // Mock data
+  const mockPortfolios: PortfolioOverview[] = [
+    {
+      userId: "usr_001",
+      userName: "Alice Johnson",
+      email: "alice.johnson@example.com",
+      totalValue: 125000,
+      assetsCount: 8,
+      lastRebalanced: "2024-01-15T10:30:00Z",
+      performance24h: 0.0245,
+      performance7d: 0.082,
+      riskLevel: "medium"
+    },
+    {
+      userId: "usr_002",
+      userName: "Bob Smith",
+      email: "bob.smith@example.com",
+      totalValue: 87500,
+      assetsCount: 6,
+      lastRebalanced: "2024-01-14T15:45:00Z",
+      performance24h: -0.0123,
+      performance7d: 0.034,
+      riskLevel: "low"
+    },
+    {
+      userId: "usr_003",
+      userName: "Carol Davis",
+      email: "carol.davis@example.com",
+      totalValue: 245000,
+      assetsCount: 12,
+      lastRebalanced: "2024-01-16T09:15:00Z",
+      performance24h: 0.0456,
+      performance7d: 0.156,
+      riskLevel: "high"
+    },
+    {
+      userId: "usr_004",
+      userName: "David Wilson",
+      email: "david.wilson@example.com",
+      totalValue: 156000,
+      assetsCount: 9,
+      lastRebalanced: "2024-01-13T14:20:00Z",
+      performance24h: 0.0189,
+      performance7d: 0.067,
+      riskLevel: "medium"
+    },
+    {
+      userId: "usr_005",
+      userName: "Emma Brown",
+      email: "emma.brown@example.com",
+      totalValue: 98000,
+      assetsCount: 7,
+      lastRebalanced: "2024-01-15T11:45:00Z",
+      performance24h: -0.0067,
+      performance7d: 0.023,
+      riskLevel: "low"
+    }
+  ];
 
-      // Use passed filters or current state
-      const activeFilters = currentFilters || filters;
+  const mockStats: PortfolioStats = {
+    totalPortfolios: 47,
+    totalValue: 2850000,
+    avgPerformance24h: 0.0178,
+    avgPerformance7d: 0.064,
+    totalAssets: 425,
+    avgAssetsPerPortfolio: 9.04,
+    riskDistribution: {
+      low: 18,
+      medium: 22,
+      high: 7
+    },
+    needsRebalancing: 12,
+    lastGlobalRebalance: "2024-01-14T08:30:00Z"
+  };
 
-      // Mock portfolio data
-      const mockPortfolios: PortfolioOverview[] = [
-        {
-          userId: "usr_001",
-          userName: "Alice Johnson",
-          email: "alice.johnson@example.com",
-          totalValue: 125000,
-          assetsCount: 8,
-          lastRebalanced: "2024-01-15T10:30:00Z",
-          performance24h: 0.0245,
-          performance7d: 0.082,
-          riskLevel: "medium"
-        },
-        {
-          userId: "usr_002",
-          userName: "Bob Smith",
-          email: "bob.smith@example.com",
-          totalValue: 87500,
-          assetsCount: 6,
-          lastRebalanced: "2024-01-14T15:45:00Z",
-          performance24h: -0.0123,
-          performance7d: 0.034,
-          riskLevel: "low"
-        },
-        {
-          userId: "usr_003",
-          userName: "Carol Davis",
-          email: "carol.davis@example.com",
-          totalValue: 245000,
-          assetsCount: 12,
-          lastRebalanced: "2024-01-16T09:15:00Z",
-          performance24h: 0.0456,
-          performance7d: 0.156,
-          riskLevel: "high"
-        },
-        {
-          userId: "usr_004",
-          userName: "David Wilson",
-          email: "david.wilson@example.com",
-          totalValue: 156000,
-          assetsCount: 9,
-          lastRebalanced: "2024-01-13T14:20:00Z",
-          performance24h: 0.0189,
-          performance7d: 0.067,
-          riskLevel: "medium"
-        },
-        {
-          userId: "usr_005",
-          userName: "Emma Brown",
-          email: "emma.brown@example.com",
-          totalValue: 98000,
-          assetsCount: 7,
-          lastRebalanced: "2024-01-15T11:45:00Z",
-          performance24h: -0.0067,
-          performance7d: 0.023,
-          riskLevel: "low"
-        }
-      ];
+  const mockHistory: RebalanceEvent[] = [
+    {
+      id: "rebal_001",
+      timestamp: "2024-01-16T10:30:00Z",
+      triggeredBy: "admin@example.com",
+      reason: "Scheduled weekly rebalance",
+      portfoliosAffected: 42,
+      totalValueRebalanced: 2650000,
+      status: "completed",
+      duration: 4500
+    },
+    {
+      id: "rebal_002",
+      timestamp: "2024-01-15T15:45:00Z",
+      triggeredBy: "system",
+      reason: "Market volatility threshold exceeded",
+      portfoliosAffected: 15,
+      totalValueRebalanced: 980000,
+      status: "completed",
+      duration: 2100
+    },
+    {
+      id: "rebal_003",
+      timestamp: "2024-01-14T09:15:00Z",
+      triggeredBy: "admin@example.com",
+      reason: "Manual rebalance - new asset allocation",
+      portfoliosAffected: 35,
+      totalValueRebalanced: 1850000,
+      status: "completed",
+      duration: 3800
+    },
+    {
+      id: "rebal_004",
+      timestamp: "2024-01-13T14:20:00Z",
+      triggeredBy: "system",
+      reason: "Risk threshold breach",
+      portfoliosAffected: 8,
+      totalValueRebalanced: 450000,
+      status: "failed",
+      duration: 1200
+    },
+    {
+      id: "rebal_005",
+      timestamp: "2024-01-12T11:00:00Z",
+      triggeredBy: "admin@example.com",
+      reason: "Quarterly strategy adjustment",
+      portfoliosAffected: 47,
+      totalValueRebalanced: 2800000,
+      status: "completed",
+      duration: 5200
+    }
+  ];
 
-      // Filter and sort mock data
-      let filteredPortfolios = mockPortfolios.filter(p =>
-        activeFilters.search === '' ||
-        p.userName.toLowerCase().includes(activeFilters.search.toLowerCase()) ||
-        p.email.toLowerCase().includes(activeFilters.search.toLowerCase()) ||
-        p.userId.toLowerCase().includes(activeFilters.search.toLowerCase())
-      );
+  // Apply filters and return processed data
+  const processPortfolios = () => {
+    // Filter
+    let filteredPortfolios = mockPortfolios.filter(p =>
+      filters.search === '' ||
+      p.userName.toLowerCase().includes(filters.search.toLowerCase()) ||
+      p.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+      p.userId.toLowerCase().includes(filters.search.toLowerCase())
+    );
 
-      // Sort
-      filteredPortfolios.sort((a, b) => {
-        let aVal: any = a[activeFilters.sort as keyof PortfolioOverview];
-        let bVal: any = b[activeFilters.sort as keyof PortfolioOverview];
+    // Sort
+    filteredPortfolios.sort((a, b) => {
+      let aVal: any = a[filters.sort as keyof PortfolioOverview];
+      let bVal: any = b[filters.sort as keyof PortfolioOverview];
 
-        if (activeFilters.order === 'asc') {
-          return aVal > bVal ? 1 : -1;
-        } else {
-          return aVal < bVal ? 1 : -1;
-        }
-      });
+      if (filters.order === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
 
-      // Paginate
-      const total = filteredPortfolios.length;
-      const paginatedPortfolios = filteredPortfolios.slice(activeFilters.offset, activeFilters.offset + activeFilters.limit);
+    // Paginate
+    const total = filteredPortfolios.length;
+    const paginatedPortfolios = filteredPortfolios.slice(filters.offset, filters.offset + filters.limit);
 
-      setPortfolios(paginatedPortfolios);
-      setMetadata({
+    return {
+      portfolios: paginatedPortfolios,
+      metadata: {
         total,
-        limit: activeFilters.limit,
-        offset: activeFilters.offset,
+        limit: filters.limit,
+        offset: filters.offset,
         summary: {
           totalPortfolios: total,
           totalValue: mockPortfolios.reduce((sum, p) => sum + p.totalValue, 0),
           avgPerformance24h: mockPortfolios.reduce((sum, p) => sum + p.performance24h, 0) / mockPortfolios.length,
           totalAssets: mockPortfolios.reduce((sum, p) => sum + p.assetsCount, 0)
         }
-      });
-    } catch (error) {
-      console.error('Failed to fetch portfolios:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch portfolio data",
-        variant: "destructive"
-      });
-    }
-  }, []);
+      }
+    };
+  };
 
-  // Fetch portfolio statistics (mock data)
-  const fetchStats = useCallback(async () => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const mockStats: PortfolioStats = {
-        totalPortfolios: 47,
-        totalValue: 2850000,
-        avgPerformance24h: 0.0178,
-        avgPerformance7d: 0.064,
-        totalAssets: 425,
-        avgAssetsPerPortfolio: 9.04,
-        riskDistribution: {
-          low: 18,
-          medium: 22,
-          high: 7
-        },
-        needsRebalancing: 12,
-        lastGlobalRebalance: "2024-01-14T08:30:00Z"
-      };
-
-      setStats(mockStats);
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch portfolio statistics",
-        variant: "destructive"
-      });
-    }
-  }, []);
-
-  // Fetch rebalance history (mock data)
-  const fetchRebalanceHistory = useCallback(async () => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 400));
-
-      const mockHistory: RebalanceEvent[] = [
-        {
-          id: "rebal_001",
-          timestamp: "2024-01-16T10:30:00Z",
-          triggeredBy: "admin@example.com",
-          reason: "Scheduled weekly rebalance",
-          portfoliosAffected: 42,
-          totalValueRebalanced: 2650000,
-          status: "completed",
-          duration: 4500
-        },
-        {
-          id: "rebal_002",
-          timestamp: "2024-01-15T15:45:00Z",
-          triggeredBy: "system",
-          reason: "Market volatility threshold exceeded",
-          portfoliosAffected: 15,
-          totalValueRebalanced: 980000,
-          status: "completed",
-          duration: 2100
-        },
-        {
-          id: "rebal_003",
-          timestamp: "2024-01-14T09:15:00Z",
-          triggeredBy: "admin@example.com",
-          reason: "Manual rebalance - new asset allocation",
-          portfoliosAffected: 35,
-          totalValueRebalanced: 1850000,
-          status: "completed",
-          duration: 3800
-        },
-        {
-          id: "rebal_004",
-          timestamp: "2024-01-13T14:20:00Z",
-          triggeredBy: "system",
-          reason: "Risk threshold breach",
-          portfoliosAffected: 8,
-          totalValueRebalanced: 450000,
-          status: "failed",
-          duration: 1200
-        },
-        {
-          id: "rebal_005",
-          timestamp: "2024-01-12T11:00:00Z",
-          triggeredBy: "admin@example.com",
-          reason: "Quarterly strategy adjustment",
-          portfoliosAffected: 47,
-          totalValueRebalanced: 2800000,
-          status: "completed",
-          duration: 5200
-        }
-      ];
-
-      setRebalanceHistory(mockHistory);
-    } catch (error) {
-      console.error('Failed to fetch rebalance history:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch rebalance history",
-        variant: "destructive"
-      });
-    }
-  }, []);
-
-  // Load all data
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Load data sequentially to prevent potential race conditions
-      await fetchStats();
-      await fetchRebalanceHistory();
-      await fetchPortfolios();
-    } catch (error) {
-      console.error('Error loading data:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [fetchStats, fetchRebalanceHistory, fetchPortfolios]);
-
-  // Refresh all data
-  const refreshData = useCallback(async () => {
-    setIsRefreshing(true);
-    try {
-      // Load data sequentially to prevent potential race conditions
-      await fetchStats();
-      await fetchRebalanceHistory();
-      await fetchPortfolios();
-    } catch (error) {
-      console.error('Error refreshing data:', error);
-    } finally {
-      setIsRefreshing(false);
-    }
-  }, [fetchStats, fetchRebalanceHistory, fetchPortfolios]);
+  // Simple refresh function
+  const refreshData = () => {
+    const { portfolios: newPortfolios, metadata: newMetadata } = processPortfolios();
+    setPortfolios(newPortfolios);
+    setMetadata(newMetadata);
+    setStats(mockStats);
+    setRebalanceHistory(mockHistory);
+  };
 
   // Initial data load
   useEffect(() => {
-    loadData();
-  }, []); // Only run once on mount
+    const timer = setTimeout(() => {
+      refreshData();
+      setIsLoading(false);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   // Handle filter changes
   useEffect(() => {
-    fetchPortfolios();
+    const { portfolios: newPortfolios, metadata: newMetadata } = processPortfolios();
+    setPortfolios(newPortfolios);
+    setMetadata(newMetadata);
   }, [filters.search, filters.sort, filters.order, filters.limit, filters.offset]);
 
   // Handle row click to show details (mock data)
