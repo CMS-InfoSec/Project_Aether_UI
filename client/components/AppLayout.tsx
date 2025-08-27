@@ -20,7 +20,6 @@ import {
   LogOut,
   Menu,
   X,
-  FileEdit,
   CandlestickChart,
   Wallet,
   User,
