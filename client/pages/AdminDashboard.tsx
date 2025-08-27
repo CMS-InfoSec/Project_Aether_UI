@@ -966,6 +966,226 @@ export default function AdminDashboard() {
               </Card>
             </WidgetErrorBoundary>
           </div>
+
+          {/* CSV Export and Backtest Download */}
+          <WidgetErrorBoundary widgetName="Export Controls">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2">
+                  <Download className="h-5 w-5" />
+                  <span>Export & Download</span>
+                </CardTitle>
+                <CardDescription>Export report data and download backtest results</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => exportCSV('daily')}
+                    disabled={isRefreshing.csv}
+                    className="w-full"
+                  >
+                    {isRefreshing.csv ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Daily CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => exportCSV('weekly')}
+                    disabled={isRefreshing.csv}
+                    className="w-full"
+                  >
+                    {isRefreshing.csv ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Weekly CSV
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => exportCSV('per-asset')}
+                    disabled={isRefreshing.csv}
+                    className="w-full"
+                  >
+                    {isRefreshing.csv ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Download className="h-4 w-4 mr-2" />
+                    )}
+                    Per-Asset CSV
+                  </Button>
+                  <Button
+                    onClick={downloadBacktestReport}
+                    disabled={isRefreshing.backtest}
+                    className="w-full"
+                  >
+                    {isRefreshing.backtest ? (
+                      <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <FileText className="h-4 w-4 mr-2" />
+                    )}
+                    Backtest Report
+                  </Button>
+                </div>
+                {isRefreshing.backtest && (
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between text-sm">
+                      <span>Preparing download...</span>
+                      <span>{backtestProgress}%</span>
+                    </div>
+                    <Progress value={backtestProgress} className="w-full" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </WidgetErrorBoundary>
+        </TabsContent>
+
+        <TabsContent value="per-asset" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Per-Asset Analysis</h2>
+              <p className="text-muted-foreground">Detailed performance breakdown by asset</p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={loadPerAssetReport}
+              disabled={isRefreshing.perAsset}
+            >
+              {isRefreshing.perAsset ? (
+                <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              Refresh
+            </Button>
+          </div>
+
+          {perAssetReport ? (
+            <div className="space-y-6">
+              {/* Summary Cards */}
+              <WidgetErrorBoundary widgetName="Asset Summary">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
+                      <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{perAssetReport.summary.totalAssets}</div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+                      <TrendingUp className="h-4 w-4 text-accent" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-lg font-bold">{perAssetReport.summary.topPerformer.symbol}</div>
+                      <p className="text-xs text-accent">
+                        {formatPercentage(perAssetReport.summary.topPerformer.return)}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Bottom Performer</CardTitle>
+                      <TrendingDown className="h-4 w-4 text-destructive" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-lg font-bold">{perAssetReport.summary.bottomPerformer.symbol}</div>
+                      <p className="text-xs text-destructive">
+                        {formatPercentage(perAssetReport.summary.bottomPerformer.return)}
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                      <CardTitle className="text-sm font-medium">Avg Volatility</CardTitle>
+                      <Activity className="h-4 w-4 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-2xl font-bold">{perAssetReport.summary.avgVolatility.toFixed(1)}%</div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </WidgetErrorBoundary>
+
+              {/* Asset Performance Table */}
+              <WidgetErrorBoundary widgetName="Asset Performance">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Asset Performance Summary</CardTitle>
+                    <CardDescription>
+                      Performance metrics for all tracked assets
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ScrollArea className="h-96 w-full">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b">
+                            <th className="text-left p-2">Asset</th>
+                            <th className="text-right p-2">Price</th>
+                            <th className="text-right p-2">Daily %</th>
+                            <th className="text-right p-2">Weekly %</th>
+                            <th className="text-right p-2">Monthly %</th>
+                            <th className="text-right p-2">Allocation</th>
+                            <th className="text-right p-2">Volatility</th>
+                            <th className="text-right p-2">Sharpe</th>
+                            <th className="text-right p-2">Trades</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {perAssetReport.assets.map((asset) => (
+                            <tr key={asset.symbol} className="border-b hover:bg-muted/50">
+                              <td className="p-2">
+                                <div>
+                                  <div className="font-semibold">{asset.symbol}</div>
+                                  <div className="text-xs text-muted-foreground">{asset.name}</div>
+                                </div>
+                              </td>
+                              <td className="text-right p-2">{formatCurrency(asset.currentPrice)}</td>
+                              <td className={`text-right p-2 ${
+                                asset.dailyChange >= 0 ? 'text-accent' : 'text-destructive'
+                              }`}>
+                                {formatPercentage(asset.dailyChange)}
+                              </td>
+                              <td className={`text-right p-2 ${
+                                asset.weeklyChange >= 0 ? 'text-accent' : 'text-destructive'
+                              }`}>
+                                {formatPercentage(asset.weeklyChange)}
+                              </td>
+                              <td className={`text-right p-2 ${
+                                asset.monthlyChange >= 0 ? 'text-accent' : 'text-destructive'
+                              }`}>
+                                {formatPercentage(asset.monthlyChange)}
+                              </td>
+                              <td className="text-right p-2">{asset.allocation}%</td>
+                              <td className="text-right p-2">{asset.volatility.toFixed(2)}%</td>
+                              <td className="text-right p-2">{asset.sharpeRatio.toFixed(2)}</td>
+                              <td className="text-right p-2">{asset.trades}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+              </WidgetErrorBoundary>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-48">
+              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="notifications" className="space-y-6">
