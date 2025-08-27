@@ -233,6 +233,7 @@ export default function AdminDashboard() {
     await Promise.all([
       loadDailyReport(),
       loadWeeklyReport(),
+      loadPerAssetReport(),
       loadNotifications()
     ]);
     setLastRefresh(new Date());
