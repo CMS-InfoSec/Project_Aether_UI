@@ -204,8 +204,8 @@ export default function UserManagement() {
       const response = await fetch(`/api/users/pending?${params}`);
       const data = await response.json();
 
-      if (response.ok) {
-        setPendingUsers(data.users || []);
+      if (response.ok && data.status === 'success') {
+        setPendingUsers(data.data.users || []);
       } else {
         console.error('Failed to fetch pending users:', data.error);
       }
@@ -291,8 +291,8 @@ export default function UserManagement() {
         const response = await fetch('/api/users/settings');
         const data = await response.json();
 
-        if (response.ok) {
-          setUserSettings(data);
+        if (response.ok && data.status === 'success') {
+          setUserSettings(data.data);
         }
       } catch (error) {
         console.error('Failed to fetch user settings:', error);

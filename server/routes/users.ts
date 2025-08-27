@@ -110,8 +110,9 @@ export const handleInviteUser: RequestHandler = (req, res) => {
     mockPendingUsers.push(newUser);
 
     res.status(201).json({
+      status: 'success',
       message: 'Invitation sent successfully',
-      user: newUser
+      data: newUser
     });
   } catch (error) {
     console.error('Invite user error:', error);
@@ -142,11 +143,14 @@ export const handleGetPendingUsers: RequestHandler = (req, res) => {
     const paginatedUsers = filteredUsers.slice(offsetNum, offsetNum + limitNum);
     
     res.json({
-      users: paginatedUsers,
-      total: filteredUsers.length,
-      limit: limitNum,
-      offset: offsetNum,
-      hasMore: offsetNum + limitNum < filteredUsers.length
+      status: 'success',
+      data: {
+        users: paginatedUsers,
+        total: filteredUsers.length,
+        limit: limitNum,
+        offset: offsetNum,
+        hasMore: offsetNum + limitNum < filteredUsers.length
+      }
     });
   } catch (error) {
     console.error('Get pending users error:', error);
@@ -187,8 +191,9 @@ export const handleApproveUser: RequestHandler = (req, res) => {
     mockPendingUsers.splice(userIndex, 1);
 
     res.json({
+      status: 'success',
       message: 'User approved successfully',
-      user: {
+      data: {
         id: user.id,
         email: user.email,
         role: assignedRole || user.requestedRole,
@@ -225,8 +230,9 @@ export const handleRejectUser: RequestHandler = (req, res) => {
     mockPendingUsers.splice(userIndex, 1);
 
     res.json({
+      status: 'success',
       message: 'User invitation rejected',
-      user: {
+      data: {
         id: user.id,
         email: user.email,
         rejectedAt: new Date().toISOString()
@@ -254,7 +260,10 @@ export const handleGetUserSettings: RequestHandler = (req, res) => {
       riskTier: 'medium' as const
     };
 
-    res.json(settings);
+    res.json({
+      status: 'success',
+      data: settings
+    });
   } catch (error) {
     console.error('Get user settings error:', error);
     res.status(500).json({
@@ -300,8 +309,9 @@ export const handleUpdateUserSettings: RequestHandler = (req, res) => {
     mockUserSettings.set(userId, settings);
 
     res.json({
+      status: 'success',
       message: 'Settings updated successfully',
-      settings
+      data: settings
     });
   } catch (error) {
     console.error('Update user settings error:', error);
@@ -322,7 +332,10 @@ export const handleGetUserStats: RequestHandler = (req, res) => {
       averageApprovalTime: '2.3 days'
     };
 
-    res.json(stats);
+    res.json({
+      status: 'success',
+      data: stats
+    });
   } catch (error) {
     console.error('Get user stats error:', error);
     res.status(500).json({
