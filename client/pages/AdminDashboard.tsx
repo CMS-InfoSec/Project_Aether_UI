@@ -109,6 +109,34 @@ interface WeeklyReport {
   lastUpdated: string;
 }
 
+interface PerAssetReport {
+  assets: Array<{
+    symbol: string;
+    name: string;
+    allocation: number;
+    currentPrice: number;
+    dailyChange: number;
+    weeklyChange: number;
+    monthlyChange: number;
+    totalReturn: number;
+    totalReturnPercent: number;
+    sharpeRatio: number;
+    volatility: number;
+    maxDrawdown: number;
+    trades: number;
+    avgHoldTime: number;
+    lastRebalance: string;
+  }>;
+  summary: {
+    totalAssets: number;
+    topPerformer: { symbol: string; return: number };
+    bottomPerformer: { symbol: string; return: number };
+    avgVolatility: number;
+    correlationMatrix: Array<{ asset1: string; asset2: string; correlation: number }>;
+  };
+  lastUpdated: string;
+}
+
 interface Notification {
   id: string;
   title: string;
