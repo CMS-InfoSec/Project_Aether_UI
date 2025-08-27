@@ -549,7 +549,7 @@ export default function AdminPortfolio() {
         setRebalanceHistory(prev => [newRebalanceEvent, ...prev]);
 
         // Refresh data
-        await refreshData();
+        refreshData();
 
         setIsRebalancing(false);
         setRebalanceProgress(0);
