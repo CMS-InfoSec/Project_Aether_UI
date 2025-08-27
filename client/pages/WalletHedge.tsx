@@ -1,11 +1,41 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Wallet, 
@@ -16,239 +46,192 @@ import {
   RefreshCw,
   TrendingUp,
   TrendingDown,
-  Clock,
-  ChevronLeft,
-  ChevronRight,
-  Search,
+  Settings,
+  Target,
+  Activity,
+  CheckCircle,
   AlertTriangle,
-  CheckCircle
+  XCircle,
+  Info,
+  BarChart3,
+  Clock,
+  Zap
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 // Types
 interface HedgeRecord {
   id: string;
-  type: 'hedge' | 'unhedge';
-  asset: string;
-  amount: number;
-  hedgePrice: number;
+  userId: string;
+  amount: number; // USDT amount
   timestamp: string;
-  status: 'completed' | 'pending' | 'failed';
-  pnl?: number;
+  type: 'profit_hedge' | 'manual_hedge' | 'auto_hedge';
+  triggerPrice: number;
+  status: 'active' | 'closed' | 'expired';
+  pnl: number;
+  fees: number;
 }
 
 interface Balance {
   asset: string;
-  total: number;
   available: number;
   locked: number;
-  usdValue: number;
-  change24h: number;
+  total: number;
+  valueUsd: number;
 }
 
-interface WithdrawableAsset {
-  asset: string;
-  available: number;
-  safeAmount: number;
+interface WithdrawableCalculation {
+  totalValue: number;
+  lockedValue: number;
+  hedgedValue: number;
+  availableToWithdraw: number;
+  maxSafeWithdrawal: number;
+  safetyBuffer: number;
+}
+
+interface UserHedgeSettings {
+  userId: string;
+  hedgePercent: number; // 0-1
+  autoAdjust: boolean;
+  lastUpdated: string;
+  updatedBy: string;
+  effectivePercent?: number;
+  marketConditions?: MarketConditions;
+}
+
+interface MarketConditions {
+  volatility: number;
   riskLevel: 'low' | 'medium' | 'high';
-  usdValue: number;
+  recommendedHedgePercent: number;
+  lastUpdated: string;
 }
 
-// Mock data
-const mockHedgeRecords: HedgeRecord[] = [
-  {
-    id: 'hedge1',
-    type: 'hedge',
-    asset: 'BTC',
-    amount: 0.5,
-    hedgePrice: 42500,
-    timestamp: '2024-01-21T10:30:00Z',
-    status: 'completed',
-    pnl: 150
-  },
-  {
-    id: 'hedge2',
-    type: 'unhedge',
-    asset: 'ETH',
-    amount: 2.0,
-    hedgePrice: 2750,
-    timestamp: '2024-01-21T09:15:00Z',
-    status: 'completed',
-    pnl: -75
-  },
-  {
-    id: 'hedge3',
-    type: 'hedge',
-    asset: 'SOL',
-    amount: 100,
-    hedgePrice: 85,
-    timestamp: '2024-01-21T11:45:00Z',
-    status: 'pending'
-  }
-];
-
-const mockBalances: Balance[] = [
-  {
-    asset: 'BTC',
-    total: 1.25,
-    available: 0.75,
-    locked: 0.5,
-    usdValue: 53750,
-    change24h: 2.5
-  },
-  {
-    asset: 'ETH',
-    total: 5.8,
-    available: 3.8,
-    locked: 2.0,
-    usdValue: 15640,
-    change24h: -1.2
-  },
-  {
-    asset: 'SOL',
-    total: 250,
-    available: 150,
-    locked: 100,
-    usdValue: 21250,
-    change24h: 4.8
-  },
-  {
-    asset: 'USDT',
-    total: 12500,
-    available: 8500,
-    locked: 4000,
-    usdValue: 12500,
-    change24h: 0
-  }
-];
-
-const mockWithdrawable: WithdrawableAsset[] = [
-  {
-    asset: 'BTC',
-    available: 0.75,
-    safeAmount: 0.5,
-    riskLevel: 'low',
-    usdValue: 21500
-  },
-  {
-    asset: 'ETH',
-    available: 3.8,
-    safeAmount: 2.5,
-    riskLevel: 'medium',
-    usdValue: 6750
-  },
-  {
-    asset: 'USDT',
-    available: 8500,
-    safeAmount: 7000,
-    riskLevel: 'low',
-    usdValue: 7000
-  }
-];
+interface HedgeMetadata {
+  total: number;
+  limit: number;
+  offset: number;
+  totals: {
+    totalHedged: number;
+    totalPnl: number;
+    totalFees: number;
+  };
+}
 
 export default function WalletHedge() {
-  const [activeTab, setActiveTab] = useState('hedges');
-  const [hedgeRecords, setHedgeRecords] = useState<HedgeRecord[]>(mockHedgeRecords);
-  const [balances, setBalances] = useState<Balance[]>(mockBalances);
-  const [withdrawable, setWithdrawable] = useState<WithdrawableAsset[]>(mockWithdrawable);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [hedgeRecords, setHedgeRecords] = useState<HedgeRecord[]>([]);
+  const [balances, setBalances] = useState<Balance[]>([]);
+  const [withdrawable, setWithdrawable] = useState<WithdrawableCalculation | null>(null);
+  const [hedgeSettings, setHedgeSettings] = useState<UserHedgeSettings | null>(null);
+  const [hedgeMetadata, setHedgeMetadata] = useState<HedgeMetadata | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExecutingHedge, setIsExecutingHedge] = useState(false);
+  const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [hedgeAmount, setHedgeAmount] = useState('');
+  const [isHedgeDialogOpen, setIsHedgeDialogOpen] = useState(false);
+  
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
-  const [isExecutingHedge, setIsExecutingHedge] = useState(false);
+  
+  // Settings form
+  const [tempHedgePercent, setTempHedgePercent] = useState(0);
+  const [tempAutoAdjust, setTempAutoAdjust] = useState(true);
 
-  // Calculate totals
-  const totalPortfolioValue = balances.reduce((sum, balance) => sum + balance.usdValue, 0);
-  const totalAvailableValue = balances.reduce((sum, balance) => sum + (balance.available / balance.total) * balance.usdValue, 0);
-  const totalHedgedValue = hedgeRecords
-    .filter(h => h.status === 'completed' && h.type === 'hedge')
-    .reduce((sum, h) => sum + (h.amount * h.hedgePrice), 0);
+  // Fetch all data
+  const fetchData = useCallback(async () => {
+    try {
+      const [hedgesRes, balancesRes, withdrawableRes, settingsRes] = await Promise.all([
+        fetch(`/api/wallet/hedges?limit=${itemsPerPage}&offset=${(currentPage - 1) * itemsPerPage}`),
+        fetch('/api/wallet/balances'),
+        fetch('/api/wallet/withdrawable'),
+        fetch('/api/hedge/percent')
+      ]);
 
-  // Filter and paginate hedge records
-  const filteredHedgeRecords = hedgeRecords.filter(hedge =>
-    hedge.asset.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      const [hedgesData, balancesData, withdrawableData, settingsData] = await Promise.all([
+        hedgesRes.json(),
+        balancesRes.json(),
+        withdrawableRes.json(),
+        settingsRes.json()
+      ]);
 
-  const totalPages = Math.ceil(filteredHedgeRecords.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedHedgeRecords = filteredHedgeRecords.slice(startIndex, startIndex + itemsPerPage);
+      if (hedgesData.status === 'success') {
+        setHedgeRecords(hedgesData.data);
+        setHedgeMetadata(hedgesData.metadata);
+      }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
-  };
+      if (balancesData.status === 'success') {
+        setBalances(balancesData.data.balances);
+      }
 
-  const formatAssetAmount = (amount: number, asset: string) => {
-    return `${amount.toFixed(asset === 'USDT' ? 2 : 6)} ${asset}`;
-  };
+      if (withdrawableData.status === 'success') {
+        setWithdrawable(withdrawableData.data);
+      }
 
-  const formatPercentage = (value: number) => {
-    return `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
-  };
-
-  const getChangeColor = (change: number) => {
-    return change >= 0 ? 'text-accent' : 'text-destructive';
-  };
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="default" className="bg-accent text-accent-foreground">Completed</Badge>;
-      case 'pending':
-        return <Badge variant="secondary">Pending</Badge>;
-      case 'failed':
-        return <Badge variant="destructive">Failed</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+      if (settingsData.status === 'success') {
+        setHedgeSettings(settingsData.data);
+        setTempHedgePercent(settingsData.data.hedgePercent * 100);
+        setTempAutoAdjust(settingsData.data.autoAdjust);
+      }
+    } catch (error) {
+      console.error('Failed to fetch data:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch wallet data",
+        variant: "destructive"
+      });
     }
-  };
+  }, [currentPage, itemsPerPage]);
 
-  const getTypeBadge = (type: 'hedge' | 'unhedge') => {
-    return (
-      <Badge variant={type === 'hedge' ? "default" : "secondary"} 
-             className={type === 'hedge' ? "bg-primary text-primary-foreground" : ""}>
-        {type === 'hedge' ? 'Hedge' : 'Unhedge'}
-      </Badge>
-    );
-  };
-
-  const getRiskBadge = (risk: 'low' | 'medium' | 'high') => {
-    const colors = {
-      low: 'bg-accent/10 text-accent border-accent/20',
-      medium: 'bg-warning/10 text-warning border-warning/20',
-      high: 'bg-destructive/10 text-destructive border-destructive/20'
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true);
+      await fetchData();
+      setIsLoading(false);
     };
-    return <Badge className={colors[risk]}>{risk.toUpperCase()}</Badge>;
-  };
+    loadData();
+  }, [fetchData]);
 
-  const executeHedge = async () => {
+  // Execute hedge
+  const handleExecuteHedge = async () => {
+    if (!hedgeAmount || parseFloat(hedgeAmount) <= 0) {
+      toast({
+        title: "Invalid Amount",
+        description: "Please enter a valid hedge amount",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsExecutingHedge(true);
     try {
-      // Mock API call - replace with POST /hedge
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      toast({
-        title: "Hedge Executed",
-        description: "Portfolio hedge operation completed successfully.",
+      const response = await fetch('/api/hedge', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: parseFloat(hedgeAmount),
+          type: 'manual_hedge'
+        }),
       });
 
-      // Add new hedge record
-      const newHedge: HedgeRecord = {
-        id: `hedge_${Date.now()}`,
-        type: 'hedge',
-        asset: 'PORTFOLIO',
-        amount: 1,
-        hedgePrice: totalPortfolioValue,
-        timestamp: new Date().toISOString(),
-        status: 'completed'
-      };
-      
-      setHedgeRecords(prev => [newHedge, ...prev]);
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        toast({
+          title: "Hedge Executed",
+          description: `Successfully hedged ${hedgeAmount} USDT`,
+        });
+        setIsHedgeDialogOpen(false);
+        setHedgeAmount('');
+        await fetchData();
+      } else {
+        throw new Error(data.message);
+      }
     } catch (error) {
       toast({
         title: "Hedge Failed",
-        description: "Failed to execute hedge operation. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to execute hedge",
         variant: "destructive"
       });
     } finally {
@@ -256,20 +239,216 @@ export default function WalletHedge() {
     }
   };
 
+  // Update hedge settings
+  const handleUpdateSettings = async () => {
+    setIsUpdatingSettings(true);
+    try {
+      const response = await fetch('/api/hedge/percent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          hedgePercent: tempHedgePercent / 100,
+          autoAdjust: tempAutoAdjust
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setHedgeSettings(data.data);
+        toast({
+          title: "Settings Updated",
+          description: "Hedge settings updated successfully",
+        });
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: error instanceof Error ? error.message : "Failed to update settings",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUpdatingSettings(false);
+    }
+  };
+
+  // Close hedge position
+  const handleCloseHedge = async (hedgeId: string) => {
+    try {
+      const response = await fetch(`/api/hedge/close/${hedgeId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        toast({
+          title: "Hedge Closed",
+          description: `Hedge position closed with P&L: ${data.data.pnl.toFixed(2)} USDT`,
+        });
+        await fetchData();
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Close Failed",
+        description: error instanceof Error ? error.message : "Failed to close hedge",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Utility functions
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  const formatUSDT = (amount: number) => {
+    return `${amount.toFixed(2)} USDT`;
+  };
+
+  const getStatusBadge = (status: string) => {
+    const variants = {
+      'active': { variant: 'default' as const, icon: CheckCircle, color: 'text-green-600' },
+      'closed': { variant: 'secondary' as const, icon: XCircle, color: 'text-gray-600' },
+      'expired': { variant: 'destructive' as const, icon: AlertTriangle, color: 'text-red-600' }
+    };
+
+    const config = variants[status as keyof typeof variants] || variants.active;
+    const Icon = config.icon;
+
+    return (
+      <Badge variant={config.variant} className="flex items-center space-x-1">
+        <Icon className={`h-3 w-3 ${config.color}`} />
+        <span className="capitalize">{status}</span>
+      </Badge>
+    );
+  };
+
+  const getTypeBadge = (type: string) => {
+    const variants = {
+      'profit_hedge': { variant: 'default' as const, label: 'Profit' },
+      'manual_hedge': { variant: 'outline' as const, label: 'Manual' },
+      'auto_hedge': { variant: 'secondary' as const, label: 'Auto' }
+    };
+
+    const config = variants[type as keyof typeof variants] || variants.manual_hedge;
+
+    return (
+      <Badge variant={config.variant}>
+        {config.label}
+      </Badge>
+    );
+  };
+
+  const getRiskBadge = (risk: string) => {
+    const variants = {
+      'low': { color: 'bg-green-100 text-green-800 border-green-200' },
+      'medium': { color: 'bg-yellow-100 text-yellow-800 border-yellow-200' },
+      'high': { color: 'bg-red-100 text-red-800 border-red-200' }
+    };
+
+    const config = variants[risk as keyof typeof variants] || variants.medium;
+
+    return (
+      <Badge className={config.color}>
+        {risk.toUpperCase()}
+      </Badge>
+    );
+  };
+
+  const totalPages = hedgeMetadata ? Math.ceil(hedgeMetadata.total / itemsPerPage) : 1;
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center h-96">
+          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Wallet & Hedge Overview</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Hedge & Wallet Control</h1>
           <p className="text-muted-foreground">
-            Manage your portfolio balances and hedging strategies
+            Display and manage hedged funds (USDT only)
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
-            <Wallet className="h-3 w-3 mr-1" />
-            Portfolio Value: {formatCurrency(totalPortfolioValue)}
-          </Badge>
+          <Button variant="outline" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+          <Dialog open={isHedgeDialogOpen} onOpenChange={setIsHedgeDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Shield className="h-4 w-4 mr-2" />
+                Execute Hedge
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Execute Hedge</DialogTitle>
+                <DialogDescription>
+                  Trigger hedging of profits into USDT
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="hedgeAmount">Amount (USDT)</Label>
+                  <Input
+                    id="hedgeAmount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Enter amount to hedge"
+                    value={hedgeAmount}
+                    onChange={(e) => setHedgeAmount(e.target.value)}
+                  />
+                </div>
+                {withdrawable && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Max safe hedge amount: {formatCurrency(withdrawable.maxSafeWithdrawal)}
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsHedgeDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleExecuteHedge} disabled={isExecutingHedge}>
+                  {isExecutingHedge ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Executing...
+                    </>
+                  ) : (
+                    'Execute Hedge'
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -277,134 +456,162 @@ export default function WalletHedge() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Portfolio</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalPortfolioValue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Across all assets
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available Value</CardTitle>
-            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-accent">{formatCurrency(totalAvailableValue)}</div>
-            <p className="text-xs text-muted-foreground">
-              Ready for trading
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hedged Value</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Hedged</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">{formatCurrency(totalHedgedValue)}</div>
+            <div className="text-2xl font-bold text-accent">
+              {hedgeMetadata ? formatUSDT(hedgeMetadata.totals.totalHedged) : formatUSDT(0)}
+            </div>
             <p className="text-xs text-muted-foreground">
-              Protected positions
+              Active hedge positions
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Hedge Ratio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {((totalHedgedValue / totalPortfolioValue) * 100).toFixed(1)}%
+              {withdrawable ? formatCurrency(withdrawable.availableToWithdraw) : formatCurrency(0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              Portfolio coverage
+              After safety buffer
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Max Safe Withdrawal</CardTitle>
+            <Target className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-primary">
+              {withdrawable ? formatCurrency(withdrawable.maxSafeWithdrawal) : formatCurrency(0)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Considering hedge positions
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Hedge P&L</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-bold ${hedgeMetadata && hedgeMetadata.totals.totalPnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {hedgeMetadata ? formatCurrency(hedgeMetadata.totals.totalPnl) : formatCurrency(0)}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Total profit/loss
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs defaultValue="hedges" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="hedges">Hedge Records</TabsTrigger>
+          <TabsTrigger value="hedges">Hedge Summary</TabsTrigger>
           <TabsTrigger value="balances">Balances</TabsTrigger>
-          <TabsTrigger value="withdrawable">Withdrawable</TabsTrigger>
+          <TabsTrigger value="settings">Hedge Control</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="hedges" className="space-y-6">
+        {/* Hedge Summary Table */}
+        <TabsContent value="hedges" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Hedge Records</CardTitle>
-                  <CardDescription>History of hedge and unhedge operations</CardDescription>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Button onClick={executeHedge} disabled={isExecutingHedge}>
-                    {isExecutingHedge ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Executing...
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="h-4 w-4 mr-2" />
-                        Execute Hedge
-                      </>
-                    )}
-                  </Button>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search by asset..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 w-64"
-                    />
-                  </div>
-                </div>
-              </div>
+              <CardTitle>Hedge Summary Table</CardTitle>
+              <CardDescription>
+                History of hedge positions and their performance
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {paginatedHedgeRecords.map((hedge) => (
-                  <div key={hedge.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex items-center space-x-4">
-                      <div className="font-medium">{hedge.asset}</div>
-                      {getTypeBadge(hedge.type)}
-                      <div className="text-sm text-muted-foreground">
-                        {formatAssetAmount(hedge.amount, hedge.asset)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        @ {formatCurrency(hedge.hedgePrice)}
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                      {hedge.pnl !== undefined && (
-                        <div className={`font-medium ${getChangeColor(hedge.pnl)}`}>
-                          {formatCurrency(hedge.pnl)}
-                        </div>
-                      )}
-                      <div className="text-sm text-muted-foreground">
-                        {new Date(hedge.timestamp).toLocaleDateString()}
-                      </div>
-                      {getStatusBadge(hedge.status)}
-                    </div>
-                  </div>
-                ))}
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Trigger Price</TableHead>
+                      <TableHead>P&L</TableHead>
+                      <TableHead>Fees</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {hedgeRecords.length > 0 ? (
+                      hedgeRecords.map((hedge) => (
+                        <TableRow key={hedge.id}>
+                          <TableCell className="font-mono text-sm">{hedge.id}</TableCell>
+                          <TableCell>{getTypeBadge(hedge.type)}</TableCell>
+                          <TableCell className="font-medium">{formatUSDT(hedge.amount)}</TableCell>
+                          <TableCell>{formatCurrency(hedge.triggerPrice)}</TableCell>
+                          <TableCell>
+                            <span className={hedge.pnl >= 0 ? 'text-green-600' : 'text-red-600'}>
+                              {formatCurrency(hedge.pnl)}
+                            </span>
+                          </TableCell>
+                          <TableCell>{formatCurrency(hedge.fees)}</TableCell>
+                          <TableCell className="text-sm">
+                            {new Date(hedge.timestamp).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(hedge.status)}</TableCell>
+                          <TableCell>
+                            {hedge.status === 'active' && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="outline" size="sm">
+                                    Close
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Close Hedge Position</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to close this hedge position?
+                                      Current P&L: {formatCurrency(hedge.pnl)}
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleCloseHedge(hedge.id)}>
+                                      Close Position
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={9} className="text-center py-8">
+                          <div className="text-muted-foreground">
+                            <Shield className="h-8 w-8 mx-auto mb-2" />
+                            <p>No hedge positions found</p>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-6">
+                <div className="flex items-center justify-between mt-4">
                   <div className="text-sm text-muted-foreground">
-                    Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, filteredHedgeRecords.length)} of {filteredHedgeRecords.length} records
+                    Page {currentPage} of {totalPages}
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -413,18 +620,15 @@ export default function WalletHedge() {
                       onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                       disabled={currentPage === 1}
                     >
-                      <ChevronLeft className="h-4 w-4" />
+                      Previous
                     </Button>
-                    <span className="text-sm">
-                      Page {currentPage} of {totalPages}
-                    </span>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                       disabled={currentPage === totalPages}
                     >
-                      <ChevronRight className="h-4 w-4" />
+                      Next
                     </Button>
                   </div>
                 </div>
@@ -433,27 +637,25 @@ export default function WalletHedge() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="balances" className="space-y-6">
+        {/* Balances */}
+        <TabsContent value="balances" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Asset Balances</CardTitle>
-              <CardDescription>Your current holdings across all assets</CardDescription>
+              <CardTitle>Wallet Balances</CardTitle>
+              <CardDescription>
+                Current asset balances and availability
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {balances.map((balance) => (
                   <div key={balance.asset} className="p-4 border rounded-lg">
                     <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="font-medium text-lg">{balance.asset}</div>
-                        <div className={`text-sm ${getChangeColor(balance.change24h)}`}>
-                          {formatPercentage(balance.change24h)}
-                        </div>
-                      </div>
+                      <div className="font-medium text-lg">{balance.asset}</div>
                       <div className="text-right">
-                        <div className="font-medium">{formatCurrency(balance.usdValue)}</div>
+                        <div className="font-bold">{formatCurrency(balance.valueUsd)}</div>
                         <div className="text-sm text-muted-foreground">
-                          {formatAssetAmount(balance.total, balance.asset)}
+                          {balance.total.toFixed(balance.asset === 'USDT' ? 2 : 6)} {balance.asset}
                         </div>
                       </div>
                     </div>
@@ -462,86 +664,199 @@ export default function WalletHedge() {
                       <div>
                         <span className="text-muted-foreground">Available:</span>
                         <div className="font-medium text-accent">
-                          {formatAssetAmount(balance.available, balance.asset)}
+                          {balance.available.toFixed(balance.asset === 'USDT' ? 2 : 6)}
                         </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Locked:</span>
-                        <div className="font-medium text-warning">
-                          {formatAssetAmount(balance.locked, balance.asset)}
+                        <div className="font-medium text-yellow-600">
+                          {balance.locked.toFixed(balance.asset === 'USDT' ? 2 : 6)}
                         </div>
                       </div>
                       <div>
                         <span className="text-muted-foreground">Total:</span>
                         <div className="font-medium">
-                          {formatAssetAmount(balance.total, balance.asset)}
+                          {balance.total.toFixed(balance.asset === 'USDT' ? 2 : 6)}
                         </div>
+                      </div>
+                    </div>
+
+                    {/* Balance visualization */}
+                    <div className="mt-3">
+                      <div className="w-full bg-muted rounded-full h-2 flex">
+                        <div 
+                          className="bg-accent h-2 rounded-l-full" 
+                          style={{ width: `${(balance.available / balance.total) * 100}%` }}
+                        />
+                        <div 
+                          className="bg-yellow-500 h-2 rounded-r-full" 
+                          style={{ width: `${(balance.locked / balance.total) * 100}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>Available: {((balance.available / balance.total) * 100).toFixed(0)}%</span>
+                        <span>Locked: {((balance.locked / balance.total) * 100).toFixed(0)}%</span>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+
+              {/* Withdrawable Summary */}
+              {withdrawable && (
+                <Card className="mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-lg">Withdrawable Funds Summary</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Total Value:</span>
+                        <div className="font-medium text-lg">{formatCurrency(withdrawable.totalValue)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Locked Value:</span>
+                        <div className="font-medium text-lg text-yellow-600">{formatCurrency(withdrawable.lockedValue)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Hedged Value:</span>
+                        <div className="font-medium text-lg text-accent">{formatCurrency(withdrawable.hedgedValue)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Available to Withdraw:</span>
+                        <div className="font-medium text-lg">{formatCurrency(withdrawable.availableToWithdraw)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Max Safe Withdrawal:</span>
+                        <div className="font-medium text-lg text-primary">{formatCurrency(withdrawable.maxSafeWithdrawal)}</div>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Safety Buffer:</span>
+                        <div className="font-medium text-lg">{formatCurrency(withdrawable.safetyBuffer)}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="withdrawable" className="space-y-6">
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              Safe withdrawal amounts are calculated based on current trading activity and risk management parameters.
-            </AlertDescription>
-          </Alert>
-
+        {/* Adaptive Hedge Control */}
+        <TabsContent value="settings" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Withdrawable Assets</CardTitle>
-              <CardDescription>Safe amounts available for withdrawal</CardDescription>
+              <CardTitle>Adaptive Hedge Control</CardTitle>
+              <CardDescription>
+                Configure automatic hedge percentage and market adaptation
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {withdrawable.map((asset) => (
-                  <div key={asset.asset} className="p-4 border rounded-lg">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center space-x-3">
-                        <div className="font-medium text-lg">{asset.asset}</div>
-                        {getRiskBadge(asset.riskLevel)}
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{formatCurrency(asset.usdValue)}</div>
-                        <div className="text-sm text-muted-foreground">Safe amount</div>
+            <CardContent className="space-y-6">
+              {hedgeSettings && (
+                <>
+                  {/* Market Conditions Display */}
+                  {hedgeSettings.marketConditions && (
+                    <Alert>
+                      <Activity className="h-4 w-4" />
+                      <AlertDescription>
+                        <div className="space-y-1">
+                          <div className="font-medium">Current Market Conditions</div>
+                          <div className="text-sm space-y-1">
+                            <div>Volatility: {(hedgeSettings.marketConditions.volatility * 100).toFixed(1)}%</div>
+                            <div>Risk Level: {getRiskBadge(hedgeSettings.marketConditions.riskLevel)}</div>
+                            <div>Recommended Hedge: {(hedgeSettings.marketConditions.recommendedHedgePercent * 100).toFixed(1)}%</div>
+                          </div>
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Auto-Adjust Toggle */}
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="font-medium">Auto-Adjust Hedge Percent</div>
+                      <div className="text-sm text-muted-foreground">
+                        When enabled, hedge percent adapts automatically to market conditions
                       </div>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <span className="text-muted-foreground">Available:</span>
-                        <div className="font-medium">
-                          {formatAssetAmount(asset.available, asset.asset)}
-                        </div>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground">Safe to withdraw:</span>
-                        <div className="font-medium text-accent">
-                          {formatAssetAmount(asset.safeAmount, asset.asset)}
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3">
-                      <div className="w-full bg-muted rounded-full h-2">
-                        <div 
-                          className="bg-accent h-2 rounded-full" 
-                          style={{ width: `${(asset.safeAmount / asset.available) * 100}%` }}
+                    <Switch
+                      checked={tempAutoAdjust}
+                      onCheckedChange={setTempAutoAdjust}
+                    />
+                  </div>
+
+                  {/* Hedge Percent Control */}
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium">
+                        Hedge Percent: {tempHedgePercent.toFixed(1)}%
+                        {tempAutoAdjust && hedgeSettings.effectivePercent && (
+                          <span className="ml-2 text-sm text-muted-foreground">
+                            (Effective: {(hedgeSettings.effectivePercent * 100).toFixed(1)}%)
+                          </span>
+                        )}
+                      </Label>
+                      <div className="mt-2">
+                        <Slider
+                          value={[tempHedgePercent]}
+                          onValueChange={(value) => setTempHedgePercent(value[0])}
+                          max={100}
+                          step={1}
+                          disabled={tempAutoAdjust}
+                          className="w-full"
                         />
                       </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {((asset.safeAmount / asset.available) * 100).toFixed(0)}% of available balance
+                      <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
                       </div>
                     </div>
+
+                    {tempAutoAdjust && (
+                      <Alert>
+                        <Zap className="h-4 w-4" />
+                        <AlertDescription>
+                          Auto-adjust is enabled. The system will automatically determine the optimal hedge percentage based on market volatility and risk metrics. Your manual setting will be used as a baseline.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  {/* Current Settings Display */}
+                  <div className="p-4 bg-muted/50 rounded-lg">
+                    <div className="text-sm font-medium mb-2">Current Settings</div>
+                    <div className="space-y-1 text-sm">
+                      <div>Hedge Percent: {(hedgeSettings.hedgePercent * 100).toFixed(1)}%</div>
+                      <div>Auto-Adjust: {hedgeSettings.autoAdjust ? 'Enabled' : 'Disabled'}</div>
+                      {hedgeSettings.effectivePercent && (
+                        <div>Effective Percent: {(hedgeSettings.effectivePercent * 100).toFixed(1)}%</div>
+                      )}
+                      <div>Last Updated: {new Date(hedgeSettings.lastUpdated).toLocaleString()}</div>
+                      <div>Updated By: {hedgeSettings.updatedBy}</div>
+                    </div>
+                  </div>
+
+                  {/* Update Button */}
+                  <Button 
+                    onClick={handleUpdateSettings} 
+                    disabled={isUpdatingSettings}
+                    className="w-full"
+                  >
+                    {isUpdatingSettings ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <Settings className="h-4 w-4 mr-2" />
+                        Update Hedge Percent
+                      </>
+                    )}
+                  </Button>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
