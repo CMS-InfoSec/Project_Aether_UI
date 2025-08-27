@@ -286,6 +286,129 @@ export default function AdminDashboard() {
     }
   };
 
+  // Load per-asset report
+  const loadPerAssetReport = async () => {
+    setIsRefreshing(prev => ({ ...prev, perAsset: true }));
+    try {
+      const response = await fetch('/api/reports/per-asset');
+      const data = await response.json();
+
+      if (data.status === 'success') {
+        setPerAssetReport(data.data);
+      } else {
+        throw new Error(data.error || 'Failed to load per-asset report');
+      }
+    } catch (error) {
+      console.error('Error loading per-asset report:', error);
+      toast({
+        title: "Per-Asset Report Error",
+        description: "Failed to load per-asset report data",
+        variant: "destructive"
+      });
+    } finally {
+      setIsRefreshing(prev => ({ ...prev, perAsset: false }));
+    }
+  };
+
+  // Export CSV
+  const exportCSV = async (reportType: 'daily' | 'weekly' | 'per-asset') => {
+    setIsRefreshing(prev => ({ ...prev, csv: true }));
+    try {
+      const response = await fetch(`/api/reports/export?type=${reportType}`);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "Export Successful",
+          description: `${reportType} report exported to CSV successfully.`,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Export failed');
+      }
+    } catch (error) {
+      console.error('Export CSV error:', error);
+      toast({
+        title: "Export Failed",
+        description: "Failed to export report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(prev => ({ ...prev, csv: false }));
+    }
+  };
+
+  // Download backtest report
+  const downloadBacktestReport = async () => {
+    setIsRefreshing(prev => ({ ...prev, backtest: true }));
+    setBacktestProgress(0);
+
+    try {
+      // Simulate progress for user feedback
+      const progressInterval = setInterval(() => {
+        setBacktestProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 200);
+
+      const response = await fetch('/api/reports/backtest');
+
+      clearInterval(progressInterval);
+      setBacktestProgress(100);
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `backtest-report-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        toast({
+          title: "Download Complete",
+          description: "Backtest report downloaded successfully.",
+        });
+      } else {
+        const errorData = await response.json();
+        if (response.status === 404) {
+          toast({
+            title: "No Report Available",
+            description: "No backtest report found. Please run a backtest first.",
+            variant: "destructive",
+          });
+        } else {
+          throw new Error(errorData.error || 'Download failed');
+        }
+      }
+    } catch (error) {
+      console.error('Download backtest report error:', error);
+      toast({
+        title: "Download Failed",
+        description: "Failed to download backtest report. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRefreshing(prev => ({ ...prev, backtest: false }));
+      setBacktestProgress(0);
+    }
+  };
+
   // Load notifications
   const loadNotifications = async () => {
     setIsRefreshing(prev => ({ ...prev, notifications: true }));
