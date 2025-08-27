@@ -391,14 +391,14 @@ export default function AdminPortfolio() {
         setTimeout(async () => {
           clearInterval(progressInterval);
           setRebalanceProgress(100);
-          
+
           // Refresh data
-          await Promise.all([fetchPortfolios(), fetchStats(), fetchRebalanceHistory()]);
-          
+          await refreshData();
+
           setIsRebalancing(false);
           setRebalanceProgress(0);
           setCurrentRebalanceId(null);
-          
+
           toast({
             title: "Rebalance Complete",
             description: `Successfully rebalanced ${data.data.portfoliosAffected} portfolios`,
