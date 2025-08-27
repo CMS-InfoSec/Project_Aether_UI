@@ -41,11 +41,11 @@ import {
 } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
+import {
   Brain,
   Play,
   Square,
-  Deploy,
+  Rocket,
   TrendingUp,
   Clock,
   CheckCircle,
@@ -527,7 +527,7 @@ export default function AdminModels() {
       'cancelled': { variant: 'secondary' as const, icon: XCircle, color: 'text-gray-600' },
       'training': { variant: 'outline' as const, icon: Brain, color: 'text-blue-600' },
       'trained': { variant: 'secondary' as const, icon: CheckCircle, color: 'text-green-600' },
-      'deployed': { variant: 'default' as const, icon: Deploy, color: 'text-accent' },
+      'deployed': { variant: 'default' as const, icon: Rocket, color: 'text-accent' },
       'shadow': { variant: 'outline' as const, icon: Eye, color: 'text-purple-600' },
       'archived': { variant: 'secondary' as const, icon: Database, color: 'text-gray-600' }
     };
@@ -775,7 +775,7 @@ export default function AdminModels() {
                         )}
                         {job.status === 'completed' && job.modelId && (
                           <Button size="sm" onClick={() => handleDeployModel(job.modelId!)}>
-                            <Deploy className="h-4 w-4 mr-1" />
+                            <Rocket className="h-4 w-4 mr-1" />
                             Deploy
                           </Button>
                         )}
@@ -870,7 +870,7 @@ export default function AdminModels() {
                                 Shadow Test
                               </Button>
                               <Button size="sm" onClick={() => handleDeployModel(model.modelId)}>
-                                <Deploy className="h-4 w-4 mr-1" />
+                                <Rocket className="h-4 w-4 mr-1" />
                                 Deploy
                               </Button>
                             </>
