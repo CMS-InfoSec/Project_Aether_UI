@@ -189,6 +189,12 @@ export function createServer() {
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
   app.post("/api/notifications", handleCreateNotification);
 
+  // User profile routes
+  app.get("/api/user/profile", handleGetUserProfile);
+  app.patch("/api/user/profile", handleUpdateUserProfile);
+  app.get("/api/user/trading-settings", handleGetTradingSettings);
+  app.patch("/api/users/settings", handleUpdateTradingSettings);
+
   // Example API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
