@@ -72,19 +72,23 @@ export const handleInviteUser: RequestHandler = (req, res) => {
     // Validation
     if (!email || !email.includes('@')) {
       return res.status(400).json({
+        status: 'error',
         error: 'Valid email address is required'
       });
     }
 
     if (!['user', 'admin'].includes(role)) {
       return res.status(400).json({
+        status: 'error',
         error: 'Role must be either user or admin'
       });
     }
 
-    if (!founderApprovals || founderApprovals.length < 3) {
+    const requiredApprovals = role === 'admin' ? 5 : 3;
+    if (!founderApprovals || founderApprovals.length < requiredApprovals) {
       return res.status(400).json({
-        error: 'Minimum 3 founder approvals required'
+        status: 'error',
+        error: `${requiredApprovals} founder approvals required for ${role} role`
       });
     }
 
@@ -92,6 +96,7 @@ export const handleInviteUser: RequestHandler = (req, res) => {
     const existingUser = mockPendingUsers.find(u => u.email === email);
     if (existingUser) {
       return res.status(409).json({
+        status: 'error',
         error: 'User with this email already has a pending invitation'
       });
     }
@@ -117,6 +122,7 @@ export const handleInviteUser: RequestHandler = (req, res) => {
   } catch (error) {
     console.error('Invite user error:', error);
     res.status(500).json({
+      status: 'error',
       error: 'Internal server error'
     });
   }
