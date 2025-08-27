@@ -26,13 +26,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Check for existing token on mount
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      // Validate token and get user info
-      validateToken(token);
-    } else {
-      setIsLoading(false);
-    }
+    // Demo: Auto-login for demonstration
+    const mockUser: User = {
+      id: '1',
+      email: 'admin@projectaether.com',
+      role: 'admin'
+    };
+    setUser(mockUser);
+    setIsLoading(false);
   }, []);
 
   const validateToken = async (token: string) => {
