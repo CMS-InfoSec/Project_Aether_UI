@@ -87,12 +87,6 @@ const navigationItems = [
     badge: '12'
   },
   {
-    title: 'Builder.io',
-    href: '/builder',
-    icon: FileEdit,
-    badge: null
-  },
-  {
     title: 'Feedback',
     href: '/feedback',
     icon: MessageSquare,
