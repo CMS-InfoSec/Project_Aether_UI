@@ -252,15 +252,44 @@ export default function AdminPortfolio() {
     }
   };
 
+  // Load all data
+  const loadData = useCallback(async () => {
+    if (isLoading || isRefreshing) return; // Prevent concurrent calls
+
+    setIsLoading(true);
+    try {
+      // Load data sequentially to prevent potential race conditions
+      await fetchPortfolios();
+      await fetchStats();
+      await fetchRebalanceHistory();
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchPortfolios, isLoading, isRefreshing]);
+
+  // Refresh all data
+  const refreshData = useCallback(async () => {
+    if (isLoading || isRefreshing) return; // Prevent concurrent calls
+
+    setIsRefreshing(true);
+    try {
+      // Load data sequentially to prevent potential race conditions
+      await fetchPortfolios();
+      await fetchStats();
+      await fetchRebalanceHistory();
+    } catch (error) {
+      console.error('Error refreshing data:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [fetchPortfolios, isLoading, isRefreshing]);
+
   // Initial data load
   useEffect(() => {
-    const loadData = async () => {
-      setIsLoading(true);
-      await Promise.all([fetchPortfolios(), fetchStats(), fetchRebalanceHistory()]);
-      setIsLoading(false);
-    };
     loadData();
-  }, [fetchPortfolios]);
+  }, [loadData]);
 
   // Handle row click to show details
   const handleRowClick = async (userId: string) => {
