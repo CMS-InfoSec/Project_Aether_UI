@@ -66,6 +66,15 @@ import {
   handleUpdateMarketConditions,
   handleCloseHedge
 } from "./routes/hedge";
+import {
+  handleGetProposals,
+  handleCreateProposal,
+  handleCastVote,
+  handleDeployProposal,
+  handleGetFeedbackSummary,
+  handleSubmitFeedback,
+  handleGetAllFeedback
+} from "./routes/governance";
 
 export function createServer() {
   const app = express();
@@ -142,6 +151,15 @@ export function createServer() {
   app.get("/api/hedge/market-conditions", handleGetMarketConditions);
   app.post("/api/hedge/market-conditions", handleUpdateMarketConditions);
   app.post("/api/hedge/close/:hedgeId", handleCloseHedge);
+
+  // Governance routes
+  app.get("/api/admin/proposals", handleGetProposals);
+  app.post("/api/admin/proposals/:proposalId", handleCreateProposal);
+  app.post("/api/admin/proposals/:proposalId/vote", handleCastVote);
+  app.post("/api/admin/deploy/:proposalId", handleDeployProposal);
+  app.get("/api/admin/feedback", handleGetFeedbackSummary);
+  app.post("/api/feedback", handleSubmitFeedback);
+  app.get("/api/admin/feedback/all", handleGetAllFeedback);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
