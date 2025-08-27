@@ -53,10 +53,21 @@ const AppRouter = () => {
 
   const checkBootstrapStatus = async () => {
     try {
-      const response = await fetch('/api/founders/bootstrap-status');
+      const response = await fetch('/api/founders/bootstrap-status', {
+        // Prevent caching issues
+        cache: 'no-cache',
+        headers: {
+          'Cache-Control': 'no-cache',
+        },
+      });
       if (response.ok) {
         const data = await response.json();
+        console.log('Bootstrap status:', data); // Debug log
         setFoundersExist(data.foundersExist);
+      } else {
+        console.error('Bootstrap status check failed:', response.status, response.statusText);
+        // If we can't check status, assume founders exist to avoid blocking
+        setFoundersExist(true);
       }
     } catch (error) {
       console.error('Failed to check bootstrap status:', error);
@@ -104,9 +115,18 @@ const AppRouter = () => {
   if (isCheckingBootstrap) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <p className="mt-2 text-gray-600">Checking system status...</p>
+          <button
+            onClick={() => {
+              setFoundersExist(true);
+              setIsCheckingBootstrap(false);
+            }}
+            className="text-sm text-blue-600 hover:text-blue-800 underline"
+          >
+            Skip to Login (Development)
+          </button>
         </div>
       </div>
     );
@@ -114,7 +134,22 @@ const AppRouter = () => {
 
   // If no founders exist, show the CreateFounderForm
   if (foundersExist === false) {
-    return <CreateFounderForm onSubmit={handleBootstrap} />;
+    return (
+      <div>
+        <CreateFounderForm onSubmit={handleBootstrap} />
+        <div className="fixed bottom-4 right-4">
+          <button
+            onClick={() => {
+              setIsCheckingBootstrap(true);
+              checkBootstrapStatus();
+            }}
+            className="bg-gray-600 text-white px-3 py-1 rounded text-sm hover:bg-gray-700"
+          >
+            Refresh Status
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // Normal app routing
