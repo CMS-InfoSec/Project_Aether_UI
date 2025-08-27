@@ -92,6 +92,12 @@ import {
   handleGetTradingSettings,
   handleUpdateTradingSettings
 } from "./routes/profile";
+import {
+  handleGetBootstrapStatus,
+  handleCreateFounder,
+  handleGetFounders,
+  handleDeleteFounder
+} from "./routes/founders";
 
 export function createServer() {
   const app = express();
@@ -105,6 +111,12 @@ export function createServer() {
   app.post("/api/auth/login", handleLogin);
   app.post("/api/auth/refresh", handleRefresh);
   app.post("/api/auth/logout", handleLogout);
+
+  // Founder/Bootstrap routes (public)
+  app.get("/api/founders/bootstrap-status", handleGetBootstrapStatus);
+  app.post("/api/founders/bootstrap", handleCreateFounder);
+  app.get("/api/founders", handleGetFounders);
+  app.delete("/api/founders/:founderId", handleDeleteFounder);
 
   // User management routes
   app.post("/api/users/invite", handleInviteUser);
