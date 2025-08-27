@@ -170,26 +170,107 @@ export default function AdminPortfolio() {
     returnsJson: '{\n  "BTC": 0.028,\n  "ETH": 0.015,\n  "ADA": -0.005,\n  "SOL": 0.042\n}'
   });
 
-  // Fetch portfolios
+  // Fetch portfolios (mock data)
   const fetchPortfolios = useCallback(async () => {
     try {
-      const params = new URLSearchParams({
-        search: filters.search,
-        sort: filters.sort,
-        order: filters.order,
-        limit: filters.limit.toString(),
-        offset: filters.offset.toString()
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Mock portfolio data
+      const mockPortfolios: PortfolioOverview[] = [
+        {
+          userId: "usr_001",
+          userName: "Alice Johnson",
+          email: "alice.johnson@example.com",
+          totalValue: 125000,
+          assetsCount: 8,
+          lastRebalanced: "2024-01-15T10:30:00Z",
+          performance24h: 0.0245,
+          performance7d: 0.082,
+          riskLevel: "medium"
+        },
+        {
+          userId: "usr_002",
+          userName: "Bob Smith",
+          email: "bob.smith@example.com",
+          totalValue: 87500,
+          assetsCount: 6,
+          lastRebalanced: "2024-01-14T15:45:00Z",
+          performance24h: -0.0123,
+          performance7d: 0.034,
+          riskLevel: "low"
+        },
+        {
+          userId: "usr_003",
+          userName: "Carol Davis",
+          email: "carol.davis@example.com",
+          totalValue: 245000,
+          assetsCount: 12,
+          lastRebalanced: "2024-01-16T09:15:00Z",
+          performance24h: 0.0456,
+          performance7d: 0.156,
+          riskLevel: "high"
+        },
+        {
+          userId: "usr_004",
+          userName: "David Wilson",
+          email: "david.wilson@example.com",
+          totalValue: 156000,
+          assetsCount: 9,
+          lastRebalanced: "2024-01-13T14:20:00Z",
+          performance24h: 0.0189,
+          performance7d: 0.067,
+          riskLevel: "medium"
+        },
+        {
+          userId: "usr_005",
+          userName: "Emma Brown",
+          email: "emma.brown@example.com",
+          totalValue: 98000,
+          assetsCount: 7,
+          lastRebalanced: "2024-01-15T11:45:00Z",
+          performance24h: -0.0067,
+          performance7d: 0.023,
+          riskLevel: "low"
+        }
+      ];
+
+      // Filter and sort mock data
+      let filteredPortfolios = mockPortfolios.filter(p =>
+        filters.search === '' ||
+        p.userName.toLowerCase().includes(filters.search.toLowerCase()) ||
+        p.email.toLowerCase().includes(filters.search.toLowerCase()) ||
+        p.userId.toLowerCase().includes(filters.search.toLowerCase())
+      );
+
+      // Sort
+      filteredPortfolios.sort((a, b) => {
+        let aVal: any = a[filters.sort as keyof PortfolioOverview];
+        let bVal: any = b[filters.sort as keyof PortfolioOverview];
+
+        if (filters.order === 'asc') {
+          return aVal > bVal ? 1 : -1;
+        } else {
+          return aVal < bVal ? 1 : -1;
+        }
       });
 
-      const response = await fetch(`/api/admin/portfolio?${params}`);
-      const data = await response.json();
+      // Paginate
+      const total = filteredPortfolios.length;
+      const paginatedPortfolios = filteredPortfolios.slice(filters.offset, filters.offset + filters.limit);
 
-      if (data.status === 'success') {
-        setPortfolios(data.data);
-        setMetadata(data.metadata);
-      } else {
-        throw new Error(data.message || 'Failed to fetch portfolios');
-      }
+      setPortfolios(paginatedPortfolios);
+      setMetadata({
+        total,
+        limit: filters.limit,
+        offset: filters.offset,
+        summary: {
+          totalPortfolios: total,
+          totalValue: mockPortfolios.reduce((sum, p) => sum + p.totalValue, 0),
+          avgPerformance24h: mockPortfolios.reduce((sum, p) => sum + p.performance24h, 0) / mockPortfolios.length,
+          totalAssets: mockPortfolios.reduce((sum, p) => sum + p.assetsCount, 0)
+        }
+      });
     } catch (error) {
       console.error('Failed to fetch portfolios:', error);
       toast({
