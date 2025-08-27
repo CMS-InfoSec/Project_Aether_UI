@@ -5,6 +5,18 @@ import { Badge } from '@/components/ui/badge';
 import { Construction, MessageSquare, ArrowRight } from 'lucide-react';
 
 const sectionDescriptions: Record<string, { title: string; description: string; features: string[] }> = {
+  // User sections
+  notifications: {
+    title: 'Notifications',
+    description: 'System notifications and alerts management',
+    features: ['View paginated notifications', 'Filter by severity levels', 'Mark notifications as read', 'Real-time alert system']
+  },
+  reports: {
+    title: 'Reports & Analytics',
+    description: 'Comprehensive reporting and analytics dashboard',
+    features: ['Daily and weekly reports', 'Per-asset performance analysis', 'Export capabilities to CSV', 'Performance tracking']
+  },
+  // Admin sections
   governance: {
     title: 'Governance & Feedback',
     description: 'Manage proposals, voting, deployment, and feedback collection',
@@ -15,42 +27,42 @@ const sectionDescriptions: Record<string, { title: string; description: string; 
     description: 'Invite users, approve registrations, and manage user settings',
     features: ['Invite new users with role assignment', 'Approve pending user registrations', 'View paginated user lists', 'Manage user settings and preferences']
   },
-  portfolio: {
+  'admin/portfolio': {
     title: 'Portfolio Management',
-    description: 'Overview of portfolios and rebalancing operations',
-    features: ['View portfolio overview with pagination', 'Trigger portfolio rebalancing', 'Monitor portfolio performance', 'Asset allocation management']
+    description: 'Admin overview of all portfolios and rebalancing operations',
+    features: ['View all user portfolios with pagination', 'Trigger system-wide rebalancing', 'Monitor aggregate performance', 'Asset allocation management']
   },
-  markets: {
+  'admin/markets': {
     title: 'Market Eligibility',
     description: 'Monitor eligible markets with filtering and sorting capabilities',
     features: ['Filter markets by status and metrics', 'View market data including volatility and volume', 'Sort by profitability and other criteria', 'Real-time market data refresh']
   },
-  models: {
+  'admin/models': {
     title: 'Model Management',
     description: 'Train, deploy, and manage ML models for trading strategies',
     features: ['Start and monitor training jobs', 'Deploy trained models', 'View model registry and history', 'Shadow testing and rollback capabilities']
   },
-  'system/config': {
+  'admin/system/config': {
     title: 'System Configuration',
     description: 'Manage runtime and system settings',
     features: ['View and update runtime configuration', 'Manage system settings', 'User settings management', 'Configuration validation and reset']
   },
-  'system/control': {
+  'admin/system/control': {
     title: 'System Control',
     description: 'Control system operations and trading modes',
     features: ['Pause and resume system operations', 'Set trading modes (Simulation, Dry-Run, Live)', 'Monitor system status', 'Audit log management']
   },
-  reports: {
-    title: 'Reports & Analytics',
-    description: 'Comprehensive reporting and analytics dashboard',
-    features: ['Daily and weekly reports', 'Per-asset performance analysis', 'Backtest report downloads', 'Export capabilities to CSV']
+  'admin/backtest': {
+    title: 'Backtest Report',
+    description: 'Download and analyze backtesting results',
+    features: ['Download latest backtest reports', 'Stream JSON report data', 'Historical backtest analysis', 'Performance comparison']
   },
-  notifications: {
-    title: 'Notifications',
-    description: 'System notifications and alerts management',
-    features: ['View paginated notifications', 'Filter by severity levels', 'Mark notifications as read', 'Real-time alert system']
+  'admin/builder': {
+    title: 'Builder.io Page Editor',
+    description: 'Edit and manage Builder.io content pages',
+    features: ['Load pages by ID', 'Edit page content with JSON editor', 'Preview changes', 'Save updates to Builder.io']
   },
-  feedback: {
+  'admin/feedback': {
     title: 'Feedback Management',
     description: 'Submit and manage user feedback',
     features: ['Submit feedback comments', 'Audit trail maintenance', 'Feedback categorization', 'Response management']
