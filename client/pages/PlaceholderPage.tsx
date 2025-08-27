@@ -50,11 +50,6 @@ const sectionDescriptions: Record<string, { title: string; description: string; 
     description: 'System notifications and alerts management',
     features: ['View paginated notifications', 'Filter by severity levels', 'Mark notifications as read', 'Real-time alert system']
   },
-  builder: {
-    title: 'Builder.io Page Editor',
-    description: 'Edit and manage Builder.io content pages',
-    features: ['Load pages by ID', 'Edit page content with JSON editor', 'Preview changes', 'Save updates to Builder.io']
-  },
   feedback: {
     title: 'Feedback Management',
     description: 'Submit and manage user feedback',
