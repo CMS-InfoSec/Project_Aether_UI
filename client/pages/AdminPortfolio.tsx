@@ -659,7 +659,13 @@ export default function AdminPortfolio() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={refreshData} disabled={isLoading || isRefreshing}>
+          <Button variant="outline" onClick={() => {
+            setIsRefreshing(true);
+            setTimeout(() => {
+              refreshData();
+              setIsRefreshing(false);
+            }, 300);
+          }} disabled={isLoading || isRefreshing}>
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </Button>
