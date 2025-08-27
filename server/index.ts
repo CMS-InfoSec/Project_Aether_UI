@@ -86,6 +86,12 @@ import {
   handleMarkAllNotificationsRead,
   handleCreateNotification
 } from "./routes/reports";
+import {
+  handleGetUserProfile,
+  handleUpdateUserProfile,
+  handleGetTradingSettings,
+  handleUpdateTradingSettings
+} from "./routes/profile";
 
 export function createServer() {
   const app = express();
