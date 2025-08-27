@@ -267,7 +267,7 @@ export default function AdminPortfolio() {
     } finally {
       setIsLoading(false);
     }
-  }, [fetchPortfolios, isLoading, isRefreshing]);
+  }, [fetchPortfolios]);
 
   // Refresh all data
   const refreshData = useCallback(async () => {
