@@ -16,7 +16,6 @@ import {
   PlayCircle,
   BarChart3,
   Bell,
-  FileEdit,
   MessageSquare,
   LogOut,
   Menu,
