@@ -281,22 +281,29 @@ export default function AdminPortfolio() {
     }
   }, [filters]);
 
-  // Fetch portfolio statistics
+  // Fetch portfolio statistics (mock data)
   const fetchStats = useCallback(async () => {
     try {
-      const response = await fetch('/api/admin/portfolio/stats');
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      const mockStats: PortfolioStats = {
+        totalPortfolios: 47,
+        totalValue: 2850000,
+        avgPerformance24h: 0.0178,
+        avgPerformance7d: 0.064,
+        totalAssets: 425,
+        avgAssetsPerPortfolio: 9.04,
+        riskDistribution: {
+          low: 18,
+          medium: 22,
+          high: 7
+        },
+        needsRebalancing: 12,
+        lastGlobalRebalance: "2024-01-14T08:30:00Z"
+      };
 
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        setStats(data.data);
-      } else {
-        throw new Error(data.message || 'Failed to fetch stats');
-      }
+      setStats(mockStats);
     } catch (error) {
       console.error('Failed to fetch stats:', error);
       toast({
