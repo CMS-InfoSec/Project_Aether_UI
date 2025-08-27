@@ -188,7 +188,7 @@ export default function AppLayout() {
       )}>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border">
+          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border" style={{ backgroundColor: '#10141D' }}>
             <div className="flex items-center space-x-3">
               <img
                 src="https://cdn.builder.io/api/v1/image/assets%2Fd9af307b1ff14040a7ba27bfc11d5227%2Ffd066184d3bd44f2ab4e38cf3625b126?format=webp&width=800"
@@ -196,8 +196,8 @@ export default function AppLayout() {
                 className="w-8 h-8 object-contain"
               />
               <div>
-                <h1 className="font-semibold text-sidebar-foreground">AETHER</h1>
-                <p className="text-xs text-sidebar-foreground/60">Trading Platform</p>
+                <h1 className="font-semibold text-white">AETHER</h1>
+                <p className="text-xs text-white/80">Trading Platform</p>
               </div>
             </div>
             <Button
