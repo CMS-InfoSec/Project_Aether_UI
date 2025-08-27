@@ -57,11 +57,6 @@ const sectionDescriptions: Record<string, { title: string; description: string; 
     description: 'Download and analyze backtesting results',
     features: ['Download latest backtest reports', 'Stream JSON report data', 'Historical backtest analysis', 'Performance comparison']
   },
-  'admin/builder': {
-    title: 'Builder.io Page Editor',
-    description: 'Edit and manage Builder.io content pages',
-    features: ['Load pages by ID', 'Edit page content with JSON editor', 'Preview changes', 'Save updates to Builder.io']
-  },
   'admin/feedback': {
     title: 'Feedback Management',
     description: 'Submit and manage user feedback',

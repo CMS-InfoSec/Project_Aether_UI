@@ -28,7 +28,6 @@ import AdminModels from "./pages/AdminModels";
 import AdminSystemConfig from "./pages/AdminSystemConfig";
 import AdminSystemControl from "./pages/AdminSystemControl";
 import AdminBacktest from "./pages/AdminBacktest";
-import AdminBuilder from "./pages/AdminBuilder";
 import AdminFeedback from "./pages/AdminFeedback";
 
 import PlaceholderPage from "./pages/PlaceholderPage";
@@ -73,7 +72,6 @@ const App = () => (
                 <Route path="admin/system/config" element={<ErrorBoundary><AdminSystemConfig /></ErrorBoundary>} />
                 <Route path="admin/system/control" element={<ErrorBoundary><AdminSystemControl /></ErrorBoundary>} />
                 <Route path="admin/backtest" element={<ErrorBoundary><AdminBacktest /></ErrorBoundary>} />
-                <Route path="admin/builder" element={<ErrorBoundary><AdminBuilder /></ErrorBoundary>} />
                 <Route path="admin/feedback" element={<ErrorBoundary><AdminFeedback /></ErrorBoundary>} />
 
                 {/* Placeholder for unimplemented sections */}
