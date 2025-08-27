@@ -47,6 +47,14 @@ import {
   handleGetMarketStats,
   handleExportMarkets
 } from "./routes/markets";
+import {
+  handleGetPortfolioOverview,
+  handleGetPortfolioDetails,
+  handleRebalanceAll,
+  handleGetRebalanceStatus,
+  handleGetRebalanceHistory,
+  handleGetPortfolioStats
+} from "./routes/portfolio";
 
 export function createServer() {
   const app = express();
@@ -104,6 +112,14 @@ export function createServer() {
   app.get("/api/markets/eligible", handleGetEligibleMarkets);
   app.get("/api/markets/stats", handleGetMarketStats);
   app.get("/api/markets/export", handleExportMarkets);
+
+  // Portfolio routes
+  app.get("/api/admin/portfolio", handleGetPortfolioOverview);
+  app.get("/api/admin/portfolio/:userId", handleGetPortfolioDetails);
+  app.post("/api/admin/portfolio/rebalance", handleRebalanceAll);
+  app.get("/api/admin/portfolio/rebalance/:rebalanceId", handleGetRebalanceStatus);
+  app.get("/api/admin/portfolio/rebalance-history", handleGetRebalanceHistory);
+  app.get("/api/admin/portfolio/stats", handleGetPortfolioStats);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
