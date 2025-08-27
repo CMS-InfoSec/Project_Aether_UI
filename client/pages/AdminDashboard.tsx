@@ -621,9 +621,10 @@ export default function AdminDashboard() {
       </Card>
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="per-asset">Per-Asset</TabsTrigger>
           <TabsTrigger value="notifications" className="relative">
             Notifications
             {notificationData?.summary.unread > 0 && (
