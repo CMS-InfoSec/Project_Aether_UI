@@ -62,6 +62,34 @@ interface Notification {
   metadata?: any;
 }
 
+interface PerAssetReport {
+  assets: Array<{
+    symbol: string;
+    name: string;
+    allocation: number;
+    currentPrice: number;
+    dailyChange: number;
+    weeklyChange: number;
+    monthlyChange: number;
+    totalReturn: number;
+    totalReturnPercent: number;
+    sharpeRatio: number;
+    volatility: number;
+    maxDrawdown: number;
+    trades: number;
+    avgHoldTime: number;
+    lastRebalance: string;
+  }>;
+  summary: {
+    totalAssets: number;
+    topPerformer: { symbol: string; return: number };
+    bottomPerformer: { symbol: string; return: number };
+    avgVolatility: number;
+    correlationMatrix: Array<{ asset1: string; asset2: string; correlation: number }>;
+  };
+  lastUpdated: string;
+}
+
 // Mock data generators (in production, these would fetch from database/calculations)
 function generateDailyReport(): DailyReport {
   const baseReturn = 24580;
@@ -137,6 +165,74 @@ function generateWeeklyReport(): WeeklyReport {
       informationRatio: 1.2 + Math.random() * 0.5,
       calmarRatio: 3.1 + Math.random() * 0.8,
       sortinoRatio: 2.8 + Math.random() * 0.6
+    },
+    lastUpdated: new Date().toISOString()
+  };
+}
+
+function generatePerAssetReport(): PerAssetReport {
+  const assetData = [
+    { symbol: 'BTC', name: 'Bitcoin', basePrice: 43250, allocation: 35 },
+    { symbol: 'ETH', name: 'Ethereum', basePrice: 2680, allocation: 25 },
+    { symbol: 'SOL', name: 'Solana', basePrice: 98, allocation: 15 },
+    { symbol: 'AVAX', name: 'Avalanche', basePrice: 38, allocation: 10 },
+    { symbol: 'MATIC', name: 'Polygon', basePrice: 0.85, allocation: 8 },
+    { symbol: 'LINK', name: 'Chainlink', basePrice: 15.2, allocation: 7 }
+  ];
+
+  const assets = assetData.map(asset => {
+    const dailyChange = (Math.random() - 0.4) * 10; // Slight positive bias
+    const weeklyChange = (Math.random() - 0.3) * 20;
+    const monthlyChange = (Math.random() - 0.2) * 40;
+    const currentPrice = asset.basePrice * (1 + dailyChange / 100);
+
+    return {
+      symbol: asset.symbol,
+      name: asset.name,
+      allocation: asset.allocation,
+      currentPrice,
+      dailyChange,
+      weeklyChange,
+      monthlyChange,
+      totalReturn: asset.basePrice * asset.allocation * (monthlyChange / 100) * 100,
+      totalReturnPercent: monthlyChange,
+      sharpeRatio: 1.5 + Math.random() * 1.5,
+      volatility: 15 + Math.random() * 25,
+      maxDrawdown: -(2 + Math.random() * 8),
+      trades: Math.floor(20 + Math.random() * 80),
+      avgHoldTime: 1.5 + Math.random() * 4,
+      lastRebalance: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+    };
+  });
+
+  const topPerformer = assets.reduce((max, asset) =>
+    asset.totalReturnPercent > max.totalReturnPercent ? asset : max
+  );
+
+  const bottomPerformer = assets.reduce((min, asset) =>
+    asset.totalReturnPercent < min.totalReturnPercent ? asset : min
+  );
+
+  // Generate correlation matrix (simplified)
+  const correlationMatrix = [];
+  for (let i = 0; i < assets.length; i++) {
+    for (let j = i + 1; j < assets.length; j++) {
+      correlationMatrix.push({
+        asset1: assets[i].symbol,
+        asset2: assets[j].symbol,
+        correlation: (Math.random() - 0.5) * 2 // -1 to 1
+      });
+    }
+  }
+
+  return {
+    assets,
+    summary: {
+      totalAssets: assets.length,
+      topPerformer: { symbol: topPerformer.symbol, return: topPerformer.totalReturnPercent },
+      bottomPerformer: { symbol: bottomPerformer.symbol, return: bottomPerformer.totalReturnPercent },
+      avgVolatility: assets.reduce((sum, asset) => sum + asset.volatility, 0) / assets.length,
+      correlationMatrix
     },
     lastUpdated: new Date().toISOString()
   };
@@ -365,6 +461,126 @@ export function handleMarkAllNotificationsRead(_req: Request, res: Response) {
     res.status(500).json({
       status: 'error',
       error: 'Failed to mark notifications as read'
+    });
+  }
+}
+
+// Get per-asset report
+export function handleGetPerAssetReport(_req: Request, res: Response) {
+  try {
+    const report = generatePerAssetReport();
+
+    res.json({
+      status: 'success',
+      data: report
+    });
+  } catch (error) {
+    console.error('Get per-asset report error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to generate per-asset report'
+    });
+  }
+}
+
+// Download backtest report
+export function handleGetBacktestReport(_req: Request, res: Response) {
+  try {
+    // Simulate checking for backtest report availability
+    const hasBacktest = Math.random() > 0.3; // 70% chance report exists
+
+    if (!hasBacktest) {
+      return res.status(404).json({
+        status: 'error',
+        error: 'No backtest report available. Please run a backtest first.'
+      });
+    }
+
+    // Generate mock CSV content
+    const csvContent = [
+      'Date,Strategy,Benchmark,Returns,Drawdown,Sharpe,Trades,Win_Rate',
+      ...Array.from({ length: 100 }, (_, i) => {
+        const date = new Date();
+        date.setDate(date.getDate() - (99 - i));
+        const strategyReturn = (Math.random() - 0.4) * 5;
+        const benchmarkReturn = (Math.random() - 0.5) * 3;
+        const drawdown = -(Math.random() * 8);
+        const sharpe = 1.2 + Math.random() * 1.5;
+        const trades = Math.floor(Math.random() * 10);
+        const winRate = 0.6 + Math.random() * 0.3;
+
+        return `${date.toISOString().split('T')[0]},${strategyReturn.toFixed(2)},${benchmarkReturn.toFixed(2)},${(strategyReturn - benchmarkReturn).toFixed(2)},${drawdown.toFixed(2)},${sharpe.toFixed(2)},${trades},${winRate.toFixed(2)}`;
+      })
+    ].join('\n');
+
+    // Set headers for file download
+    const filename = `backtest-report-${new Date().toISOString().split('T')[0]}.csv`;
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', Buffer.byteLength(csvContent));
+
+    res.send(csvContent);
+  } catch (error) {
+    console.error('Get backtest report error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to download backtest report'
+    });
+  }
+}
+
+// Export report data as CSV
+export function handleExportReportCSV(req: Request, res: Response) {
+  try {
+    const { type = 'daily' } = req.query;
+
+    let csvContent = '';
+    let filename = '';
+
+    if (type === 'daily') {
+      const report = generateDailyReport();
+      csvContent = [
+        'Date,Returns,Benchmark,Performance',
+        ...report.dailyReturnsData.map(item =>
+          `${item.date},${item.returns},${item.benchmark},${(item.returns - item.benchmark).toFixed(2)}`
+        )
+      ].join('\n');
+      filename = `daily-report-${new Date().toISOString().split('T')[0]}.csv`;
+    } else if (type === 'weekly') {
+      const report = generateWeeklyReport();
+      csvContent = [
+        'Asset,Returns,Volatility,Allocation,Trades',
+        ...report.weeklyAssetData.map(asset =>
+          `${asset.asset},${asset.returns},${asset.volatility},${asset.allocation},${asset.trades}`
+        )
+      ].join('\n');
+      filename = `weekly-report-${new Date().toISOString().split('T')[0]}.csv`;
+    } else if (type === 'per-asset') {
+      const report = generatePerAssetReport();
+      csvContent = [
+        'Symbol,Name,Allocation,Current_Price,Daily_Change,Weekly_Change,Monthly_Change,Total_Return,Sharpe_Ratio,Volatility,Max_Drawdown,Trades,Avg_Hold_Time',
+        ...report.assets.map(asset =>
+          `${asset.symbol},${asset.name},${asset.allocation},${asset.currentPrice},${asset.dailyChange},${asset.weeklyChange},${asset.monthlyChange},${asset.totalReturn},${asset.sharpeRatio},${asset.volatility},${asset.maxDrawdown},${asset.trades},${asset.avgHoldTime}`
+        )
+      ].join('\n');
+      filename = `per-asset-report-${new Date().toISOString().split('T')[0]}.csv`;
+    } else {
+      return res.status(400).json({
+        status: 'error',
+        error: 'Invalid report type. Use daily, weekly, or per-asset.'
+      });
+    }
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', Buffer.byteLength(csvContent));
+
+    res.send(csvContent);
+  } catch (error) {
+    console.error('Export CSV error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to export CSV'
     });
   }
 }
