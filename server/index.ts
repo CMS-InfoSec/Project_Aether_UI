@@ -42,6 +42,11 @@ import {
   handleRollbackModel,
   handleGetShadowTests
 } from "./routes/models";
+import {
+  handleGetEligibleMarkets,
+  handleGetMarketStats,
+  handleExportMarkets
+} from "./routes/markets";
 
 export function createServer() {
   const app = express();
@@ -94,6 +99,11 @@ export function createServer() {
   app.post("/api/models/shadow/stop", handleStopShadow);
   app.post("/api/models/rollback", handleRollbackModel);
   app.get("/api/models/shadow", handleGetShadowTests);
+
+  // Markets routes
+  app.get("/api/markets/eligible", handleGetEligibleMarkets);
+  app.get("/api/markets/stats", handleGetMarketStats);
+  app.get("/api/markets/export", handleExportMarkets);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
