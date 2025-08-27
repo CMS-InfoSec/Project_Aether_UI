@@ -311,6 +311,7 @@ export default function UserDashboard() {
                   <CardDescription>7-day portfolio performance vs benchmark</CardDescription>
                 </CardHeader>
                 <CardContent>
+                {dailyReturnsData && dailyReturnsData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <LineChart data={dailyReturnsData}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -318,24 +319,29 @@ export default function UserDashboard() {
                       <YAxis tick={{ fontSize: 12 }} />
                       <Tooltip />
                       <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="returns" 
-                        stroke="hsl(var(--primary))" 
+                      <Line
+                        type="monotone"
+                        dataKey="returns"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={2}
                         name="Portfolio (%)"
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="benchmark" 
-                        stroke="hsl(var(--muted-foreground))" 
+                      <Line
+                        type="monotone"
+                        dataKey="benchmark"
+                        stroke="hsl(var(--muted-foreground))"
                         strokeWidth={2}
                         strokeDasharray="5 5"
                         name="Benchmark (%)"
                       />
                     </LineChart>
                   </ResponsiveContainer>
-                </CardContent>
+                ) : (
+                  <div className="flex items-center justify-center h-[300px]">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                )}
+              </CardContent>
               </Card>
             </div>
 
