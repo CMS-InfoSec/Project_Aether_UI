@@ -415,13 +415,81 @@ export function handleUpdateMarketConditions(req: Request, res: Response) {
   });
 }
 
+// Get wallet snapshot (live vs stored portfolio)
+export function handleGetSnapshot(req: Request, res: Response) {
+  const userId = req.query.userId as string || 'user_001'; // In production, get from auth
+
+  // Simulate snapshot data
+  const liveBalances = balances.map(b => ({
+    asset: b.asset,
+    free: b.available,
+    locked: b.locked,
+    total: b.total,
+    valueUsd: b.valueUsd
+  }));
+
+  const totalLive = liveBalances.reduce((sum, b) => sum + b.valueUsd, 0);
+
+  // Simulate stored portfolio (what we expect to have)
+  const storedPortfolio = {
+    totalValue: totalLive * 0.98, // 2% difference
+    assets: liveBalances.map(b => ({
+      ...b,
+      valueUsd: b.valueUsd * (0.95 + Math.random() * 0.1) // ±5% variance
+    }))
+  };
+
+  const totalStored = storedPortfolio.assets.reduce((sum, a) => sum + a.valueUsd, 0);
+
+  // Calculate drift
+  const driftPercent = ((totalLive - totalStored) / totalStored) * 100;
+  const driftTolerance = 5.0; // 5% tolerance
+
+  // Get hedged amount
+  const hedged = hedgeRecords
+    .filter(h => h.status === 'active' && h.userId === userId)
+    .reduce((sum, h) => sum + h.amount, 0);
+
+  const snapshot = {
+    live: {
+      total: totalLive,
+      balances: liveBalances
+    },
+    stored: {
+      total: totalStored,
+      balances: storedPortfolio.assets
+    },
+    hedged,
+    drift: {
+      absolute: totalLive - totalStored,
+      percent: driftPercent,
+      tolerance: driftTolerance,
+      exceeded: Math.abs(driftPercent) > driftTolerance
+    },
+    lastUpdated: new Date().toISOString()
+  };
+
+  // Simulate occasional 502 errors for testing
+  if (Math.random() > 0.95) {
+    return res.status(502).json({
+      status: 'error',
+      message: 'Bad Gateway - Unable to fetch live snapshot'
+    });
+  }
+
+  res.json({
+    status: 'success',
+    data: snapshot
+  });
+}
+
 // Close hedge position
 export function handleCloseHedge(req: Request, res: Response) {
   const { hedgeId } = req.params;
   const { userId = 'user_001' } = req.body; // In production, get from auth
 
   const hedge = hedgeRecords.find(h => h.id === hedgeId && h.userId === userId);
-  
+
   if (!hedge) {
     return res.status(404).json({
       status: 'error',
@@ -438,7 +506,7 @@ export function handleCloseHedge(req: Request, res: Response) {
 
   // Close the hedge
   hedge.status = 'closed';
-  
+
   // Simulate final P&L calculation
   const marketMovement = (Math.random() - 0.5) * 0.1; // ±5% movement
   hedge.pnl = hedge.amount * marketMovement;

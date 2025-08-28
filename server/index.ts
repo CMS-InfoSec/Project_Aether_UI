@@ -64,7 +64,8 @@ import {
   handleUpdateHedgePercent,
   handleGetMarketConditions,
   handleUpdateMarketConditions,
-  handleCloseHedge
+  handleCloseHedge,
+  handleGetSnapshot
 } from "./routes/hedge";
 import {
   handleGetProposals,
@@ -182,6 +183,7 @@ export function createServer() {
   app.get("/api/wallet/hedges", handleGetHedges);
   app.get("/api/wallet/balances", handleGetBalances);
   app.get("/api/wallet/withdrawable", handleGetWithdrawable);
+  app.get("/api/wallet/snapshot", handleGetSnapshot);
   app.post("/api/hedge", handleExecuteHedge);
   app.get("/api/hedge/percent", handleGetHedgePercent);
   app.post("/api/hedge/percent", handleUpdateHedgePercent);
