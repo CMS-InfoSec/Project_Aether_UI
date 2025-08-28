@@ -1,17 +1,10 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -20,14 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,63 +29,51 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   Briefcase,
   DollarSign,
-  TrendingUp,
-  TrendingDown,
+  Users,
   BarChart3,
   RefreshCw,
   ChevronUp,
   ChevronDown,
-  Search,
-  Eye,
-  Settings,
-  Clock,
-  Users,
   Target,
   AlertTriangle,
   CheckCircle,
   Activity,
-  PieChart
+  Clock,
+  TrendingUp,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-// Types
-interface PortfolioOverview {
-  userId: string;
-  userName: string;
-  email: string;
-  totalValue: number;
-  assetsCount: number;
-  lastRebalanced: string;
-  performance24h: number;
-  performance7d: number;
-  riskLevel: 'low' | 'medium' | 'high';
+// Types matching specification
+interface PortfolioRecord {
+  id: string;
+  user_id: string;
+  mode: 'live' | 'demo' | 'paper';
+  total_balance: number;
+  usdt_balance: number;
+  hedged_balance: number;
+  last_updated: string;
 }
 
-interface Asset {
-  symbol: string;
-  name: string;
-  quantity: number;
-  currentPrice: number;
-  value: number;
-  allocation: number;
-  targetAllocation: number;
-  performance24h: number;
-  lastUpdated: string;
+interface PortfolioResponse {
+  total: number;
+  items: PortfolioRecord[];
+  next: number | null;
 }
 
-interface PortfolioDetails {
-  userId: string;
-  userName: string;
-  email: string;
+interface PortfolioStats {
+  totalPortfolios: number;
   totalValue: number;
-  assetsCount: number;
-  lastRebalanced: string;
-  performance24h: number;
-  performance7d: number;
-  performance30d: number;
-  riskLevel: 'low' | 'medium' | 'high';
-  assets: Asset[];
-  rebalanceHistory: RebalanceEvent[];
+  totalUsdtBalance: number;
+  totalHedgedBalance: number;
+  modeDistribution: {
+    live: number;
+    demo: number;
+    paper: number;
+  };
+  needsRebalancing: number;
+  lastGlobalRebalance: string | null;
 }
 
 interface RebalanceEvent {
@@ -114,465 +87,287 @@ interface RebalanceEvent {
   duration: number;
 }
 
-interface PortfolioStats {
-  totalPortfolios: number;
-  totalValue: number;
-  avgPerformance24h: number;
-  avgPerformance7d: number;
-  totalAssets: number;
-  avgAssetsPerPortfolio: number;
-  riskDistribution: {
-    low: number;
-    medium: number;
-    high: number;
-  };
-  needsRebalancing: number;
-  lastGlobalRebalance: string | null;
-}
-
-interface Metadata {
-  total: number;
-  limit: number;
-  offset: number;
-  summary: {
-    totalPortfolios: number;
-    totalValue: number;
-    avgPerformance24h: number;
-    totalAssets: number;
-  };
-}
+const DEFAULT_PAGE_LIMIT = 20;
+const MAX_PAGE_LIMIT = 100;
 
 export default function AdminPortfolio() {
-  const [portfolios, setPortfolios] = useState<PortfolioOverview[]>([]);
+  // State
+  const [portfolioData, setPortfolioData] = useState<PortfolioResponse | null>(null);
   const [stats, setStats] = useState<PortfolioStats | null>(null);
-  const [metadata, setMetadata] = useState<Metadata | null>(null);
-  const [selectedPortfolio, setSelectedPortfolio] = useState<PortfolioDetails | null>(null);
   const [rebalanceHistory, setRebalanceHistory] = useState<RebalanceEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
   const [isRebalancing, setIsRebalancing] = useState(false);
-  const [rebalanceProgress, setRebalanceProgress] = useState(0);
-  const [currentRebalanceId, setCurrentRebalanceId] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-
-  // Table controls
-  const [filters, setFilters] = useState({
-    search: '',
-    sort: 'totalValue',
-    order: 'desc' as 'asc' | 'desc',
-    limit: 20,
-    offset: 0
-  });
-
+  const [error, setError] = useState<string | null>(null);
+  
+  // Pagination
+  const [limit, setLimit] = useState(DEFAULT_PAGE_LIMIT);
+  const [offset, setOffset] = useState(0);
+  
+  // Sorting
+  const [sortField, setSortField] = useState<keyof PortfolioRecord>('total_balance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  
   // Rebalance form
-  const [rebalanceForm, setRebalanceForm] = useState({
-    pricesJson: '{\n  "BTC": 43500.00,\n  "ETH": 2650.00,\n  "ADA": 0.48,\n  "SOL": 98.50\n}',
-    returnsJson: '{\n  "BTC": 0.028,\n  "ETH": 0.015,\n  "ADA": -0.005,\n  "SOL": 0.042\n}'
-  });
+  const [pricesJson, setPricesJson] = useState(`{
+  "BTC/USDT": 43500.00,
+  "ETH/USDT": 2650.00,
+  "ADA/USDT": 0.48,
+  "SOL/USDT": 98.50,
+  "MATIC/USDT": 0.85
+}`);
+  
+  const [returnsJson, setReturnsJson] = useState(`{
+  "BTC/USDT": [0.02, -0.01, 0.03, 0.015, -0.008],
+  "ETH/USDT": [0.015, 0.008, -0.012, 0.025, 0.002],
+  "ADA/USDT": [-0.005, 0.012, -0.008, 0.018, -0.003],
+  "SOL/USDT": [0.042, -0.015, 0.028, -0.005, 0.035],
+  "MATIC/USDT": [0.018, 0.002, -0.015, 0.012, 0.008]
+}`);
 
-  // Mock data
-  const mockPortfolios: PortfolioOverview[] = [
-    {
-      userId: "usr_001",
-      userName: "Alice Johnson",
-      email: "alice.johnson@example.com",
-      totalValue: 125000,
-      assetsCount: 8,
-      lastRebalanced: "2024-01-15T10:30:00Z",
-      performance24h: 0.0245,
-      performance7d: 0.082,
-      riskLevel: "medium"
-    },
-    {
-      userId: "usr_002",
-      userName: "Bob Smith",
-      email: "bob.smith@example.com",
-      totalValue: 87500,
-      assetsCount: 6,
-      lastRebalanced: "2024-01-14T15:45:00Z",
-      performance24h: -0.0123,
-      performance7d: 0.034,
-      riskLevel: "low"
-    },
-    {
-      userId: "usr_003",
-      userName: "Carol Davis",
-      email: "carol.davis@example.com",
-      totalValue: 245000,
-      assetsCount: 12,
-      lastRebalanced: "2024-01-16T09:15:00Z",
-      performance24h: 0.0456,
-      performance7d: 0.156,
-      riskLevel: "high"
-    },
-    {
-      userId: "usr_004",
-      userName: "David Wilson",
-      email: "david.wilson@example.com",
-      totalValue: 156000,
-      assetsCount: 9,
-      lastRebalanced: "2024-01-13T14:20:00Z",
-      performance24h: 0.0189,
-      performance7d: 0.067,
-      riskLevel: "medium"
-    },
-    {
-      userId: "usr_005",
-      userName: "Emma Brown",
-      email: "emma.brown@example.com",
-      totalValue: 98000,
-      assetsCount: 7,
-      lastRebalanced: "2024-01-15T11:45:00Z",
-      performance24h: -0.0067,
-      performance7d: 0.023,
-      riskLevel: "low"
-    }
-  ];
+  const [jsonErrors, setJsonErrors] = useState({ prices: '', returns: '' });
 
-  const mockStats: PortfolioStats = {
-    totalPortfolios: 47,
-    totalValue: 2850000,
-    avgPerformance24h: 0.0178,
-    avgPerformance7d: 0.064,
-    totalAssets: 425,
-    avgAssetsPerPortfolio: 9.04,
-    riskDistribution: {
-      low: 18,
-      medium: 22,
-      high: 7
-    },
-    needsRebalancing: 12,
-    lastGlobalRebalance: "2024-01-14T08:30:00Z"
-  };
+  // Update URL query parameters
+  const updateUrl = useCallback(() => {
+    const params = new URLSearchParams();
+    if (limit !== DEFAULT_PAGE_LIMIT) params.set('limit', limit.toString());
+    if (offset > 0) params.set('offset', offset.toString());
+    
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.pushState({}, '', newUrl);
+  }, [limit, offset]);
 
-  const mockHistory: RebalanceEvent[] = [
-    {
-      id: "rebal_001",
-      timestamp: "2024-01-16T10:30:00Z",
-      triggeredBy: "admin@example.com",
-      reason: "Scheduled weekly rebalance",
-      portfoliosAffected: 42,
-      totalValueRebalanced: 2650000,
-      status: "completed",
-      duration: 4500
-    },
-    {
-      id: "rebal_002",
-      timestamp: "2024-01-15T15:45:00Z",
-      triggeredBy: "system",
-      reason: "Market volatility threshold exceeded",
-      portfoliosAffected: 15,
-      totalValueRebalanced: 980000,
-      status: "completed",
-      duration: 2100
-    },
-    {
-      id: "rebal_003",
-      timestamp: "2024-01-14T09:15:00Z",
-      triggeredBy: "admin@example.com",
-      reason: "Manual rebalance - new asset allocation",
-      portfoliosAffected: 35,
-      totalValueRebalanced: 1850000,
-      status: "completed",
-      duration: 3800
-    },
-    {
-      id: "rebal_004",
-      timestamp: "2024-01-13T14:20:00Z",
-      triggeredBy: "system",
-      reason: "Risk threshold breach",
-      portfoliosAffected: 8,
-      totalValueRebalanced: 450000,
-      status: "failed",
-      duration: 1200
-    },
-    {
-      id: "rebal_005",
-      timestamp: "2024-01-12T11:00:00Z",
-      triggeredBy: "admin@example.com",
-      reason: "Quarterly strategy adjustment",
-      portfoliosAffected: 47,
-      totalValueRebalanced: 2800000,
-      status: "completed",
-      duration: 5200
-    }
-  ];
+  // Load URL query parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlLimit = params.get('limit');
+    const urlOffset = params.get('offset');
+    
+    if (urlLimit) setLimit(Math.min(parseInt(urlLimit) || DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT));
+    if (urlOffset) setOffset(Math.max(parseInt(urlOffset) || 0, 0));
+  }, []);
 
-  // Apply filters and return processed data
-  const processPortfolios = () => {
-    // Filter
-    let filteredPortfolios = mockPortfolios.filter(p =>
-      filters.search === '' ||
-      p.userName.toLowerCase().includes(filters.search.toLowerCase()) ||
-      p.email.toLowerCase().includes(filters.search.toLowerCase()) ||
-      p.userId.toLowerCase().includes(filters.search.toLowerCase())
-    );
+  // Fetch portfolio data
+  const fetchPortfolios = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const params = new URLSearchParams();
+      params.set('limit', limit.toString());
+      params.set('offset', offset.toString());
 
-    // Sort
-    filteredPortfolios.sort((a, b) => {
-      let aVal: any = a[filters.sort as keyof PortfolioOverview];
-      let bVal: any = b[filters.sort as keyof PortfolioOverview];
-
-      if (filters.order === 'asc') {
-        return aVal > bVal ? 1 : -1;
-      } else {
-        return aVal < bVal ? 1 : -1;
+      const response = await fetch(`/api/admin/portfolio?${params}`);
+      
+      if (response.status === 403) {
+        setError('Access denied - admin role required');
+        return;
       }
-    });
+      
+      if (response.status === 502) {
+        setError('Server unavailable - please try again');
+        return;
+      }
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
 
-    // Paginate
-    const total = filteredPortfolios.length;
-    const paginatedPortfolios = filteredPortfolios.slice(filters.offset, filters.offset + filters.limit);
+      const data: PortfolioResponse = await response.json();
+      setPortfolioData(data);
+      updateUrl();
+      
+    } catch (error) {
+      console.error('Failed to fetch portfolios:', error);
+      setError(error instanceof Error ? error.message : 'Failed to fetch portfolios');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [limit, offset, updateUrl]);
 
-    return {
-      portfolios: paginatedPortfolios,
-      metadata: {
-        total,
-        limit: filters.limit,
-        offset: filters.offset,
-        summary: {
-          totalPortfolios: total,
-          totalValue: mockPortfolios.reduce((sum, p) => sum + p.totalValue, 0),
-          avgPerformance24h: mockPortfolios.reduce((sum, p) => sum + p.performance24h, 0) / mockPortfolios.length,
-          totalAssets: mockPortfolios.reduce((sum, p) => sum + p.assetsCount, 0)
+  // Fetch portfolio statistics
+  const fetchStats = async () => {
+    try {
+      const response = await fetch('/api/admin/portfolio/stats');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          setStats(result.data);
         }
       }
-    };
+    } catch (error) {
+      console.error('Failed to fetch stats:', error);
+    }
   };
 
-  // Simple refresh function
-  const refreshData = () => {
-    const { portfolios: newPortfolios, metadata: newMetadata } = processPortfolios();
-    setPortfolios(newPortfolios);
-    setMetadata(newMetadata);
-    setStats(mockStats);
-    setRebalanceHistory(mockHistory);
+  // Fetch rebalance history
+  const fetchRebalanceHistory = async () => {
+    try {
+      const response = await fetch('/api/admin/portfolio/rebalance-history');
+      if (response.ok) {
+        const result = await response.json();
+        if (result.status === 'success') {
+          setRebalanceHistory(result.data);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch rebalance history:', error);
+    }
   };
 
   // Initial data load
   useEffect(() => {
-    const timer = setTimeout(() => {
-      refreshData();
-      setIsLoading(false);
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  // Handle filter changes
-  useEffect(() => {
-    const { portfolios: newPortfolios, metadata: newMetadata } = processPortfolios();
-    setPortfolios(newPortfolios);
-    setMetadata(newMetadata);
-  }, [filters.search, filters.sort, filters.order, filters.limit, filters.offset]);
-
-  // Handle row click to show details (mock data)
-  const handleRowClick = async (userId: string) => {
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Find the portfolio from our current data
-      const portfolio = portfolios.find(p => p.userId === userId);
-      if (!portfolio) return;
-
-      // Mock detailed portfolio data
-      const mockDetails: PortfolioDetails = {
-        userId: portfolio.userId,
-        userName: portfolio.userName,
-        email: portfolio.email,
-        totalValue: portfolio.totalValue,
-        assetsCount: portfolio.assetsCount,
-        lastRebalanced: portfolio.lastRebalanced,
-        performance24h: portfolio.performance24h,
-        performance7d: portfolio.performance7d,
-        performance30d: portfolio.performance7d * 1.8,
-        riskLevel: portfolio.riskLevel,
-        assets: [
-          {
-            symbol: "BTC",
-            name: "Bitcoin",
-            quantity: 2.5,
-            currentPrice: 43500,
-            value: 108750,
-            allocation: 0.35,
-            targetAllocation: 0.30,
-            performance24h: 0.0245,
-            lastUpdated: "2024-01-16T14:30:00Z"
-          },
-          {
-            symbol: "ETH",
-            name: "Ethereum",
-            quantity: 45.8,
-            currentPrice: 2650,
-            value: 121370,
-            allocation: 0.32,
-            targetAllocation: 0.35,
-            performance24h: 0.0189,
-            lastUpdated: "2024-01-16T14:30:00Z"
-          },
-          {
-            symbol: "ADA",
-            name: "Cardano",
-            quantity: 15000,
-            currentPrice: 0.48,
-            value: 7200,
-            allocation: 0.15,
-            targetAllocation: 0.15,
-            performance24h: -0.0123,
-            lastUpdated: "2024-01-16T14:30:00Z"
-          },
-          {
-            symbol: "SOL",
-            name: "Solana",
-            quantity: 180,
-            currentPrice: 98.5,
-            value: 17730,
-            allocation: 0.18,
-            targetAllocation: 0.20,
-            performance24h: 0.0456,
-            lastUpdated: "2024-01-16T14:30:00Z"
-          }
-        ],
-        rebalanceHistory: [
-          {
-            id: "rebal_usr_001",
-            timestamp: portfolio.lastRebalanced,
-            triggeredBy: "system",
-            reason: "Weekly rebalance",
-            portfoliosAffected: 1,
-            totalValueRebalanced: portfolio.totalValue,
-            status: "completed",
-            duration: 850
-          }
-        ]
-      };
-
-      setSelectedPortfolio(mockDetails);
-      setIsDetailsDialogOpen(true);
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch portfolio details",
-        variant: "destructive"
-      });
-    }
-  };
+    const loadData = async () => {
+      await Promise.all([
+        fetchPortfolios(),
+        fetchStats(), 
+        fetchRebalanceHistory()
+      ]);
+    };
+    loadData();
+  }, [fetchPortfolios]);
 
   // Handle sorting
-  const handleSort = (field: string) => {
-    setFilters(prev => ({
-      ...prev,
-      sort: field,
-      order: prev.sort === field && prev.order === 'desc' ? 'asc' : 'desc',
-      offset: 0
-    }));
-  };
-
-  // Handle search
-  const handleSearch = (search: string) => {
-    setFilters(prev => ({
-      ...prev,
-      search,
-      offset: 0
-    }));
+  const handleSort = (field: keyof PortfolioRecord) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'desc' ? 'asc' : 'desc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+    
+    // Sort current data
+    if (portfolioData) {
+      const sortedItems = [...portfolioData.items].sort((a, b) => {
+        const aVal = a[field];
+        const bVal = b[field];
+        
+        if (typeof aVal === 'string' && typeof bVal === 'string') {
+          return sortOrder === 'desc' 
+            ? bVal.localeCompare(aVal)
+            : aVal.localeCompare(bVal);
+        }
+        
+        if (typeof aVal === 'number' && typeof bVal === 'number') {
+          return sortOrder === 'desc' ? bVal - aVal : aVal - bVal;
+        }
+        
+        return 0;
+      });
+      
+      setPortfolioData({ ...portfolioData, items: sortedItems });
+    }
   };
 
   // Handle pagination
   const handlePagination = (direction: 'prev' | 'next') => {
-    if (direction === 'prev' && filters.offset > 0) {
-      setFilters(prev => ({ ...prev, offset: Math.max(0, prev.offset - prev.limit) }));
-    } else if (direction === 'next' && metadata && filters.offset + filters.limit < metadata.total) {
-      setFilters(prev => ({ ...prev, offset: prev.offset + prev.limit }));
+    if (direction === 'prev' && offset > 0) {
+      setOffset(Math.max(0, offset - limit));
+    } else if (direction === 'next' && portfolioData?.next !== null) {
+      setOffset(portfolioData.next);
     }
   };
 
-  // Handle global rebalance (mock simulation)
-  const handleGlobalRebalance = async () => {
-    // Validate JSON
+  // Validate JSON inputs
+  const validateJson = (jsonString: string, type: 'prices' | 'returns') => {
     try {
-      JSON.parse(rebalanceForm.pricesJson);
-      JSON.parse(rebalanceForm.returnsJson);
+      const parsed = JSON.parse(jsonString);
+      
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) {
+        throw new Error(`${type} must be an object`);
+      }
+      
+      if (type === 'prices') {
+        for (const [symbol, price] of Object.entries(parsed)) {
+          if (typeof price !== 'number' || price <= 0) {
+            throw new Error(`Invalid price for ${symbol}: must be a positive number`);
+          }
+        }
+      } else {
+        for (const [symbol, returns] of Object.entries(parsed)) {
+          if (!Array.isArray(returns)) {
+            throw new Error(`Invalid returns for ${symbol}: must be an array`);
+          }
+          for (const returnValue of returns) {
+            if (typeof returnValue !== 'number') {
+              throw new Error(`Invalid return value for ${symbol}: all values must be numbers`);
+            }
+          }
+        }
+      }
+      
+      setJsonErrors(prev => ({ ...prev, [type]: '' }));
+      return true;
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Invalid JSON format';
+      setJsonErrors(prev => ({ ...prev, [type]: errorMessage }));
+      return false;
+    }
+  };
+
+  // Handle rebalance
+  const handleRebalance = async () => {
+    // Validate both JSON inputs
+    const pricesValid = validateJson(pricesJson, 'prices');
+    const returnsValid = validateJson(returnsJson, 'returns');
+    
+    if (!pricesValid || !returnsValid) {
       toast({
-        title: "Invalid JSON",
-        description: "Please check your prices and returns JSON format",
+        title: "Validation Error",
+        description: "Please fix JSON validation errors before proceeding",
         variant: "destructive"
       });
       return;
     }
 
     setIsRebalancing(true);
-    setRebalanceProgress(0);
-
+    
     try {
-      // Mock rebalance response
-      const mockResponse = {
-        status: 'success',
-        data: {
-          rebalanceId: `rebal_${Date.now()}`,
-          portfoliosAffected: stats?.totalPortfolios || 47,
-          estimatedDuration: 5000
-        }
-      };
+      const response = await fetch('/api/admin/portfolio/rebalance', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prices: JSON.parse(pricesJson),
+          returns: JSON.parse(returnsJson),
+          actor: 'admin@example.com'
+        }),
+      });
 
-      setCurrentRebalanceId(mockResponse.data.rebalanceId);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        throw new Error(errorData.message || `HTTP ${response.status}`);
+      }
 
-      // Simulate progress updates
-      const progressInterval = setInterval(() => {
-        setRebalanceProgress(prev => {
-          if (prev >= 95) {
-            clearInterval(progressInterval);
-            return 95;
-          }
-          return prev + Math.random() * 15;
-        });
-      }, 500);
-
-      // Check for completion
-      setTimeout(async () => {
-        clearInterval(progressInterval);
-        setRebalanceProgress(100);
-
-        // Add new rebalance event to history
-        const newRebalanceEvent: RebalanceEvent = {
-          id: mockResponse.data.rebalanceId,
-          timestamp: new Date().toISOString(),
-          triggeredBy: "admin@example.com",
-          reason: "Manual global rebalance",
-          portfoliosAffected: mockResponse.data.portfoliosAffected,
-          totalValueRebalanced: stats?.totalValue || 2850000,
-          status: "completed",
-          duration: 5000
-        };
-
-        setRebalanceHistory(prev => [newRebalanceEvent, ...prev]);
-
-        // Refresh data
-        refreshData();
-
-        setIsRebalancing(false);
-        setRebalanceProgress(0);
-        setCurrentRebalanceId(null);
-
-        toast({
-          title: "Rebalance Complete",
-          description: `Successfully rebalanced ${mockResponse.data.portfoliosAffected} portfolios`,
-        });
-      }, 5000);
-
+      const result = await response.json();
+      
       toast({
         title: "Rebalance Started",
-        description: `Rebalancing ${mockResponse.data.portfoliosAffected} portfolios`,
+        description: `Rebalancing ${result.rebalanced} portfolios`,
       });
+      
+      // Refresh data after a delay
+      setTimeout(async () => {
+        await Promise.all([
+          fetchPortfolios(),
+          fetchStats(),
+          fetchRebalanceHistory()
+        ]);
+        
+        toast({
+          title: "Rebalance Complete",
+          description: `Successfully rebalanced ${result.rebalanced} portfolios`,
+        });
+      }, 3000);
+      
     } catch (error) {
-      setIsRebalancing(false);
-      setRebalanceProgress(0);
       toast({
         title: "Rebalance Failed",
         description: error instanceof Error ? error.message : "Failed to start rebalance",
         variant: "destructive"
       });
+    } finally {
+      setIsRebalancing(false);
     }
   };
 
@@ -586,37 +381,28 @@ export default function AdminPortfolio() {
     }).format(amount);
   };
 
-  const formatPercentage = (value: number) => {
-    const formatted = `${(value * 100).toFixed(2)}%`;
-    return value >= 0 ? `+${formatted}` : formatted;
+  const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('en-US').format(num);
   };
 
-  const getRiskBadge = (risk: string) => {
+  const getModeBadge = (mode: string) => {
     const variants = {
-      'low': { variant: 'outline' as const, color: 'text-green-600', bgColor: 'bg-green-50 border-green-200' },
-      'medium': { variant: 'outline' as const, color: 'text-yellow-600', bgColor: 'bg-yellow-50 border-yellow-200' },
-      'high': { variant: 'outline' as const, color: 'text-red-600', bgColor: 'bg-red-50 border-red-200' }
+      'live': { variant: 'default' as const, color: 'text-green-600' },
+      'demo': { variant: 'secondary' as const, color: 'text-blue-600' },
+      'paper': { variant: 'outline' as const, color: 'text-gray-600' }
     };
 
-    const config = variants[risk as keyof typeof variants];
+    const config = variants[mode as keyof typeof variants] || variants.paper;
     return (
-      <Badge variant={config.variant} className={`${config.bgColor} ${config.color} font-medium`}>
-        {risk.toUpperCase()}
+      <Badge variant={config.variant} className={`${config.color} font-medium`}>
+        {mode.toUpperCase()}
       </Badge>
     );
   };
 
-  const getPerformanceColor = (performance: number) => {
-    return performance >= 0 ? 'text-green-600' : 'text-red-600';
-  };
-
-  const getPerformanceIcon = (performance: number) => {
-    return performance >= 0 ? TrendingUp : TrendingDown;
-  };
-
-  const getSortIcon = (field: string) => {
-    if (filters.sort !== field) return null;
-    return filters.order === 'desc' ? 
+  const getSortIcon = (field: keyof PortfolioRecord) => {
+    if (sortField !== field) return null;
+    return sortOrder === 'desc' ? 
       <ChevronDown className="h-4 w-4" /> : 
       <ChevronUp className="h-4 w-4" />;
   };
@@ -639,12 +425,27 @@ export default function AdminPortfolio() {
     );
   };
 
-  if (isLoading) {
+  // Error handling
+  if (error) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-96">
-          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Portfolio Management</h1>
+            <p className="text-muted-foreground">Admin overview of all portfolios and rebalancing operations</p>
+          </div>
         </div>
+        
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Retry
+            </Button>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -655,39 +456,46 @@ export default function AdminPortfolio() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Portfolio Management</h1>
           <p className="text-muted-foreground">
-            Admin overview of all portfolios and rebalancing operations
+            Aggregated view of all user portfolios with system-wide rebalancing controls
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => {
-            setIsRefreshing(true);
-            setTimeout(() => {
-              refreshData();
-              setIsRefreshing(false);
-            }, 300);
-          }} disabled={isLoading || isRefreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Refreshing...' : 'Refresh'}
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              fetchPortfolios();
+              fetchStats();
+              fetchRebalanceHistory();
+            }}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
           </Button>
         </div>
       </div>
 
+      {/* Summary Bar */}
+      {portfolioData && (
+        <Alert>
+          <Briefcase className="h-4 w-4" />
+          <AlertDescription>
+            <div className="flex items-center justify-between">
+              <span>
+                <strong>Total Portfolios:</strong> {portfolioData.total} 
+                {stats && ` • ${stats.needsRebalancing} need rebalancing`}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Showing {offset + 1}-{Math.min(offset + limit, portfolioData.total)} of {portfolioData.total}
+              </span>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Statistics Cards */}
       {stats && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Portfolios</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPortfolios}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.needsRebalancing} need rebalancing
-              </p>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
@@ -696,35 +504,48 @@ export default function AdminPortfolio() {
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats.totalValue)}</div>
               <p className="text-xs text-muted-foreground">
-                Across all portfolios
+                Combined portfolio value
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Performance</CardTitle>
+              <CardTitle className="text-sm font-medium">USDT Balance</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className={`text-2xl font-bold ${getPerformanceColor(stats.avgPerformance24h)}`}>
-                {formatPercentage(stats.avgPerformance24h)}
-              </div>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalUsdtBalance)}</div>
               <p className="text-xs text-muted-foreground">
-                24h performance
+                Available for trading
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Assets</CardTitle>
-              <PieChart className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Hedged Balance</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAssets}</div>
+              <div className="text-2xl font-bold">{formatCurrency(stats.totalHedgedBalance)}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.avgAssetsPerPortfolio.toFixed(1)} avg per portfolio
+                Protected positions
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Portfolios</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.modeDistribution.live + stats.modeDistribution.demo}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.modeDistribution.live} live, {stats.modeDistribution.demo} demo
               </p>
             </CardContent>
           </Card>
@@ -732,178 +553,164 @@ export default function AdminPortfolio() {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Portfolio Overview Table */}
+        {/* Portfolios Overview Table */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Portfolio Overview</CardTitle>
-                  <CardDescription>
-                    Click on any row to view detailed portfolio information
-                  </CardDescription>
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search portfolios..."
-                    value={filters.search}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    className="pl-8 w-64"
-                  />
-                </div>
-              </div>
+              <CardTitle>Portfolios Overview</CardTitle>
+              <CardDescription>
+                Click column headers to sort. Use pagination controls to navigate.
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('userId')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>User ID</span>
-                          {getSortIcon('userId')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('userName')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>User Name</span>
-                          {getSortIcon('userName')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('totalValue')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Total Value</span>
-                          {getSortIcon('totalValue')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('assetsCount')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Assets</span>
-                          {getSortIcon('assetsCount')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('performance24h')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>24h Performance</span>
-                          {getSortIcon('performance24h')}
-                        </div>
-                      </TableHead>
-                      <TableHead 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => handleSort('lastRebalanced')}
-                      >
-                        <div className="flex items-center space-x-1">
-                          <span>Last Rebalanced</span>
-                          {getSortIcon('lastRebalanced')}
-                        </div>
-                      </TableHead>
-                      <TableHead>Risk</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {portfolios.length > 0 ? (
-                      portfolios.map((portfolio) => {
-                        const PerformanceIcon = getPerformanceIcon(portfolio.performance24h);
-                        return (
-                          <TableRow 
-                            key={portfolio.userId}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => handleRowClick(portfolio.userId)}
-                          >
-                            <TableCell className="font-mono text-sm">{portfolio.userId}</TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{portfolio.userName}</div>
-                                <div className="text-sm text-muted-foreground">{portfolio.email}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell className="font-bold">{formatCurrency(portfolio.totalValue)}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{portfolio.assetsCount}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className={`flex items-center space-x-1 ${getPerformanceColor(portfolio.performance24h)}`}>
-                                <PerformanceIcon className="h-4 w-4" />
-                                <span className="font-medium">{formatPercentage(portfolio.performance24h)}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-sm text-muted-foreground">
-                              {new Date(portfolio.lastRebalanced).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>{getRiskBadge(portfolio.riskLevel)}</TableCell>
-                          </TableRow>
-                        );
-                      })
-                    ) : (
-                      <TableRow>
-                        <TableCell colSpan={7} className="text-center py-8">
-                          <div className="text-muted-foreground">
-                            <Briefcase className="h-8 w-8 mx-auto mb-2" />
-                            <p>No portfolios found</p>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Pagination */}
-              {metadata && metadata.total > filters.limit && (
-                <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-muted-foreground">
-                    Showing {metadata.offset + 1}-{Math.min(metadata.offset + metadata.limit, metadata.total)} of {metadata.total} portfolios
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePagination('prev')}
-                      disabled={filters.offset === 0}
-                    >
-                      Previous
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePagination('next')}
-                      disabled={filters.offset + filters.limit >= metadata.total}
-                    >
-                      Next
-                    </Button>
-                  </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-48">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
-              )}
+              ) : portfolioData ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('id')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>ID</span>
+                              {getSortIcon('id')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('user_id')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>User ID</span>
+                              {getSortIcon('user_id')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('mode')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>Mode</span>
+                              {getSortIcon('mode')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('total_balance')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>Total Balance</span>
+                              {getSortIcon('total_balance')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('usdt_balance')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>USDT Balance</span>
+                              {getSortIcon('usdt_balance')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('hedged_balance')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>Hedged Balance</span>
+                              {getSortIcon('hedged_balance')}
+                            </div>
+                          </TableHead>
+                          <TableHead 
+                            className="cursor-pointer hover:bg-muted/50"
+                            onClick={() => handleSort('last_updated')}
+                          >
+                            <div className="flex items-center space-x-1">
+                              <span>Last Updated</span>
+                              {getSortIcon('last_updated')}
+                            </div>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {portfolioData.items.length > 0 ? (
+                          portfolioData.items.map((portfolio) => (
+                            <TableRow key={portfolio.id} className="hover:bg-muted/50">
+                              <TableCell className="font-mono text-sm">{portfolio.id}</TableCell>
+                              <TableCell className="font-mono text-sm">{portfolio.user_id}</TableCell>
+                              <TableCell>{getModeBadge(portfolio.mode)}</TableCell>
+                              <TableCell className="font-bold">{formatCurrency(portfolio.total_balance)}</TableCell>
+                              <TableCell>{formatCurrency(portfolio.usdt_balance)}</TableCell>
+                              <TableCell>{formatCurrency(portfolio.hedged_balance)}</TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {new Date(portfolio.last_updated).toLocaleString()}
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                <Briefcase className="h-8 w-8 mx-auto mb-2" />
+                                <p>No portfolios found</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Pagination Controls */}
+                  {portfolioData.total > limit && (
+                    <div className="flex items-center justify-between">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {offset + 1}-{Math.min(offset + limit, portfolioData.total)} of {portfolioData.total}
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePagination('prev')}
+                          disabled={offset === 0}
+                        >
+                          <ArrowUp className="h-4 w-4 mr-1" />
+                          Previous
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handlePagination('next')}
+                          disabled={portfolioData.next === null}
+                        >
+                          Next
+                          <ArrowDown className="h-4 w-4 ml-1" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
         </div>
 
-        {/* Rebalance Panel */}
+        {/* Rebalance Controls */}
         <div className="space-y-4">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Target className="h-5 w-5" />
-                <span>Global Rebalance</span>
+                <span>Rebalance Controls</span>
               </CardTitle>
               <CardDescription>
-                Trigger system-wide portfolio rebalancing
+                Trigger system-wide portfolio rebalancing with current market data
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -912,43 +719,63 @@ export default function AdminPortfolio() {
                   <Activity className="h-4 w-4" />
                   <AlertDescription>
                     <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span>Rebalancing in progress...</span>
-                        <span className="text-sm">{Math.round(rebalanceProgress)}%</span>
-                      </div>
-                      <Progress value={rebalanceProgress} className="w-full" />
+                      <div>Rebalancing in progress...</div>
+                      <Progress value={75} className="w-full" />
                     </div>
                   </AlertDescription>
                 </Alert>
               )}
 
-              <div>
-                <Label htmlFor="pricesJson">Prices JSON</Label>
+              <div className="space-y-2">
+                <Label htmlFor="pricesJson">Prices JSON Input</Label>
                 <Textarea
                   id="pricesJson"
-                  placeholder="Enter current asset prices..."
-                  value={rebalanceForm.pricesJson}
-                  onChange={(e) => setRebalanceForm(prev => ({ ...prev, pricesJson: e.target.value }))}
+                  placeholder="Enter asset prices as JSON object..."
+                  value={pricesJson}
+                  onChange={(e) => {
+                    setPricesJson(e.target.value);
+                    if (jsonErrors.prices) validateJson(e.target.value, 'prices');
+                  }}
+                  onBlur={() => validateJson(pricesJson, 'prices')}
                   rows={6}
-                  className="font-mono text-sm"
+                  className={`font-mono text-sm ${jsonErrors.prices ? 'border-red-500' : ''}`}
                 />
+                {jsonErrors.prices && (
+                  <p className="text-xs text-red-500">{jsonErrors.prices}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Format: {"{"}"SYMBOL/USDT": price, ...{"}"}
+                </p>
               </div>
 
-              <div>
-                <Label htmlFor="returnsJson">Returns JSON</Label>
+              <div className="space-y-2">
+                <Label htmlFor="returnsJson">Returns JSON Input</Label>
                 <Textarea
                   id="returnsJson"
-                  placeholder="Enter expected returns..."
-                  value={rebalanceForm.returnsJson}
-                  onChange={(e) => setRebalanceForm(prev => ({ ...prev, returnsJson: e.target.value }))}
+                  placeholder="Enter historical returns as JSON object..."
+                  value={returnsJson}
+                  onChange={(e) => {
+                    setReturnsJson(e.target.value);
+                    if (jsonErrors.returns) validateJson(e.target.value, 'returns');
+                  }}
+                  onBlur={() => validateJson(returnsJson, 'returns')}
                   rows={6}
-                  className="font-mono text-sm"
+                  className={`font-mono text-sm ${jsonErrors.returns ? 'border-red-500' : ''}`}
                 />
+                {jsonErrors.returns && (
+                  <p className="text-xs text-red-500">{jsonErrors.returns}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Format: {"{"}"SYMBOL/USDT": [return1, return2, ...], ...{"}"}
+                </p>
               </div>
 
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button className="w-full" disabled={isRebalancing}>
+                  <Button 
+                    className="w-full" 
+                    disabled={isRebalancing || !!jsonErrors.prices || !!jsonErrors.returns}
+                  >
                     {isRebalancing ? (
                       <>
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
@@ -957,23 +784,22 @@ export default function AdminPortfolio() {
                     ) : (
                       <>
                         <Target className="h-4 w-4 mr-2" />
-                        Rebalance All Portfolios
+                        Rebalance Portfolios
                       </>
                     )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Global Rebalance</AlertDialogTitle>
+                    <AlertDialogTitle>Confirm System-Wide Rebalance</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will trigger a rebalance across all portfolios using the provided prices and returns data. 
-                      This action cannot be undone and may take several minutes to complete.
+                      This will trigger a rebalance across all active portfolios using the provided prices and returns data. 
+                      This action cannot be undone.
                       {stats && (
                         <div className="mt-4 p-3 bg-muted rounded-lg">
                           <div className="text-sm space-y-1">
-                            <div><strong>Portfolios to rebalance:</strong> {stats.totalPortfolios}</div>
+                            <div><strong>Active portfolios:</strong> {stats.modeDistribution.live + stats.modeDistribution.demo}</div>
                             <div><strong>Total value:</strong> {formatCurrency(stats.totalValue)}</div>
-                            <div><strong>Estimated duration:</strong> 5-10 minutes</div>
                           </div>
                         </div>
                       )}
@@ -981,7 +807,7 @@ export default function AdminPortfolio() {
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleGlobalRebalance}>
+                    <AlertDialogAction onClick={handleRebalance}>
                       Confirm Rebalance
                     </AlertDialogAction>
                   </AlertDialogFooter>
@@ -990,7 +816,7 @@ export default function AdminPortfolio() {
             </CardContent>
           </Card>
 
-          {/* Rebalance History */}
+          {/* Recent Rebalances */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -998,7 +824,7 @@ export default function AdminPortfolio() {
                 <span>Recent Rebalances</span>
               </CardTitle>
               <CardDescription>
-                History of global rebalance operations
+                History of recent rebalancing operations
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -1011,18 +837,10 @@ export default function AdminPortfolio() {
                         {getStatusBadge(event.status)}
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                        <div>
-                          <span>Portfolios:</span> {event.portfoliosAffected}
-                        </div>
-                        <div>
-                          <span>Value:</span> {formatCurrency(event.totalValueRebalanced)}
-                        </div>
-                        <div>
-                          <span>By:</span> {event.triggeredBy}
-                        </div>
-                        <div>
-                          <span>Duration:</span> {event.duration ? `${(event.duration / 1000).toFixed(1)}s` : 'N/A'}
-                        </div>
+                        <div>Portfolios: {event.portfoliosAffected}</div>
+                        <div>Value: {formatCurrency(event.totalValueRebalanced)}</div>
+                        <div>By: {event.triggeredBy}</div>
+                        <div>Duration: {event.duration ? `${(event.duration / 1000).toFixed(1)}s` : 'N/A'}</div>
                       </div>
                       <div className="text-xs text-muted-foreground mt-2">
                         {new Date(event.timestamp).toLocaleString()}
@@ -1032,7 +850,7 @@ export default function AdminPortfolio() {
                 ) : (
                   <div className="text-center py-4 text-muted-foreground">
                     <Clock className="h-8 w-8 mx-auto mb-2" />
-                    <p>No rebalance history</p>
+                    <p>No recent rebalances</p>
                   </div>
                 )}
               </div>
@@ -1040,102 +858,6 @@ export default function AdminPortfolio() {
           </Card>
         </div>
       </div>
-
-      {/* Portfolio Details Dialog */}
-      <Dialog open={isDetailsDialogOpen} onOpenChange={setIsDetailsDialogOpen}>
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Portfolio Details</DialogTitle>
-            <DialogDescription>
-              Detailed view of {selectedPortfolio?.userName}'s portfolio
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedPortfolio && (
-            <div className="space-y-6">
-              {/* Portfolio Summary */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{formatCurrency(selectedPortfolio.totalValue)}</div>
-                  <div className="text-sm text-muted-foreground">Total Value</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">{selectedPortfolio.assetsCount}</div>
-                  <div className="text-sm text-muted-foreground">Assets</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${getPerformanceColor(selectedPortfolio.performance24h)}`}>
-                    {formatPercentage(selectedPortfolio.performance24h)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">24h Performance</div>
-                </div>
-                <div className="text-center">
-                  <div className={`text-2xl font-bold ${getPerformanceColor(selectedPortfolio.performance7d)}`}>
-                    {formatPercentage(selectedPortfolio.performance7d)}
-                  </div>
-                  <div className="text-sm text-muted-foreground">7d Performance</div>
-                </div>
-              </div>
-
-              {/* Assets Table */}
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Asset Allocation</h3>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Quantity</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Value</TableHead>
-                        <TableHead>Current %</TableHead>
-                        <TableHead>Target %</TableHead>
-                        <TableHead>24h Performance</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedPortfolio.assets.map((asset) => {
-                        const PerformanceIcon = getPerformanceIcon(asset.performance24h);
-                        return (
-                          <TableRow key={asset.symbol}>
-                            <TableCell>
-                              <div>
-                                <div className="font-medium">{asset.symbol}</div>
-                                <div className="text-sm text-muted-foreground">{asset.name}</div>
-                              </div>
-                            </TableCell>
-                            <TableCell>{asset.quantity.toFixed(6)}</TableCell>
-                            <TableCell>{formatCurrency(asset.currentPrice)}</TableCell>
-                            <TableCell className="font-medium">{formatCurrency(asset.value)}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{(asset.allocation * 100).toFixed(1)}%</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">{(asset.targetAllocation * 100).toFixed(1)}%</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <div className={`flex items-center space-x-1 ${getPerformanceColor(asset.performance24h)}`}>
-                                <PerformanceIcon className="h-4 w-4" />
-                                <span>{formatPercentage(asset.performance24h)}</span>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </div>
-          )}
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDetailsDialogOpen(false)}>
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
