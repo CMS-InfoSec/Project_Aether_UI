@@ -19,7 +19,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
   TrendingUp,
@@ -33,25 +38,38 @@ import {
   Activity,
   Database,
   Clock,
-  ExternalLink,
+  Copy,
   AlertCircle,
   CheckCircle,
   Eye,
-  XCircle
+  XCircle,
+  Shield,
+  Ban,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
-// Types
-interface MarketData {
+// Types matching specification
+interface MarketItem {
   symbol: string;
   cap_usd: number;
-  volatility: number;
+  realized_vol: number;
+  status: 'active' | 'inactive' | 'delisted' | 'monitoring';
   profitability: number;
   volume: number;
-  last_updated: string;
-  created_at: string;
-  data_source: string;
-  status: 'active' | 'inactive' | 'delisted' | 'monitoring';
+  last_validated: string;
+  last_refreshed: string;
+  source: string;
+  override: 'allow' | 'block' | null;
+}
+
+interface MarketResponse {
+  total: number;
+  items: MarketItem[];
+  next: number | null;
+  last_refreshed: string;
+  source: string;
 }
 
 interface MarketStats {
@@ -61,128 +79,167 @@ interface MarketStats {
   inactive_markets: number;
   delisted_markets: number;
   avg_profitability: number;
-  avg_volatility: number;
+  avg_realized_vol: number;
   total_volume: number;
   total_market_cap: number;
 }
 
 interface Filters {
-  status: string[];
+  status: string;
   min_profitability: string;
   min_volume: string;
   sort: string;
-  order: 'asc' | 'desc';
   limit: number;
   offset: number;
 }
 
-interface Metadata {
-  total: number;
-  limit: number;
-  offset: number;
-  last_refreshed: string;
-  sources: string;
-}
+const DEFAULT_PAGE_LIMIT = 25;
+const MAX_PAGE_LIMIT = 100;
 
 export default function AdminMarkets() {
-  const [markets, setMarkets] = useState<MarketData[]>([]);
+  // State
+  const [marketData, setMarketData] = useState<MarketResponse | null>(null);
   const [stats, setStats] = useState<MarketStats | null>(null);
-  const [metadata, setMetadata] = useState<Metadata | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [profitabilityThreshold, setProfitabilityThreshold] = useState(0.05);
+  
+  // Filters state
   const [filters, setFilters] = useState<Filters>({
-    status: ['active'],
+    status: '',
     min_profitability: '',
     min_volume: '',
-    sort: 'profitability',
-    order: 'desc',
-    limit: 50,
+    sort: 'symbol',
+    limit: DEFAULT_PAGE_LIMIT,
     offset: 0
   });
-  const [isFilterPanelOpen, setIsFilterPanelOpen] = useState(true);
 
-  // Status options
+  // Form state for filter panel
+  const [filterForm, setFilterForm] = useState<Filters>({
+    status: '',
+    min_profitability: '',
+    min_volume: '',
+    sort: 'symbol',
+    limit: DEFAULT_PAGE_LIMIT,
+    offset: 0
+  });
+
+  // Status and sort options
   const statusOptions = [
+    { value: '', label: 'All Statuses' },
     { value: 'active', label: 'Active', icon: CheckCircle, color: 'text-green-600' },
     { value: 'monitoring', label: 'Monitoring', icon: Eye, color: 'text-yellow-600' },
     { value: 'inactive', label: 'Inactive', icon: AlertCircle, color: 'text-gray-600' },
     { value: 'delisted', label: 'Delisted', icon: XCircle, color: 'text-red-600' }
   ];
 
-  // Sort options
   const sortOptions = [
     { value: 'symbol', label: 'Symbol' },
     { value: 'cap_usd', label: 'Market Cap' },
-    { value: 'volatility', label: 'Volatility' },
+    { value: 'realized_vol', label: 'Realized Volatility' },
+    { value: 'status', label: 'Status' },
     { value: 'profitability', label: 'Profitability' },
-    { value: 'volume', label: 'Volume' },
-    { value: 'last_updated', label: 'Last Updated' }
+    { value: 'volume', label: 'Volume' }
   ];
 
-  // Load filters from localStorage
+  // Load/save filters from URL query parameters
   useEffect(() => {
-    const savedFilters = localStorage.getItem('market-filters');
-    if (savedFilters) {
-      try {
-        const parsed = JSON.parse(savedFilters);
-        setFilters(prev => ({ ...prev, ...parsed }));
-      } catch (error) {
-        console.error('Failed to parse saved filters:', error);
-      }
+    const params = new URLSearchParams(window.location.search);
+    const urlFilters: Partial<Filters> = {};
+    
+    if (params.get('status')) urlFilters.status = params.get('status')!;
+    if (params.get('min_profitability')) urlFilters.min_profitability = params.get('min_profitability')!;
+    if (params.get('min_volume')) urlFilters.min_volume = params.get('min_volume')!;
+    if (params.get('sort')) urlFilters.sort = params.get('sort')!;
+    if (params.get('limit')) urlFilters.limit = parseInt(params.get('limit')!) || DEFAULT_PAGE_LIMIT;
+    if (params.get('offset')) urlFilters.offset = parseInt(params.get('offset')!) || 0;
+
+    if (Object.keys(urlFilters).length > 0) {
+      setFilters(prev => ({ ...prev, ...urlFilters }));
+      setFilterForm(prev => ({ ...prev, ...urlFilters }));
     }
   }, []);
 
-  // Save filters to localStorage
-  useEffect(() => {
-    localStorage.setItem('market-filters', JSON.stringify(filters));
-  }, [filters]);
+  // Update URL when filters change
+  const updateUrl = useCallback((newFilters: Filters) => {
+    const params = new URLSearchParams();
+    
+    if (newFilters.status) params.set('status', newFilters.status);
+    if (newFilters.min_profitability) params.set('min_profitability', newFilters.min_profitability);
+    if (newFilters.min_volume) params.set('min_volume', newFilters.min_volume);
+    if (newFilters.sort !== 'symbol') params.set('sort', newFilters.sort);
+    if (newFilters.limit !== DEFAULT_PAGE_LIMIT) params.set('limit', newFilters.limit.toString());
+    if (newFilters.offset > 0) params.set('offset', newFilters.offset.toString());
+
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.pushState({}, '', newUrl);
+  }, []);
 
   // Fetch market data
-  const fetchMarkets = useCallback(async () => {
+  const fetchMarkets = useCallback(async (currentFilters: Filters) => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
       const params = new URLSearchParams();
       
-      if (filters.status.length > 0) {
-        params.append('status', filters.status.join(','));
-      }
-      if (filters.min_profitability) {
-        params.append('min_profitability', filters.min_profitability);
-      }
-      if (filters.min_volume) {
-        params.append('min_volume', filters.min_volume);
-      }
-      params.append('sort', filters.sort);
-      params.append('order', filters.order);
-      params.append('limit', filters.limit.toString());
-      params.append('offset', filters.offset.toString());
+      if (currentFilters.status) params.append('status', currentFilters.status);
+      if (currentFilters.min_profitability) params.append('min_profitability', currentFilters.min_profitability);
+      if (currentFilters.min_volume) params.append('min_volume', currentFilters.min_volume);
+      params.append('sort', currentFilters.sort);
+      params.append('limit', currentFilters.limit.toString());
+      params.append('offset', currentFilters.offset.toString());
 
       const response = await fetch(`/api/markets/eligible?${params}`);
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        setMarkets(data.data);
-        setMetadata(data.metadata);
-      } else {
-        throw new Error(data.message || 'Failed to fetch markets');
+      
+      if (response.status === 401) {
+        throw new Error('Unauthorized - please login');
       }
+      
+      if (response.status === 403) {
+        throw new Error('Forbidden - admin access required');
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+
+      const data: MarketResponse = await response.json();
+      setMarketData(data);
+      updateUrl(currentFilters);
+      
     } catch (error) {
       console.error('Failed to fetch markets:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to fetch market data",
-        variant: "destructive"
-      });
+      setError(error instanceof Error ? error.message : 'Failed to fetch market data');
+      
+      // Handle unauthorized/forbidden errors
+      if (error instanceof Error) {
+        if (error.message.includes('Unauthorized')) {
+          // Redirect to login
+          window.location.href = '/login';
+          return;
+        }
+        if (error.message.includes('Forbidden')) {
+          // Redirect to dashboard
+          window.location.href = '/dashboard';
+          return;
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
-  }, [filters]);
+  }, [updateUrl]);
 
   // Fetch market statistics
   const fetchStats = async () => {
     try {
       const response = await fetch('/api/markets/stats');
-      const data = await response.json();
-
-      if (data.status === 'success') {
-        setStats(data.data);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === 'success') {
+          setStats(data.data);
+        }
       }
     } catch (error) {
       console.error('Failed to fetch stats:', error);
@@ -192,78 +249,99 @@ export default function AdminMarkets() {
   // Initial data load
   useEffect(() => {
     const loadData = async () => {
-      setIsLoading(true);
-      await Promise.all([fetchMarkets(), fetchStats()]);
-      setIsLoading(false);
+      await Promise.all([fetchMarkets(filters), fetchStats()]);
     };
     loadData();
-  }, [fetchMarkets]);
+  }, [filters, fetchMarkets]);
 
-  // Handle filter changes
-  const updateFilter = (key: keyof Filters, value: any) => {
-    setFilters(prev => ({
-      ...prev,
-      [key]: value,
-      offset: key !== 'offset' ? 0 : value // Reset to first page when changing filters
-    }));
+  // Apply filters
+  const handleApplyFilters = () => {
+    // Validate limit
+    const validLimit = Math.min(Math.max(1, filterForm.limit), MAX_PAGE_LIMIT);
+    const newFilters = { ...filterForm, limit: validLimit, offset: 0 };
+    setFilters(newFilters);
   };
 
-  // Handle status filter toggle
-  const toggleStatus = (status: string) => {
-    setFilters(prev => ({
-      ...prev,
-      status: prev.status.includes(status)
-        ? prev.status.filter(s => s !== status)
-        : [...prev.status, status],
+  // Reset filters
+  const handleResetFilters = () => {
+    const defaultFilters: Filters = {
+      status: '',
+      min_profitability: '',
+      min_volume: '',
+      sort: 'symbol',
+      limit: DEFAULT_PAGE_LIMIT,
       offset: 0
-    }));
-  };
-
-  // Handle sorting
-  const handleSort = (field: string) => {
-    setFilters(prev => ({
-      ...prev,
-      sort: field,
-      order: prev.sort === field && prev.order === 'desc' ? 'asc' : 'desc',
-      offset: 0
-    }));
+    };
+    setFilterForm(defaultFilters);
+    setFilters(defaultFilters);
   };
 
   // Handle pagination
   const handlePagination = (direction: 'prev' | 'next') => {
     if (direction === 'prev' && filters.offset > 0) {
-      updateFilter('offset', Math.max(0, filters.offset - filters.limit));
-    } else if (direction === 'next' && metadata && filters.offset + filters.limit < metadata.total) {
-      updateFilter('offset', filters.offset + filters.limit);
+      const newFilters = { ...filters, offset: Math.max(0, filters.offset - filters.limit) };
+      setFilters(newFilters);
+    } else if (direction === 'next' && marketData?.next !== null) {
+      const newFilters = { ...filters, offset: marketData.next };
+      setFilters(newFilters);
     }
   };
 
-  // Export to CSV
+  // Export to CSV (client-side conversion as specified)
   const handleExport = async () => {
     setIsExporting(true);
     try {
       const params = new URLSearchParams();
       
-      if (filters.status.length > 0) {
-        params.append('status', filters.status.join(','));
-      }
-      if (filters.min_profitability) {
-        params.append('min_profitability', filters.min_profitability);
-      }
-      if (filters.min_volume) {
-        params.append('min_volume', filters.min_volume);
-      }
+      if (filters.status) params.append('status', filters.status);
+      if (filters.min_profitability) params.append('min_profitability', filters.min_profitability);
+      if (filters.min_volume) params.append('min_volume', filters.min_volume);
       params.append('sort', filters.sort);
-      params.append('order', filters.order);
 
       const response = await fetch(`/api/markets/export?${params}`);
       
-      if (response.ok) {
-        const blob = await response.blob();
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        // Client-side CSV conversion as specified
+        const csvHeaders = [
+          'Symbol',
+          'Market Cap (USD)',
+          'Realized Volatility',
+          'Status',
+          'Profitability',
+          'Volume',
+          'Last Validated',
+          'Last Refreshed',
+          'Source',
+          'Override'
+        ].join(',');
+
+        const csvRows = data.data.map((item: MarketItem) => [
+          item.symbol,
+          item.cap_usd,
+          item.realized_vol,
+          item.status,
+          item.profitability,
+          item.volume,
+          item.last_validated,
+          item.last_refreshed,
+          item.source,
+          item.override || ''
+        ].join(','));
+
+        const csvContent = [csvHeaders, ...csvRows].join('\n');
+        
+        // Download CSV
+        const blob = new Blob([csvContent], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = response.headers.get('Content-Disposition')?.split('filename=')[1]?.replace(/"/g, '') || 'markets.csv';
+        a.download = 'eligible_markets.csv';
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
@@ -274,7 +352,7 @@ export default function AdminMarkets() {
           description: "Market data exported to CSV",
         });
       } else {
-        throw new Error('Export failed');
+        throw new Error(data.message || 'Export failed');
       }
     } catch (error) {
       toast({
@@ -287,17 +365,21 @@ export default function AdminMarkets() {
     }
   };
 
-  // Clear all filters
-  const clearFilters = () => {
-    setFilters({
-      status: ['active'],
-      min_profitability: '',
-      min_volume: '',
-      sort: 'profitability',
-      order: 'desc',
-      limit: 50,
-      offset: 0
-    });
+  // Copy symbol to clipboard
+  const copySymbolToClipboard = async (symbol: string) => {
+    try {
+      await navigator.clipboard.writeText(symbol);
+      toast({
+        title: "Copied",
+        description: `${symbol} copied to clipboard`,
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive"
+      });
+    }
   };
 
   // Utility functions
@@ -311,10 +393,7 @@ export default function AdminMarkets() {
   };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('en-US', {
-      notation: 'compact',
-      maximumFractionDigits: 2
-    }).format(num);
+    return new Intl.NumberFormat('en-US').format(num);
   };
 
   const formatPercentage = (value: number) => {
@@ -323,7 +402,7 @@ export default function AdminMarkets() {
 
   const getStatusBadge = (status: string) => {
     const config = statusOptions.find(opt => opt.value === status);
-    if (!config) return null;
+    if (!config || !config.icon) return <Badge variant="secondary">{status}</Badge>;
 
     const Icon = config.icon;
     return (
@@ -334,178 +413,187 @@ export default function AdminMarkets() {
     );
   };
 
-  const getSortIcon = (field: string) => {
-    if (filters.sort !== field) return null;
-    return filters.order === 'desc' ? 
-      <ChevronDown className="h-4 w-4" /> : 
-      <ChevronUp className="h-4 w-4" />;
+  const getOverrideBadge = (override: 'allow' | 'block' | null) => {
+    if (!override) return null;
+    
+    return override === 'allow' ? (
+      <Badge variant="default" className="flex items-center space-x-1">
+        <Shield className="h-3 w-3" />
+        <span>Allow</span>
+      </Badge>
+    ) : (
+      <Badge variant="destructive" className="flex items-center space-x-1">
+        <Ban className="h-3 w-3" />
+        <span>Block</span>
+      </Badge>
+    );
   };
 
-  if (isLoading) {
+  const isRecentlyValidated = (timestamp: string) => {
+    const validatedTime = new Date(timestamp).getTime();
+    const now = Date.now();
+    return (now - validatedTime) < 24 * 60 * 60 * 1000; // Less than 24 hours
+  };
+
+  // Error handling
+  if (error && (error.includes('Unauthorized') || error.includes('Forbidden'))) {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-96">
-          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {error.includes('Unauthorized') && 'Unauthorized - please login.'}
+            {error.includes('Forbidden') && 'Forbidden - admin access required.'}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Market Eligibility</h1>
-          <p className="text-muted-foreground">
-            Monitor eligible markets with filtering and sorting capabilities
-          </p>
+    <TooltipProvider>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Market Eligibility</h1>
+            <p className="text-muted-foreground">
+              Review, filter, and export eligible market pairs (USDT quote, ≥ $200M market cap)
+            </p>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button variant="outline" onClick={() => fetchMarkets(filters)}>
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Refresh
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" onClick={() => setIsFilterPanelOpen(!isFilterPanelOpen)}>
-            <Filter className="h-4 w-4 mr-2" />
-            {isFilterPanelOpen ? 'Hide' : 'Show'} Filters
-          </Button>
-          <Button variant="outline" onClick={fetchMarkets}>
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Refresh
-          </Button>
-          <Button onClick={handleExport} disabled={isExporting}>
-            {isExporting ? (
-              <>
-                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                Exporting...
-              </>
-            ) : (
-              <>
-                <Download className="h-4 w-4 mr-2" />
-                Export CSV
-              </>
-            )}
-          </Button>
-        </div>
-      </div>
 
-      {/* Statistics Cards */}
-      {stats && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Markets</CardTitle>
-              <Database className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total_markets}</div>
-              <p className="text-xs text-muted-foreground">
-                {stats.active_markets} active
-              </p>
-            </CardContent>
-          </Card>
+        {/* Statistics Cards */}
+        {stats && (
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Markets</CardTitle>
+                <Database className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.total_markets}</div>
+                <p className="text-xs text-muted-foreground">
+                  {stats.active_markets} active
+                </p>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg Profitability</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-accent">
-                {formatPercentage(stats.avg_profitability)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Average across all markets
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.total_volume)}</div>
-              <p className="text-xs text-muted-foreground">
-                24h trading volume
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Market Cap</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatCurrency(stats.total_market_cap)}</div>
-              <p className="text-xs text-muted-foreground">
-                Combined market cap
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Header Metadata */}
-      {metadata && (
-        <Alert>
-          <Clock className="h-4 w-4" />
-          <AlertDescription>
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="text-sm">
-                  <strong>Last Refreshed:</strong> {new Date(metadata.last_refreshed).toLocaleString()}
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Avg Profitability</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-accent">
+                  {formatPercentage(stats.avg_profitability)}
                 </div>
-                <div className="text-sm">
-                  <strong>Data Sources:</strong> {metadata.sources}
-                </div>
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Showing {metadata.offset + 1}-{Math.min(metadata.offset + metadata.limit, metadata.total)} of {metadata.total} markets
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
+                <p className="text-xs text-muted-foreground">
+                  Average across all markets
+                </p>
+              </CardContent>
+            </Card>
 
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Filter Panel */}
-        {isFilterPanelOpen && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Volume</CardTitle>
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.total_volume)}</div>
+                <p className="text-xs text-muted-foreground">
+                  24h trading volume
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Market Cap</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(stats.total_market_cap)}</div>
+                <p className="text-xs text-muted-foreground">
+                  Combined market cap
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Results Header */}
+        {marketData && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <div className="text-sm">
+                    <strong>Last Refreshed:</strong> {new Date(marketData.last_refreshed).toLocaleString()}
+                  </div>
+                  <div className="text-sm">
+                    <strong>Data Source:</strong> {marketData.source}
+                  </div>
+                </div>
+                <Button onClick={handleExport} disabled={isExporting}>
+                  {isExporting ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export CSV
+                    </>
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-4">
+          {/* Filter Panel */}
           <Card className="lg:col-span-1">
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Filter className="h-5 w-5" />
-                <span>Filters</span>
+                <span>Filter Panel</span>
               </CardTitle>
               <CardDescription>
-                Filter markets by status and performance metrics
+                Filter markets by eligibility criteria
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Status Filter */}
+              {/* Status Dropdown */}
               <div>
-                <Label className="text-sm font-medium">Status</Label>
-                <div className="space-y-2 mt-2">
-                  {statusOptions.map((option) => {
-                    const Icon = option.icon;
-                    return (
-                      <div key={option.value} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={option.value}
-                          checked={filters.status.includes(option.value)}
-                          onCheckedChange={() => toggleStatus(option.value)}
-                        />
-                        <Label htmlFor={option.value} className="flex items-center space-x-2 text-sm cursor-pointer">
-                          <Icon className={`h-3 w-3 ${option.color}`} />
-                          <span>{option.label}</span>
-                        </Label>
-                      </div>
-                    );
-                  })}
-                </div>
+                <Label>Status</Label>
+                <Select 
+                  value={filterForm.status} 
+                  onValueChange={(value) => setFilterForm(prev => ({ ...prev, status: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Min Profitability */}
               <div>
-                <Label htmlFor="minProf">Min Profitability (%)</Label>
+                <Label htmlFor="minProf">Min Profitability</Label>
                 <Input
                   id="minProf"
                   type="number"
@@ -513,214 +601,236 @@ export default function AdminMarkets() {
                   min="0"
                   max="1"
                   placeholder="0.05"
-                  value={filters.min_profitability}
-                  onChange={(e) => updateFilter('min_profitability', e.target.value)}
+                  value={filterForm.min_profitability}
+                  onChange={(e) => setFilterForm(prev => ({ ...prev, min_profitability: e.target.value }))}
                 />
               </div>
 
               {/* Min Volume */}
               <div>
-                <Label htmlFor="minVol">Min Volume (USD)</Label>
+                <Label htmlFor="minVol">Min Volume</Label>
                 <Input
                   id="minVol"
                   type="number"
                   step="1000000"
                   min="0"
                   placeholder="1000000000"
-                  value={filters.min_volume}
-                  onChange={(e) => updateFilter('min_volume', e.target.value)}
+                  value={filterForm.min_volume}
+                  onChange={(e) => setFilterForm(prev => ({ ...prev, min_volume: e.target.value }))}
                 />
               </div>
 
-              {/* Sort Options */}
+              {/* Sort By */}
               <div>
                 <Label>Sort By</Label>
-                <div className="space-y-2 mt-2">
-                  <Select value={filters.sort} onValueChange={(value) => updateFilter('sort', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sortOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select value={filters.order} onValueChange={(value: 'asc' | 'desc') => updateFilter('order', value)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="desc">Descending</SelectItem>
-                      <SelectItem value="asc">Ascending</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {/* Limit */}
-              <div>
-                <Label>Results per page</Label>
-                <Select value={filters.limit.toString()} onValueChange={(value) => updateFilter('limit', parseInt(value))}>
+                <Select 
+                  value={filterForm.sort} 
+                  onValueChange={(value) => setFilterForm(prev => ({ ...prev, sort: value }))}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                    <SelectItem value="100">100</SelectItem>
+                    {sortOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
-              <Button variant="outline" className="w-full" onClick={clearFilters}>
-                Clear All Filters
-              </Button>
+              {/* Limit */}
+              <div>
+                <Label htmlFor="limit">Limit (1-{MAX_PAGE_LIMIT})</Label>
+                <Input
+                  id="limit"
+                  type="number"
+                  min="1"
+                  max={MAX_PAGE_LIMIT}
+                  value={filterForm.limit}
+                  onChange={(e) => setFilterForm(prev => ({ 
+                    ...prev, 
+                    limit: Math.min(Math.max(1, parseInt(e.target.value) || DEFAULT_PAGE_LIMIT), MAX_PAGE_LIMIT) 
+                  }))}
+                />
+              </div>
+
+              {/* Apply/Reset Buttons */}
+              <div className="space-y-2">
+                <Button 
+                  onClick={handleApplyFilters} 
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  Apply Filters
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleResetFilters} 
+                  className="w-full"
+                >
+                  Reset
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        )}
 
-        {/* Markets Table */}
-        <Card className={isFilterPanelOpen ? "lg:col-span-3" : "lg:col-span-4"}>
-          <CardHeader>
-            <CardTitle>Eligible Markets</CardTitle>
-            <CardDescription>
-              Real-time market data with eligibility status and performance metrics
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('symbol')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Symbol</span>
-                        {getSortIcon('symbol')}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('cap_usd')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Market Cap</span>
-                        {getSortIcon('cap_usd')}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('volatility')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Volatility</span>
-                        {getSortIcon('volatility')}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('profitability')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Profitability</span>
-                        {getSortIcon('profitability')}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('volume')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Volume (24h)</span>
-                        {getSortIcon('volume')}
-                      </div>
-                    </TableHead>
-                    <TableHead 
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={() => handleSort('last_updated')}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Last Updated</span>
-                        {getSortIcon('last_updated')}
-                      </div>
-                    </TableHead>
-                    <TableHead>Data Source</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {markets.length > 0 ? (
-                    markets.map((market) => (
-                      <TableRow key={market.symbol}>
-                        <TableCell className="font-medium">{market.symbol}</TableCell>
-                        <TableCell>{formatCurrency(market.cap_usd)}</TableCell>
-                        <TableCell>{formatPercentage(market.volatility)}</TableCell>
-                        <TableCell className="text-accent font-medium">
-                          {formatPercentage(market.profitability)}
-                        </TableCell>
-                        <TableCell>{formatCurrency(market.volume)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {new Date(market.last_updated).toLocaleString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-1">
-                            <span className="text-sm">{market.data_source}</span>
-                            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-                          </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(market.status)}</TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center py-8">
-                        <div className="text-muted-foreground">
-                          <Activity className="h-8 w-8 mx-auto mb-2" />
-                          <p>No markets found with current filters</p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          {/* Markets Table */}
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <CardTitle>Eligible Markets Table</CardTitle>
+              <CardDescription>
+                Click symbol to copy to clipboard. Row highlighting indicates recently validated entries.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-96">
+                  <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : error ? (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    <div className="space-y-2">
+                      <div>{error}</div>
+                      <Button variant="outline" size="sm" onClick={() => fetchMarkets(filters)}>
+                        Retry
+                      </Button>
+                    </div>
+                  </AlertDescription>
+                </Alert>
+              ) : marketData ? (
+                <div className="space-y-4">
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Symbol</TableHead>
+                          <TableHead>Market Cap (USD)</TableHead>
+                          <TableHead>Realized Volatility</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Profitability</TableHead>
+                          <TableHead>Volume</TableHead>
+                          <TableHead>Last Validated</TableHead>
+                          <TableHead>Last Refreshed</TableHead>
+                          <TableHead>Source</TableHead>
+                          <TableHead>Override</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {marketData.items.length > 0 ? (
+                          marketData.items.map((market) => (
+                            <TableRow 
+                              key={market.symbol}
+                              className={isRecentlyValidated(market.last_validated) ? 'bg-blue-50 hover:bg-blue-100' : ''}
+                            >
+                              <TableCell>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="font-medium p-0 h-auto"
+                                      onClick={() => copySymbolToClipboard(market.symbol)}
+                                    >
+                                      {market.symbol}
+                                      <Copy className="h-3 w-3 ml-1" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Click to copy to clipboard</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell>{formatNumber(market.cap_usd)}</TableCell>
+                              <TableCell>{formatPercentage(market.realized_vol)}</TableCell>
+                              <TableCell>{getStatusBadge(market.status)}</TableCell>
+                              <TableCell className={market.profitability >= profitabilityThreshold ? 'text-green-600 font-medium' : ''}>
+                                {formatPercentage(market.profitability)}
+                              </TableCell>
+                              <TableCell>{formatCurrency(market.volume)}</TableCell>
+                              <TableCell>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="text-sm text-muted-foreground cursor-help">
+                                      {new Date(market.last_validated).toLocaleDateString()}
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>{new Date(market.last_validated).toLocaleString()}</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">
+                                {new Date(market.last_refreshed).toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <span className="text-sm">{market.source}</span>
+                              </TableCell>
+                              <TableCell>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div>{getOverrideBadge(market.override)}</div>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>
+                                      {market.override === 'allow' && 'Governance override: Allow trading'}
+                                      {market.override === 'block' && 'Governance override: Block trading'}
+                                      {!market.override && 'No governance override applied'}
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                            </TableRow>
+                          ))
+                        ) : (
+                          <TableRow>
+                            <TableCell colSpan={10} className="text-center py-8">
+                              <div className="text-muted-foreground">
+                                <Activity className="h-8 w-8 mx-auto mb-2" />
+                                <p>No markets match current filters.</p>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                  </div>
 
-            {/* Pagination */}
-            {metadata && metadata.total > filters.limit && (
-              <div className="flex items-center justify-between mt-4">
-                <div className="text-sm text-muted-foreground">
-                  Showing {metadata.offset + 1}-{Math.min(metadata.offset + metadata.limit, metadata.total)} of {metadata.total} markets
+                  {/* Pagination Controls */}
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      Showing {filters.offset + 1}-{Math.min(filters.offset + filters.limit, marketData.total)} of {marketData.total}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePagination('prev')}
+                        disabled={filters.offset === 0}
+                      >
+                        <ArrowUp className="h-4 w-4 mr-2" />
+                        Previous
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handlePagination('next')}
+                        disabled={marketData.next === null}
+                      >
+                        Next
+                        <ArrowDown className="h-4 w-4 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePagination('prev')}
-                    disabled={filters.offset === 0}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handlePagination('next')}
-                    disabled={filters.offset + filters.limit >= metadata.total}
-                  >
-                    Next
-                  </Button>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              ) : null}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
