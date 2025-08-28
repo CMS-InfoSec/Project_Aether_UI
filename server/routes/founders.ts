@@ -22,10 +22,35 @@ let mockFounders: Array<{
   createdAt: string;
 }> = [];
 
+// Initialize mockFounders based on existing admin users
+const initializeMockFounders = () => {
+  const { mockUsers } = require('./auth');
+  if (mockUsers && mockFounders.length === 0) {
+    // Find any existing admin users and add them to founders
+    const adminUsers = mockUsers.filter((user: any) => user.role === 'admin');
+    adminUsers.forEach((admin: any) => {
+      mockFounders.push({
+        id: admin.id,
+        email: admin.email,
+        name: admin.email.split('@')[0], // Use email prefix as name
+        createdAt: new Date(Date.now() - 86400000).toISOString() // 1 day ago
+      });
+    });
+  }
+};
+
+// Initialize on module load
+initializeMockFounders();
+
 export const handleGetBootstrapStatus: RequestHandler = (req, res) => {
   try {
+    // Ensure mockFounders is synchronized with admin users
+    initializeMockFounders();
+
     const foundersExist = mockFounders.length > 0;
-    
+
+    console.log('Bootstrap status check:', { foundersExist, foundersCount: mockFounders.length });
+
     const response: BootstrapStatusResponse = {
       foundersExist
     };
@@ -41,8 +66,12 @@ export const handleGetBootstrapStatus: RequestHandler = (req, res) => {
 
 export const handleCreateFounder: RequestHandler = (req, res) => {
   try {
+    // Ensure mockFounders is synchronized with admin users
+    initializeMockFounders();
+
     // Re-check that no founder record exists
     if (mockFounders.length > 0) {
+      console.log('Bootstrap conflict: founders already exist', { foundersCount: mockFounders.length, founders: mockFounders });
       return res.status(409).json({
         error: 'Founders already exist. Bootstrap is not allowed.'
       });
@@ -152,26 +181,20 @@ export const handleResetFounders: RequestHandler = (req, res) => {
     // This is for testing purposes only - clear all founders
     mockFounders.length = 0;
 
-    // Also reset mock users to default state
+    // Also reset mock users to remove default admin users for proper bootstrap
     const { mockUsers } = require('./auth');
     if (mockUsers) {
       mockUsers.length = 0;
-      mockUsers.push(
-        {
-          id: '1',
-          email: 'admin@projectaether.com',
-          password: 'admin123',
-          role: 'admin' as const
-        },
-        {
-          id: '2',
-          email: 'user@projectaether.com',
-          password: 'user123',
-          role: 'user' as const
-        }
-      );
+      // Don't add default admin user - let bootstrap process create it
+      mockUsers.push({
+        id: '2',
+        email: 'user@projectaether.com',
+        password: 'user123',
+        role: 'user' as const
+      });
     }
 
+    console.log('Founders and admin users reset for bootstrap');
     res.json({ message: 'Founders reset successfully' });
   } catch (error) {
     console.error('Reset founders error:', error);
