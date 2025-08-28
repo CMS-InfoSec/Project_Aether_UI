@@ -203,3 +203,27 @@ export const handleResetFounders: RequestHandler = (req, res) => {
     });
   }
 };
+
+export const handleGetSystemDebug: RequestHandler = (req, res) => {
+  try {
+    const { mockUsers } = require('./auth');
+
+    // Ensure mockFounders is synchronized
+    initializeMockFounders();
+
+    const debugInfo = {
+      founders: mockFounders,
+      users: mockUsers ? mockUsers.map((u: any) => ({ id: u.id, email: u.email, role: u.role })) : [],
+      foundersCount: mockFounders.length,
+      adminUsersCount: mockUsers ? mockUsers.filter((u: any) => u.role === 'admin').length : 0,
+      foundersExist: mockFounders.length > 0
+    };
+
+    res.json(debugInfo);
+  } catch (error) {
+    console.error('System debug error:', error);
+    res.status(500).json({
+      error: 'Internal server error'
+    });
+  }
+};
