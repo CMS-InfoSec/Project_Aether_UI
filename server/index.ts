@@ -99,6 +99,11 @@ import {
   handleDeleteFounder,
   handleResetFounders
 } from "./routes/founders";
+import {
+  handleGetRecentTrades,
+  handleGetOpenPositions,
+  handleVetoTrade
+} from "./routes/trades";
 
 export function createServer() {
   const app = express();
@@ -208,6 +213,11 @@ export function createServer() {
   app.patch("/api/user/profile", handleUpdateUserProfile);
   app.get("/api/user/trading-settings", handleGetTradingSettings);
   app.patch("/api/users/settings", handleUpdateTradingSettings);
+
+  // Trades and positions routes
+  app.get("/api/trades/recent", handleGetRecentTrades);
+  app.get("/api/positions/open", handleGetOpenPositions);
+  app.post("/api/admin/trades/veto", handleVetoTrade);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
