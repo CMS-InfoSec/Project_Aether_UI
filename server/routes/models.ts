@@ -1299,11 +1299,162 @@ export function handleGetSentimentPipelines(_req: Request, res: Response) {
   });
 }
 
-// Model registry actions (promote, shadow, rollback) - keeping existing implementations
-export { 
-  handlePromoteModel, 
-  handleStartShadow, 
-  handleStopShadow, 
-  handleRollbackModel, 
-  handleGetShadowTests 
-} from './models';
+// Model registry actions
+
+// Promote model with founder approval
+export function handlePromoteModel(req: Request, res: Response) {
+  const { modelId, founderApproval } = req.body;
+
+  if (!founderApproval) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Founder approval is required for model promotion'
+    });
+  }
+
+  const model = models.find(m => m.modelId === modelId);
+  if (!model) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Model not found'
+    });
+  }
+
+  // Archive current deployed model
+  models.forEach(m => {
+    if (m.status === 'deployed') {
+      m.status = 'archived';
+    }
+  });
+
+  model.status = 'deployed';
+  model.deployedAt = new Date().toISOString();
+
+  console.log(`Model promoted: ${modelId} with founder approval`);
+
+  res.json({
+    status: 'success',
+    message: 'Model promoted to production successfully',
+    data: model
+  });
+}
+
+// Start shadow testing
+export function handleStartShadow(req: Request, res: Response) {
+  const { modelId } = req.body;
+
+  const model = models.find(m => m.modelId === modelId);
+  if (!model) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Model not found'
+    });
+  }
+
+  if (model.status === 'shadow') {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Model is already in shadow testing'
+    });
+  }
+
+  model.status = 'shadow';
+  model.shadowStart = new Date().toISOString();
+
+  console.log(`Shadow testing started: ${modelId}`);
+
+  res.json({
+    status: 'success',
+    message: 'Shadow testing started successfully',
+    data: model
+  });
+}
+
+// Stop shadow testing
+export function handleStopShadow(req: Request, res: Response) {
+  const { modelId } = req.body;
+
+  const model = models.find(m => m.modelId === modelId);
+  if (!model) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Model not found'
+    });
+  }
+
+  if (model.status !== 'shadow') {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Model is not in shadow testing'
+    });
+  }
+
+  model.status = 'trained';
+  model.shadowEnd = new Date().toISOString();
+
+  console.log(`Shadow testing stopped: ${modelId}`);
+
+  res.json({
+    status: 'success',
+    message: 'Shadow testing stopped successfully',
+    data: model
+  });
+}
+
+// Rollback model
+export function handleRollbackModel(req: Request, res: Response) {
+  const { fromModelId, toModelId, founderApproval } = req.body;
+
+  if (!founderApproval) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Founder approval is required for model rollback'
+    });
+  }
+
+  const fromModel = models.find(m => m.modelId === fromModelId);
+  const toModel = models.find(m => m.modelId === toModelId);
+
+  if (!fromModel || !toModel) {
+    return res.status(404).json({
+      status: 'error',
+      message: 'Model not found'
+    });
+  }
+
+  // Perform rollback
+  fromModel.status = 'archived';
+  toModel.status = 'deployed';
+  toModel.deployedAt = new Date().toISOString();
+
+  console.log(`Model rollback: ${fromModelId} -> ${toModelId}`);
+
+  res.json({
+    status: 'success',
+    message: 'Model rollback completed successfully',
+    data: { fromModel, toModel }
+  });
+}
+
+// Get shadow tests (mock implementation)
+export function handleGetShadowTests(_req: Request, res: Response) {
+  const shadowTests = models
+    .filter(m => m.status === 'shadow' || m.shadowStart)
+    .map(m => ({
+      id: `shadow_${m.modelId}`,
+      modelId: m.modelId,
+      startTime: m.shadowStart,
+      endTime: m.shadowEnd,
+      status: m.status === 'shadow' ? 'running' : 'completed',
+      results: {
+        performance: Math.random() * 20,
+        trades: Math.floor(Math.random() * 100),
+        pnl: (Math.random() - 0.5) * 5000
+      }
+    }));
+
+  res.json({
+    status: 'success',
+    data: shadowTests
+  });
+}

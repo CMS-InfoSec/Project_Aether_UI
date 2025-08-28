@@ -40,7 +40,10 @@ import {
   handleStartShadow,
   handleStopShadow,
   handleRollbackModel,
-  handleGetShadowTests
+  handleGetShadowTests,
+  handleGetCurriculumStages,
+  handleGetDatasets,
+  handleGetSentimentPipelines
 } from "./routes/models";
 import {
   handleGetEligibleMarkets,
@@ -165,6 +168,9 @@ export function createServer() {
   app.post("/api/models/shadow/stop", handleStopShadow);
   app.post("/api/models/rollback", handleRollbackModel);
   app.get("/api/models/shadow", handleGetShadowTests);
+  app.get("/api/models/curriculum", handleGetCurriculumStages);
+  app.get("/api/models/datasets", handleGetDatasets);
+  app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
 
   // Markets routes
   app.get("/api/markets/eligible", handleGetEligibleMarkets);
