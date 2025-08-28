@@ -319,6 +319,100 @@ export function handleGetUserSettings(_req: Request, res: Response) {
   });
 }
 
+// Reload configuration
+export function handleReloadConfig(req: Request, res: Response) {
+  const { actor } = req.body;
+
+  // Simulate configuration reload - in production this would reload from files/database
+  try {
+    // Reset to fresh values
+    runtimeConfig = {
+      'trading.max_position_size': 100000,
+      'trading.risk_limit_percent': 2.5,
+      'trading.stop_loss_percent': 1.0,
+      'api.rate_limit_per_minute': 1000,
+      'system.maintenance_mode': false,
+      'logging.level': 'info',
+      'monitoring.alert_threshold': 95,
+      'cache.ttl_seconds': 300
+    };
+
+    console.log(`Configuration reloaded by ${actor || 'Unknown'}`);
+
+    res.json({
+      status: 'success',
+      message: 'Configuration reloaded successfully',
+      data: filterSensitiveKeys(runtimeConfig)
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      message: 'Failed to reload configuration',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+// Get effective configuration (runtime + derived data)
+export function handleGetEffectiveConfig(_req: Request, res: Response) {
+  const RISK_TIER_DEFAULTS = {
+    conservative: {
+      max_position_size: 50000,
+      risk_limit_percent: 1.0,
+      stop_loss_percent: 0.5
+    },
+    moderate: {
+      max_position_size: 100000,
+      risk_limit_percent: 2.5,
+      stop_loss_percent: 1.0
+    },
+    aggressive: {
+      max_position_size: 200000,
+      risk_limit_percent: 5.0,
+      stop_loss_percent: 2.0
+    }
+  };
+
+  const ASC = {
+    algorithmic_strategy_config: {
+      momentum: {
+        enabled: true,
+        lookback_period: 20,
+        threshold: 0.02
+      },
+      mean_reversion: {
+        enabled: true,
+        bollinger_bands: 2.0,
+        rsi_threshold: 30
+      },
+      arbitrage: {
+        enabled: false,
+        min_spread: 0.001,
+        max_exposure: 0.1
+      }
+    }
+  };
+
+  const effectiveConfig = {
+    runtime: filterSensitiveKeys(runtimeConfig),
+    system: filterSensitiveKeys(systemConfig),
+    derived: {
+      RISK_TIER_DEFAULTS,
+      ASC
+    },
+    metadata: {
+      last_reload: new Date().toISOString(),
+      config_version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development'
+    }
+  };
+
+  res.json({
+    status: 'success',
+    data: effectiveConfig
+  });
+}
+
 // Update user settings
 export function handleUpdateUserSettings(req: Request, res: Response) {
   const { userId, settings, actor } = req.body;
@@ -331,7 +425,7 @@ export function handleUpdateUserSettings(req: Request, res: Response) {
   }
 
   const userIndex = userSettings.findIndex(u => u.userId === userId);
-  
+
   if (userIndex === -1) {
     // Create new user settings
     userSettings.push({ userId, settings });
