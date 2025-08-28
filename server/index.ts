@@ -23,11 +23,13 @@ import {
 import {
   handleGetRuntimeConfig,
   handleUpdateRuntimeConfig,
+  handleReloadConfig,
+  handleGetEffectiveConfig,
   handleGetSystemConfig,
   handleUpdateSystemConfig,
   handleResetSystemConfig,
-  handleGetUserSettings,
-  handleUpdateUserSettings
+  handleGetUserSettings as handleGetConfigUserSettings,
+  handleUpdateUserSettings as handleUpdateConfigUserSettings
 } from "./routes/config";
 import {
   handleStartTraining,
@@ -150,11 +152,13 @@ export function createServer() {
   // Configuration routes
   app.get("/api/config/runtime", handleGetRuntimeConfig);
   app.put("/api/config/runtime", handleUpdateRuntimeConfig);
+  app.post("/api/config/reload", handleReloadConfig);
+  app.get("/api/config/effective", handleGetEffectiveConfig);
   app.get("/api/config", handleGetSystemConfig);
   app.patch("/api/config", handleUpdateSystemConfig);
   app.delete("/api/config", handleResetSystemConfig);
-  app.get("/api/config/users", handleGetUserSettings);
-  app.post("/api/config/user", handleUpdateUserSettings);
+  app.get("/api/config/users", handleGetConfigUserSettings);
+  app.post("/api/config/user", handleUpdateConfigUserSettings);
 
   // Models routes
   app.post("/api/models/train", handleStartTraining);
