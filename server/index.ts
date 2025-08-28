@@ -18,6 +18,7 @@ import {
   handleResumeSystem,
   handleGetTradingMode,
   handleSetTradingMode,
+  handleKillSwitch,
   handleGetAuditLog
 } from "./routes/system";
 import {
@@ -147,6 +148,7 @@ export function createServer() {
   app.post("/api/system/resume", handleResumeSystem);
   app.get("/api/system/mode", handleGetTradingMode);
   app.post("/api/system/mode", handleSetTradingMode);
+  app.post("/api/admin/kill-switch", handleKillSwitch);
   app.get("/api/system/audit", handleGetAuditLog);
 
   // Configuration routes
