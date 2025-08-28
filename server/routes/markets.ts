@@ -1,131 +1,217 @@
 import { Request, Response } from 'express';
 
-// Types
-interface MarketData {
+// Types matching the specification
+interface MarketItem {
   symbol: string;
   cap_usd: number;
-  volatility: number;
+  realized_vol: number;
+  status: 'active' | 'inactive' | 'delisted' | 'monitoring';
   profitability: number;
   volume: number;
-  last_updated: string;
-  created_at: string;
-  data_source: string;
-  status: 'active' | 'inactive' | 'delisted' | 'monitoring';
+  last_validated: string;
+  last_refreshed: string;
+  source: string;
+  override: 'allow' | 'block' | null;
 }
 
-// Mock market data - in production this would come from external APIs or database
-const mockMarkets: MarketData[] = [
+interface MarketStats {
+  total_markets: number;
+  active_markets: number;
+  monitoring_markets: number;
+  inactive_markets: number;
+  delisted_markets: number;
+  avg_profitability: number;
+  avg_realized_vol: number;
+  total_volume: number;
+  total_market_cap: number;
+}
+
+// Mock market data - USDT quote pairs with ≥ $200M market cap
+const mockMarkets: MarketItem[] = [
   {
-    symbol: 'BTC',
+    symbol: 'BTC/USDT',
     cap_usd: 850000000000,
-    volatility: 0.045,
+    realized_vol: 0.045,
     profitability: 0.127,
     volume: 28500000000,
-    last_updated: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 30).toISOString(), // 30 days ago
-    data_source: 'CoinGecko',
-    status: 'active'
+    last_validated: new Date(Date.now() - 300000).toISOString(), // 5 minutes ago
+    last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: null
   },
   {
-    symbol: 'ETH',
+    symbol: 'ETH/USDT',
     cap_usd: 420000000000,
-    volatility: 0.052,
+    realized_vol: 0.052,
     profitability: 0.098,
     volume: 15200000000,
-    last_updated: new Date(Date.now() - 180000).toISOString(), // 3 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 28).toISOString(),
-    data_source: 'CoinGecko',
-    status: 'active'
+    last_validated: new Date(Date.now() - 180000).toISOString(), // 3 minutes ago
+    last_refreshed: new Date(Date.now() - 1200000).toISOString(), // 20 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: 'allow'
   },
   {
-    symbol: 'ADA',
-    cap_usd: 18500000000,
-    volatility: 0.067,
+    symbol: 'BNB/USDT',
+    cap_usd: 65000000000,
+    realized_vol: 0.067,
     profitability: 0.045,
     volume: 850000000,
-    last_updated: new Date(Date.now() - 420000).toISOString(), // 7 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 25).toISOString(),
-    data_source: 'Binance',
-    status: 'active'
+    last_validated: new Date(Date.now() - 420000).toISOString(), // 7 minutes ago
+    last_refreshed: new Date(Date.now() - 2400000).toISOString(), // 40 minutes ago
+    source: 'binance',
+    status: 'active',
+    override: null
   },
   {
-    symbol: 'DOT',
-    cap_usd: 12200000000,
-    volatility: 0.071,
+    symbol: 'XRP/USDT',
+    cap_usd: 32000000000,
+    realized_vol: 0.089,
     profitability: 0.032,
     volume: 420000000,
-    last_updated: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 22).toISOString(),
-    data_source: 'Binance',
-    status: 'monitoring'
+    last_validated: new Date(Date.now() - 600000).toISOString(), // 10 minutes ago
+    last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
+    source: 'coingecko',
+    status: 'monitoring',
+    override: null
   },
   {
-    symbol: 'SOL',
+    symbol: 'SOL/USDT',
     cap_usd: 45000000000,
-    volatility: 0.089,
+    realized_vol: 0.089,
     profitability: 0.156,
     volume: 2100000000,
-    last_updated: new Date(Date.now() - 240000).toISOString(), // 4 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 20).toISOString(),
-    data_source: 'CoinGecko',
-    status: 'active'
+    last_validated: new Date(Date.now() - 240000).toISOString(), // 4 minutes ago
+    last_refreshed: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: null
   },
   {
-    symbol: 'MATIC',
-    cap_usd: 8500000000,
-    volatility: 0.094,
+    symbol: 'ADA/USDT',
+    cap_usd: 18500000000,
+    realized_vol: 0.094,
     profitability: 0.078,
     volume: 680000000,
-    last_updated: new Date(Date.now() - 720000).toISOString(), // 12 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 18).toISOString(),
-    data_source: 'Binance',
-    status: 'active'
+    last_validated: new Date(Date.now() - 720000).toISOString(), // 12 minutes ago
+    last_refreshed: new Date(Date.now() - 3600000).toISOString(), // 60 minutes ago
+    source: 'binance',
+    status: 'active',
+    override: null
   },
   {
-    symbol: 'LINK',
-    cap_usd: 7800000000,
-    volatility: 0.063,
-    profitability: 0.024,
-    volume: 520000000,
-    last_updated: new Date(Date.now() - 480000).toISOString(), // 8 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
-    data_source: 'CoinGecko',
-    status: 'inactive'
-  },
-  {
-    symbol: 'AVAX',
+    symbol: 'AVAX/USDT',
     cap_usd: 15600000000,
-    volatility: 0.076,
+    realized_vol: 0.076,
     profitability: 0.089,
     volume: 720000000,
-    last_updated: new Date(Date.now() - 360000).toISOString(), // 6 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 12).toISOString(),
-    data_source: 'Binance',
-    status: 'active'
+    last_validated: new Date(Date.now() - 360000).toISOString(), // 6 minutes ago
+    last_refreshed: new Date(Date.now() - 2700000).toISOString(), // 45 minutes ago
+    source: 'binance',
+    status: 'active',
+    override: null
   },
   {
-    symbol: 'ALGO',
-    cap_usd: 2400000000,
-    volatility: 0.058,
-    profitability: 0.018,
-    volume: 180000000,
-    last_updated: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
-    data_source: 'CoinGecko',
-    status: 'delisted'
+    symbol: 'DOGE/USDT',
+    cap_usd: 12200000000,
+    realized_vol: 0.112,
+    profitability: 0.024,
+    volume: 520000000,
+    last_validated: new Date(Date.now() - 480000).toISOString(), // 8 minutes ago
+    last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
+    source: 'coingecko',
+    status: 'inactive',
+    override: 'block'
   },
   {
-    symbol: 'ATOM',
-    cap_usd: 3200000000,
-    volatility: 0.082,
+    symbol: 'DOT/USDT',
+    cap_usd: 8900000000,
+    realized_vol: 0.082,
     profitability: 0.041,
     volume: 290000000,
-    last_updated: new Date(Date.now() - 540000).toISOString(), // 9 minutes ago
-    created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-    data_source: 'Binance',
-    status: 'monitoring'
+    last_validated: new Date(Date.now() - 540000).toISOString(), // 9 minutes ago
+    last_refreshed: new Date(Date.now() - 2100000).toISOString(), // 35 minutes ago
+    source: 'binance',
+    status: 'monitoring',
+    override: null
+  },
+  {
+    symbol: 'MATIC/USDT',
+    cap_usd: 7200000000,
+    realized_vol: 0.098,
+    profitability: 0.067,
+    volume: 380000000,
+    last_validated: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+    last_refreshed: new Date(Date.now() - 3000000).toISOString(), // 50 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: null
+  },
+  {
+    symbol: 'LTC/USDT',
+    cap_usd: 6800000000,
+    realized_vol: 0.058,
+    profitability: 0.018,
+    volume: 180000000,
+    last_validated: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
+    last_refreshed: new Date(Date.now() - 4200000).toISOString(), // 70 minutes ago
+    source: 'coingecko',
+    status: 'delisted',
+    override: 'block'
+  },
+  {
+    symbol: 'LINK/USDT',
+    cap_usd: 8200000000,
+    realized_vol: 0.063,
+    profitability: 0.055,
+    volume: 340000000,
+    last_validated: new Date(Date.now() - 660000).toISOString(), // 11 minutes ago
+    last_refreshed: new Date(Date.now() - 2400000).toISOString(), // 40 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: null
+  },
+  {
+    symbol: 'ATOM/USDT',
+    cap_usd: 3200000000,
+    realized_vol: 0.105,
+    profitability: 0.073,
+    volume: 195000000,
+    last_validated: new Date(Date.now() - 780000).toISOString(), // 13 minutes ago
+    last_refreshed: new Date(Date.now() - 3300000).toISOString(), // 55 minutes ago
+    source: 'binance',
+    status: 'monitoring',
+    override: null
+  },
+  {
+    symbol: 'NEAR/USDT',
+    cap_usd: 4100000000,
+    realized_vol: 0.091,
+    profitability: 0.086,
+    volume: 245000000,
+    last_validated: new Date(Date.now() - 1020000).toISOString(), // 17 minutes ago
+    last_refreshed: new Date(Date.now() - 1500000).toISOString(), // 25 minutes ago
+    source: 'coingecko',
+    status: 'active',
+    override: null
+  },
+  {
+    symbol: 'FTM/USDT',
+    cap_usd: 2800000000,
+    realized_vol: 0.115,
+    profitability: 0.092,
+    volume: 165000000,
+    last_validated: new Date(Date.now() - 1380000).toISOString(), // 23 minutes ago
+    last_refreshed: new Date(Date.now() - 3900000).toISOString(), // 65 minutes ago
+    source: 'binance',
+    status: 'active',
+    override: null
   }
 ];
+
+const DEFAULT_PAGE_LIMIT = 25;
+const MAX_PAGE_LIMIT = 100;
 
 // Get eligible markets with filtering and pagination
 export function handleGetEligibleMarkets(req: Request, res: Response) {
@@ -133,19 +219,17 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
     status,
     min_profitability,
     min_volume,
-    sort = 'profitability',
-    order = 'desc',
-    limit = '50',
+    sort = 'symbol',
+    limit = DEFAULT_PAGE_LIMIT.toString(),
     offset = '0'
   } = req.query;
 
   let filteredMarkets = [...mockMarkets];
 
   // Apply filters
-  if (status && typeof status === 'string') {
-    const statusArray = status.split(',');
+  if (status && typeof status === 'string' && status.trim()) {
     filteredMarkets = filteredMarkets.filter(market => 
-      statusArray.includes(market.status)
+      market.status === status.trim()
     );
   }
 
@@ -168,7 +252,7 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
   }
 
   // Apply sorting
-  const sortField = sort as keyof MarketData;
+  const sortField = sort as keyof MarketItem;
   filteredMarkets.sort((a, b) => {
     let aVal = a[sortField];
     let bVal = b[sortField];
@@ -177,56 +261,55 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       aVal = aVal.toLowerCase();
       bVal = bVal.toLowerCase();
-    }
-
-    if (order === 'desc') {
-      return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-    } else {
       return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     }
+
+    // For numeric fields, sort descending by default
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return bVal - aVal;
+    }
+
+    return 0;
   });
 
   // Apply pagination
-  const limitNum = parseInt(limit as string, 10) || 50;
+  const limitNum = Math.min(parseInt(limit as string, 10) || DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT);
   const offsetNum = parseInt(offset as string, 10) || 0;
+  
   const paginatedMarkets = filteredMarkets.slice(offsetNum, offsetNum + limitNum);
+  const hasNext = offsetNum + limitNum < filteredMarkets.length;
+  const nextOffset = hasNext ? offsetNum + limitNum : null;
 
-  // Generate metadata headers
-  const lastRefreshed = new Date().toISOString();
-  const sources = [...new Set(filteredMarkets.map(m => m.data_source))].join(', ');
+  // Generate timestamps
+  const lastRefreshed = new Date(Date.now() - 86400000).toISOString(); // 24 hours ago
+  const dataSource = 'supabase';
 
-  // Set response headers
+  // Set response headers as specified
   res.set({
     'X-Last-Refreshed': lastRefreshed,
-    'X-Source': sources,
-    'X-Total-Count': filteredMarkets.length.toString(),
-    'X-Limit': limitNum.toString(),
-    'X-Offset': offsetNum.toString()
+    'X-Source': dataSource
   });
 
+  // Response format matching specification
   res.json({
-    status: 'success',
-    data: paginatedMarkets,
-    metadata: {
-      total: filteredMarkets.length,
-      limit: limitNum,
-      offset: offsetNum,
-      last_refreshed: lastRefreshed,
-      sources: sources
-    }
+    total: filteredMarkets.length,
+    items: paginatedMarkets,
+    next: nextOffset,
+    last_refreshed: lastRefreshed,
+    source: dataSource
   });
 }
 
 // Get market statistics
 export function handleGetMarketStats(_req: Request, res: Response) {
-  const stats = {
+  const stats: MarketStats = {
     total_markets: mockMarkets.length,
     active_markets: mockMarkets.filter(m => m.status === 'active').length,
     monitoring_markets: mockMarkets.filter(m => m.status === 'monitoring').length,
     inactive_markets: mockMarkets.filter(m => m.status === 'inactive').length,
     delisted_markets: mockMarkets.filter(m => m.status === 'delisted').length,
     avg_profitability: mockMarkets.reduce((sum, m) => sum + m.profitability, 0) / mockMarkets.length,
-    avg_volatility: mockMarkets.reduce((sum, m) => sum + m.volatility, 0) / mockMarkets.length,
+    avg_realized_vol: mockMarkets.reduce((sum, m) => sum + m.realized_vol, 0) / mockMarkets.length,
     total_volume: mockMarkets.reduce((sum, m) => sum + m.volume, 0),
     total_market_cap: mockMarkets.reduce((sum, m) => sum + m.cap_usd, 0)
   };
@@ -237,23 +320,21 @@ export function handleGetMarketStats(_req: Request, res: Response) {
   });
 }
 
-// Export markets to CSV
+// Export markets to CSV (client-side conversion as specified)
 export function handleExportMarkets(req: Request, res: Response) {
   const {
     status,
     min_profitability,
     min_volume,
-    sort = 'profitability',
-    order = 'desc'
+    sort = 'symbol'
   } = req.query;
 
   let filteredMarkets = [...mockMarkets];
 
   // Apply same filters as the main endpoint
-  if (status && typeof status === 'string') {
-    const statusArray = status.split(',');
+  if (status && typeof status === 'string' && status.trim()) {
     filteredMarkets = filteredMarkets.filter(market => 
-      statusArray.includes(market.status)
+      market.status === status.trim()
     );
   }
 
@@ -276,7 +357,7 @@ export function handleExportMarkets(req: Request, res: Response) {
   }
 
   // Apply sorting
-  const sortField = sort as keyof MarketData;
+  const sortField = sort as keyof MarketItem;
   filteredMarkets.sort((a, b) => {
     let aVal = a[sortField];
     let bVal = b[sortField];
@@ -284,52 +365,30 @@ export function handleExportMarkets(req: Request, res: Response) {
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       aVal = aVal.toLowerCase();
       bVal = bVal.toLowerCase();
-    }
-
-    if (order === 'desc') {
-      return aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
-    } else {
       return aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
     }
+
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return bVal - aVal;
+    }
+
+    return 0;
   });
-
-  // Generate CSV content
-  const csvHeaders = [
-    'Symbol',
-    'Market Cap (USD)',
-    'Volatility',
-    'Profitability',
-    'Volume',
-    'Last Updated',
-    'Created At',
-    'Data Source',
-    'Status'
-  ].join(',');
-
-  const csvRows = filteredMarkets.map(market => [
-    market.symbol,
-    market.cap_usd,
-    market.volatility,
-    market.profitability,
-    market.volume,
-    market.last_updated,
-    market.created_at,
-    market.data_source,
-    market.status
-  ].join(','));
-
-  const csvContent = [csvHeaders, ...csvRows].join('\n');
 
   // Set CSV response headers
   const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-  const filename = `eligible-markets-${timestamp}.csv`;
+  const filename = `eligible_markets.csv`;
 
   res.set({
-    'Content-Type': 'text/csv',
-    'Content-Disposition': `attachment; filename="${filename}"`,
-    'X-Last-Refreshed': new Date().toISOString(),
-    'X-Source': [...new Set(filteredMarkets.map(m => m.data_source))].join(', ')
+    'Content-Type': 'application/json',
+    'X-Last-Refreshed': new Date(Date.now() - 86400000).toISOString(),
+    'X-Source': 'supabase'
   });
 
-  res.send(csvContent);
+  // Return data for client-side CSV conversion as specified
+  res.json({
+    status: 'success',
+    data: filteredMarkets,
+    filename: filename
+  });
 }
