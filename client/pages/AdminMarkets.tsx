@@ -107,7 +107,7 @@ export default function AdminMarkets() {
   
   // Filters state
   const [filters, setFilters] = useState<Filters>({
-    status: '',
+    status: 'all',
     min_profitability: '',
     min_volume: '',
     sort: 'symbol',
@@ -117,7 +117,7 @@ export default function AdminMarkets() {
 
   // Form state for filter panel
   const [filterForm, setFilterForm] = useState<Filters>({
-    status: '',
+    status: 'all',
     min_profitability: '',
     min_volume: '',
     sort: 'symbol',
@@ -127,7 +127,7 @@ export default function AdminMarkets() {
 
   // Status and sort options
   const statusOptions = [
-    { value: '', label: 'All Statuses' },
+    { value: 'all', label: 'All Statuses' },
     { value: 'active', label: 'Active', icon: CheckCircle, color: 'text-green-600' },
     { value: 'monitoring', label: 'Monitoring', icon: Eye, color: 'text-yellow-600' },
     { value: 'inactive', label: 'Inactive', icon: AlertCircle, color: 'text-gray-600' },
@@ -165,7 +165,7 @@ export default function AdminMarkets() {
   const updateUrl = useCallback((newFilters: Filters) => {
     const params = new URLSearchParams();
     
-    if (newFilters.status) params.set('status', newFilters.status);
+    if (newFilters.status && newFilters.status !== 'all') params.set('status', newFilters.status);
     if (newFilters.min_profitability) params.set('min_profitability', newFilters.min_profitability);
     if (newFilters.min_volume) params.set('min_volume', newFilters.min_volume);
     if (newFilters.sort !== 'symbol') params.set('sort', newFilters.sort);
@@ -184,7 +184,7 @@ export default function AdminMarkets() {
     try {
       const params = new URLSearchParams();
       
-      if (currentFilters.status) params.append('status', currentFilters.status);
+      if (currentFilters.status && currentFilters.status !== 'all') params.append('status', currentFilters.status);
       if (currentFilters.min_profitability) params.append('min_profitability', currentFilters.min_profitability);
       if (currentFilters.min_volume) params.append('min_volume', currentFilters.min_volume);
       params.append('sort', currentFilters.sort);
@@ -265,7 +265,7 @@ export default function AdminMarkets() {
   // Reset filters
   const handleResetFilters = () => {
     const defaultFilters: Filters = {
-      status: '',
+      status: 'all',
       min_profitability: '',
       min_volume: '',
       sort: 'symbol',
@@ -293,7 +293,7 @@ export default function AdminMarkets() {
     try {
       const params = new URLSearchParams();
       
-      if (filters.status) params.append('status', filters.status);
+      if (filters.status && filters.status !== 'all') params.append('status', filters.status);
       if (filters.min_profitability) params.append('min_profitability', filters.min_profitability);
       if (filters.min_volume) params.append('min_volume', filters.min_volume);
       params.append('sort', filters.sort);
