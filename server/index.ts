@@ -90,7 +90,8 @@ import {
   handleGetUserProfile,
   handleUpdateUserProfile,
   handleGetTradingSettings,
-  handleUpdateTradingSettings
+  handleUpdateTradingSettings,
+  handleGetApiKeys
 } from "./routes/profile";
 import {
   handleGetBootstrapStatus,
@@ -213,6 +214,7 @@ export function createServer() {
   app.patch("/api/user/profile", handleUpdateUserProfile);
   app.get("/api/user/trading-settings", handleGetTradingSettings);
   app.patch("/api/users/settings", handleUpdateTradingSettings);
+  app.get("/api/user/api-keys", handleGetApiKeys);
 
   // Trades and positions routes
   app.get("/api/trades/recent", handleGetRecentTrades);
