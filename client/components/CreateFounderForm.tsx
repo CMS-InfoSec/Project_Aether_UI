@@ -92,13 +92,41 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
       ...prev,
       [field]: e.target.value
     }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
         [field]: undefined
       }));
+    }
+  };
+
+  const handleResetSystem = async () => {
+    if (!confirm('Reset system for bootstrap testing? This will clear all founders and reset to initial state.')) {
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await fetch('/api/founders/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        window.location.reload(); // Refresh the page to re-check bootstrap status
+      } else {
+        console.error('Failed to reset system');
+        setErrors({ general: 'Failed to reset system for testing' });
+      }
+    } catch (error) {
+      console.error('Reset system error:', error);
+      setErrors({ general: 'Failed to reset system for testing' });
+    } finally {
+      setIsResetting(false);
     }
   };
 
