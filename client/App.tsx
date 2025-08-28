@@ -102,7 +102,15 @@ const AppRouter = () => {
           // If we can't parse JSON, use the status text or a generic message
           errorMessage = response.statusText || errorMessage;
         }
+
         console.error('Bootstrap failed:', errorMessage);
+
+        // If we get a 409, it means founders already exist - refresh status
+        if (response.status === 409) {
+          console.log('Founders already exist, refreshing bootstrap status...');
+          await checkBootstrapStatus();
+        }
+
         return false;
       }
     } catch (error) {
