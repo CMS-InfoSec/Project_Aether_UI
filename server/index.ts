@@ -105,7 +105,8 @@ import {
   handleCreateFounder,
   handleGetFounders,
   handleDeleteFounder,
-  handleResetFounders
+  handleResetFounders,
+  handleGetSystemDebug
 } from "./routes/founders";
 import {
   handleGetRecentTrades,
@@ -132,6 +133,7 @@ export function createServer() {
   app.get("/api/founders", handleGetFounders);
   app.delete("/api/founders/:founderId", handleDeleteFounder);
   app.post("/api/founders/reset", handleResetFounders); // For testing only
+  app.get("/api/founders/debug", handleGetSystemDebug); // For debugging only
 
   // User management routes
   app.post("/api/users/invite", handleInviteUser);
