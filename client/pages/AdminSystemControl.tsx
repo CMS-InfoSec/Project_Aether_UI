@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
@@ -13,15 +14,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +37,12 @@ import {
   CheckCircle,
   RefreshCw,
   FileText,
-  Calendar
+  Calendar,
+  Skull,
+  Eye,
+  EyeOff,
+  Power,
+  Lock
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
@@ -55,9 +52,13 @@ interface SystemState {
   pausedBy?: string;
   pausedReason?: string;
   pausedAt?: string;
-  mode: 'Simulation' | 'Dry-Run' | 'Live';
+  mode: string;
   changedBy?: string;
   changedAt?: string;
+  killSwitchEnabled: boolean;
+  killSwitchBy?: string;
+  killSwitchReason?: string;
+  killSwitchAt?: string;
 }
 
 interface AuditLogEntry {
@@ -69,47 +70,106 @@ interface AuditLogEntry {
   success: boolean;
 }
 
+const API_KEY = 'aether-admin-key-2024'; // In production, this would come from environment
+
 export default function AdminSystemControl() {
+  // System state
   const [systemState, setSystemState] = useState<SystemState>({
     isPaused: false,
-    mode: 'Live'
+    mode: 'live',
+    killSwitchEnabled: false
   });
+  
+  // Audit log
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  
+  // Loading states
   const [isLoading, setIsLoading] = useState(true);
-  const [isPauseDialogOpen, setIsPauseDialogOpen] = useState(false);
-  const [isResumeDialogOpen, setIsResumeDialogOpen] = useState(false);
-  const [pauseActor, setPauseActor] = useState('');
-  const [pauseReason, setPauseReason] = useState('');
-  const [resumeActor, setResumeActor] = useState('');
-  const [resumeReason, setResumeReason] = useState('');
-  const [selectedMode, setSelectedMode] = useState<'Simulation' | 'Dry-Run' | 'Live'>('Live');
-  const [modeChangeActor, setModeChangeActor] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Error state
+  const [error, setError] = useState<string | null>(null);
+  
+  // Pause/Resume form
+  const [pauseActor, setPauseActor] = useState('admin@example.com');
+  const [pauseReason, setPauseReason] = useState('');
+  const [resumeActor, setResumeActor] = useState('admin@example.com');
+  const [resumeReason, setResumeReason] = useState('');
+  
+  // Trading mode form
+  const [selectedMode, setSelectedMode] = useState('live');
+  const [modeActor, setModeActor] = useState('admin@example.com');
+  const [modeReason, setModeReason] = useState('');
+  
+  // Kill switch form
+  const [killSwitchActor, setKillSwitchActor] = useState('admin@example.com');
+  const [killSwitchReason, setKillSwitchReason] = useState('');
 
-  // Fetch system state
+  // API request helper with X-API-Key header
+  const apiRequest = async (url: string, options: RequestInit = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-API-Key': API_KEY,
+      ...options.headers,
+    };
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401) {
+      throw new Error('API key required');
+    }
+    
+    if (response.status === 403) {
+      throw new Error('Insufficient permissions');
+    }
+    
+    if (response.status >= 500) {
+      throw new Error('Server error. Please try again.');
+    }
+
+    return response;
+  };
+
+  // Fetch system status
   const fetchSystemState = async () => {
     try {
-      const response = await fetch('/api/system/status');
+      const response = await apiRequest('/api/system/status');
       const data = await response.json();
+      
       if (data.status === 'success') {
         setSystemState(data.data);
         setSelectedMode(data.data.mode);
       }
     } catch (error) {
       console.error('Failed to fetch system state:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch system state",
-        variant: "destructive"
-      });
+      setError(error instanceof Error ? error.message : 'Failed to fetch system state');
+    }
+  };
+
+  // Fetch current mode
+  const fetchCurrentMode = async () => {
+    try {
+      const response = await apiRequest('/api/system/mode');
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setSystemState(prev => ({ ...prev, mode: data.data.mode }));
+        setSelectedMode(data.data.mode);
+      }
+    } catch (error) {
+      console.error('Failed to fetch trading mode:', error);
     }
   };
 
   // Fetch audit log
   const fetchAuditLog = async () => {
     try {
-      const response = await fetch('/api/system/audit');
+      const response = await apiRequest('/api/system/audit?limit=20');
       const data = await response.json();
+      
       if (data.status === 'success') {
         setAuditLog(data.data);
       }
@@ -118,12 +178,25 @@ export default function AdminSystemControl() {
     }
   };
 
+  // Load initial data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchSystemState(), fetchAuditLog()]);
-      setIsLoading(false);
+      setError(null);
+      
+      try {
+        await Promise.all([
+          fetchSystemState(),
+          fetchCurrentMode(),
+          fetchAuditLog()
+        ]);
+      } catch (error) {
+        setError(error instanceof Error ? error.message : 'Failed to load data');
+      } finally {
+        setIsLoading(false);
+      }
     };
+    
     loadData();
   }, []);
 
@@ -138,31 +211,35 @@ export default function AdminSystemControl() {
       return;
     }
 
+    if (pauseReason.length > 200) {
+      toast({
+        title: "Validation Error",
+        description: "Reason must be 200 characters or less",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/system/pause', {
+      const response = await apiRequest('/api/system/pause', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           actor: pauseActor,
-          reason: pauseReason || 'No reason provided'
+          reason: pauseReason || undefined
         }),
       });
 
       const data = await response.json();
       
       if (data.status === 'success') {
-        setSystemState(data.data);
+        setSystemState(prev => ({ ...prev, isPaused: true }));
         toast({
-          title: "System Paused",
-          description: "System has been paused successfully",
+          title: "Success",
+          description: "System paused",
         });
-        setIsPauseDialogOpen(false);
-        setPauseActor('');
         setPauseReason('');
-        await fetchAuditLog();
+        await Promise.all([fetchSystemState(), fetchAuditLog()]);
       } else {
         throw new Error(data.message);
       }
@@ -188,31 +265,35 @@ export default function AdminSystemControl() {
       return;
     }
 
+    if (resumeReason.length > 200) {
+      toast({
+        title: "Validation Error",
+        description: "Reason must be 200 characters or less",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/system/resume', {
+      const response = await apiRequest('/api/system/resume', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           actor: resumeActor,
-          reason: resumeReason || 'System resumed'
+          reason: resumeReason || undefined
         }),
       });
 
       const data = await response.json();
       
       if (data.status === 'success') {
-        setSystemState(data.data);
+        setSystemState(prev => ({ ...prev, isPaused: false }));
         toast({
-          title: "System Resumed",
-          description: "System has been resumed successfully",
+          title: "Success",
+          description: "System resumed",
         });
-        setIsResumeDialogOpen(false);
-        setResumeActor('');
         setResumeReason('');
-        await fetchAuditLog();
+        await Promise.all([fetchSystemState(), fetchAuditLog()]);
       } else {
         throw new Error(data.message);
       }
@@ -229,7 +310,7 @@ export default function AdminSystemControl() {
 
   // Handle mode change
   const handleModeChange = async () => {
-    if (!modeChangeActor.trim()) {
+    if (!modeActor.trim()) {
       toast({
         title: "Validation Error",
         description: "Actor field is required",
@@ -238,29 +319,37 @@ export default function AdminSystemControl() {
       return;
     }
 
+    // Require reason when moving to live
+    if (selectedMode.toLowerCase() === 'live' && !modeReason.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Reason is required when switching to live mode",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/system/mode', {
+      const response = await apiRequest('/api/system/mode', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           mode: selectedMode,
-          actor: modeChangeActor
+          actor: modeActor,
+          reason: modeReason || undefined
         }),
       });
 
       const data = await response.json();
       
       if (data.status === 'success') {
-        setSystemState(data.data);
+        setSystemState(prev => ({ ...prev, mode: selectedMode }));
         toast({
-          title: "Trading Mode Updated",
-          description: `Trading mode changed to ${selectedMode}`,
+          title: "Success",
+          description: `Trading mode set to ${selectedMode}`,
         });
-        setModeChangeActor('');
-        await fetchAuditLog();
+        setModeReason('');
+        await Promise.all([fetchSystemState(), fetchAuditLog()]);
       } else {
         throw new Error(data.message);
       }
@@ -275,43 +364,158 @@ export default function AdminSystemControl() {
     }
   };
 
+  // Handle kill switch toggle
+  const handleKillSwitchToggle = async (enabled: boolean) => {
+    if (enabled) {
+      if (!killSwitchActor.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Actor is required when enabling kill switch",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!killSwitchReason.trim()) {
+        toast({
+          title: "Validation Error",
+          description: "Reason is mandatory when enabling kill switch",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (killSwitchReason.length < 10) {
+        toast({
+          title: "Validation Error",
+          description: "Reason must be at least 10 characters",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    setIsProcessing(true);
+    try {
+      const response = await apiRequest('/api/admin/kill-switch', {
+        method: 'POST',
+        body: JSON.stringify({
+          enabled,
+          actor: killSwitchActor,
+          reason: enabled ? killSwitchReason : undefined
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.status === 'success') {
+        setSystemState(prev => ({ ...prev, killSwitchEnabled: enabled }));
+        toast({
+          title: "Success",
+          description: `Kill switch ${enabled ? 'enabled' : 'disabled'}`,
+          variant: enabled ? "destructive" : "default"
+        });
+        if (!enabled) {
+          setKillSwitchReason('');
+        }
+        await Promise.all([fetchSystemState(), fetchAuditLog()]);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to toggle kill switch",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Status badge helpers
   const getStatusBadge = () => {
+    if (systemState.killSwitchEnabled) {
+      return (
+        <Badge variant="destructive" className="flex items-center space-x-1">
+          <Skull className="h-3 w-3" />
+          <span>EMERGENCY</span>
+        </Badge>
+      );
+    }
+    
     if (systemState.isPaused) {
       return (
         <Badge variant="destructive" className="flex items-center space-x-1">
           <Pause className="h-3 w-3" />
-          <span>Paused</span>
+          <span>PAUSED</span>
         </Badge>
       );
     }
+    
     return (
       <Badge variant="default" className="bg-accent text-accent-foreground flex items-center space-x-1">
         <Activity className="h-3 w-3" />
-        <span>Active</span>
+        <span>ACTIVE</span>
       </Badge>
     );
   };
 
   const getModeBadge = (mode: string) => {
-    const variants = {
-      'Simulation': 'secondary',
-      'Dry-Run': 'outline',
-      'Live': 'default'
-    } as const;
+    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
+      'simulation': 'secondary',
+      'dry-run': 'outline',
+      'live': 'default'
+    };
     
     return (
-      <Badge variant={variants[mode as keyof typeof variants] || 'secondary'}>
-        {mode}
+      <Badge variant={variants[mode.toLowerCase()] || 'secondary'}>
+        {mode.toUpperCase()}
+      </Badge>
+    );
+  };
+
+  const getKillSwitchBadge = () => {
+    return systemState.killSwitchEnabled ? (
+      <Badge variant="destructive" className="flex items-center space-x-1">
+        <Lock className="h-3 w-3" />
+        <span>ENABLED</span>
+      </Badge>
+    ) : (
+      <Badge variant="secondary" className="flex items-center space-x-1">
+        <Power className="h-3 w-3" />
+        <span>DISABLED</span>
       </Badge>
     );
   };
 
   if (isLoading) {
     return (
+      <div className="flex items-center justify-center h-96">
+        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
       <div className="space-y-6">
-        <div className="flex items-center justify-center h-96">
-          <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-        </div>
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {error === 'API key required' && 'API key required.'}
+            {error === 'Insufficient permissions' && 'Insufficient permissions.'}
+            {error.includes('Server error') && (
+              <div className="space-y-2">
+                <div>{error}</div>
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
+            )}
+            {!['API key required', 'Insufficient permissions'].includes(error) && !error.includes('Server error') && error}
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
@@ -322,19 +526,75 @@ export default function AdminSystemControl() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">System Control</h1>
           <p className="text-muted-foreground">
-            Manage system operations and trading modes
+            Pause/resume trading, change global trading mode, and manage emergency controls
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          {getStatusBadge()}
-          {getModeBadge(systemState.mode)}
-        </div>
+        <Button variant="outline" onClick={() => window.location.reload()}>
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      {/* Global Status Banner */}
-      {systemState.isPaused && (
+      {/* System Status Banner */}
+      <Card className="border-l-4 border-l-blue-500">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Activity className="h-5 w-5" />
+            <span>System Status</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Mode</div>
+                <div className="text-sm text-muted-foreground">Current trading mode</div>
+              </div>
+              {getModeBadge(systemState.mode)}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Status</div>
+                <div className="text-sm text-muted-foreground">
+                  {systemState.isPaused ? 'System paused' : 'System active'}
+                </div>
+              </div>
+              {getStatusBadge()}
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-medium">Kill Switch</div>
+                <div className="text-sm text-muted-foreground">Emergency control status</div>
+              </div>
+              {getKillSwitchBadge()}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Emergency alerts */}
+      {systemState.killSwitchEnabled && (
         <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
+          <Skull className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-1">
+              <div className="font-semibold">EMERGENCY KILL SWITCH ACTIVATED</div>
+              <div className="text-sm">
+                Activated by {systemState.killSwitchBy} at {systemState.killSwitchAt ? new Date(systemState.killSwitchAt).toLocaleString() : 'Unknown time'}
+              </div>
+              {systemState.killSwitchReason && (
+                <div className="text-sm">Reason: {systemState.killSwitchReason}</div>
+              )}
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {systemState.isPaused && !systemState.killSwitchEnabled && (
+        <Alert variant="destructive">
+          <Pause className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1">
               <div className="font-semibold">System is currently paused</div>
@@ -350,242 +610,272 @@ export default function AdminSystemControl() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* System Control */}
+        {/* Pause/Resume Trading */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Shield className="h-5 w-5" />
-              <span>System Control</span>
+              <span>Pause/Resume Trading</span>
             </CardTitle>
             <CardDescription>
-              Pause or resume system operations
+              Control system operations with audit trail
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">Current Status</div>
-                <div className="text-sm text-muted-foreground">
-                  {systemState.isPaused ? 'System is paused' : 'System is active'}
+            {systemState.isPaused ? (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="resumeActor">Actor (optional)</Label>
+                  <Input
+                    id="resumeActor"
+                    placeholder="Your email or identifier"
+                    value={resumeActor}
+                    onChange={(e) => setResumeActor(e.target.value)}
+                    disabled={systemState.killSwitchEnabled}
+                  />
                 </div>
-              </div>
-              {getStatusBadge()}
-            </div>
-
-            <div className="flex space-x-2">
-              {systemState.isPaused ? (
-                <Dialog open={isResumeDialogOpen} onOpenChange={setIsResumeDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="flex-1">
+                <div>
+                  <Label htmlFor="resumeReason">Reason (optional, max 200 chars)</Label>
+                  <Textarea
+                    id="resumeReason"
+                    placeholder="Reason for resuming the system"
+                    value={resumeReason}
+                    onChange={(e) => setResumeReason(e.target.value)}
+                    maxLength={200}
+                    disabled={systemState.killSwitchEnabled}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {resumeReason.length}/200 characters
+                  </div>
+                </div>
+                <Button 
+                  onClick={handleResumeSystem} 
+                  disabled={isProcessing || systemState.killSwitchEnabled}
+                  className="w-full"
+                >
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Resuming...
+                    </>
+                  ) : (
+                    <>
                       <Play className="h-4 w-4 mr-2" />
                       Resume System
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Resume System</DialogTitle>
-                      <DialogDescription>
-                        This will resume all system operations. Please provide details for the audit log.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="resumeActor">Actor (Required)</Label>
-                        <Input
-                          id="resumeActor"
-                          placeholder="Your email or identifier"
-                          value={resumeActor}
-                          onChange={(e) => setResumeActor(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="resumeReason">Reason (Optional)</Label>
-                        <Textarea
-                          id="resumeReason"
-                          placeholder="Reason for resuming the system"
-                          value={resumeReason}
-                          onChange={(e) => setResumeReason(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsResumeDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button onClick={handleResumeSystem} disabled={isProcessing}>
-                        {isProcessing ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Resuming...
-                          </>
-                        ) : (
-                          <>
-                            <Play className="h-4 w-4 mr-2" />
-                            Resume System
-                          </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              ) : (
-                <Dialog open={isPauseDialogOpen} onOpenChange={setIsPauseDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button variant="destructive" className="flex-1">
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div>
+                  <Label htmlFor="pauseActor">Actor (optional)</Label>
+                  <Input
+                    id="pauseActor"
+                    placeholder="Your email or identifier"
+                    value={pauseActor}
+                    onChange={(e) => setPauseActor(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pauseReason">Reason (optional, max 200 chars)</Label>
+                  <Textarea
+                    id="pauseReason"
+                    placeholder="Reason for pausing the system"
+                    value={pauseReason}
+                    onChange={(e) => setPauseReason(e.target.value)}
+                    maxLength={200}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {pauseReason.length}/200 characters
+                  </div>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  onClick={handlePauseSystem} 
+                  disabled={isProcessing}
+                  className="w-full"
+                >
+                  {isProcessing ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Pausing...
+                    </>
+                  ) : (
+                    <>
                       <Pause className="h-4 w-4 mr-2" />
                       Pause System
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Pause System</DialogTitle>
-                      <DialogDescription>
-                        This will pause all system operations including trading. Please provide details for the audit log.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="pauseActor">Actor (Required)</Label>
-                        <Input
-                          id="pauseActor"
-                          placeholder="Your email or identifier"
-                          value={pauseActor}
-                          onChange={(e) => setPauseActor(e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="pauseReason">Reason (Optional)</Label>
-                        <Textarea
-                          id="pauseReason"
-                          placeholder="Reason for pausing the system"
-                          value={pauseReason}
-                          onChange={(e) => setPauseReason(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button variant="outline" onClick={() => setIsPauseDialogOpen(false)}>
-                        Cancel
-                      </Button>
-                      <Button variant="destructive" onClick={handlePauseSystem} disabled={isProcessing}>
-                        {isProcessing ? (
-                          <>
-                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                            Pausing...
-                          </>
-                        ) : (
-                          <>
-                            <Pause className="h-4 w-4 mr-2" />
-                            Pause System
-                          </>
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              )}
-            </div>
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Trading Mode */}
+        {/* Trading Mode Control */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
               <Settings className="h-5 w-5" />
-              <span>Trading Mode</span>
+              <span>Trading Mode Control</span>
             </CardTitle>
             <CardDescription>
-              Configure the trading mode for the system
+              Change the global trading mode
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-medium">Current Mode</div>
-                <div className="text-sm text-muted-foreground">
-                  {systemState.mode} trading mode
-                </div>
-              </div>
-              {getModeBadge(systemState.mode)}
+            <div>
+              <Label htmlFor="modeSelect">Mode Selector</Label>
+              <Select
+                value={selectedMode}
+                onValueChange={setSelectedMode}
+                disabled={systemState.killSwitchEnabled}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select trading mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simulation">Simulation</SelectItem>
+                  <SelectItem value="dry-run">Dry-Run</SelectItem>
+                  <SelectItem value="live">Live</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="modeSelect">Select Trading Mode</Label>
-                <Select
-                  value={selectedMode}
-                  onValueChange={(value: 'Simulation' | 'Dry-Run' | 'Live') => setSelectedMode(value)}
-                  disabled={systemState.isPaused}
+            <div>
+              <Label htmlFor="modeActor">Actor (optional)</Label>
+              <Input
+                id="modeActor"
+                placeholder="Your email or identifier"
+                value={modeActor}
+                onChange={(e) => setModeActor(e.target.value)}
+                disabled={systemState.killSwitchEnabled}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="modeReason">
+                Reason {selectedMode.toLowerCase() === 'live' && '(required for live mode)'}
+              </Label>
+              <Textarea
+                id="modeReason"
+                placeholder="Reason for changing trading mode"
+                value={modeReason}
+                onChange={(e) => setModeReason(e.target.value)}
+                disabled={systemState.killSwitchEnabled}
+              />
+            </div>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button 
+                  className="w-full" 
+                  disabled={
+                    isProcessing || 
+                    systemState.killSwitchEnabled ||
+                    selectedMode === systemState.mode ||
+                    (selectedMode.toLowerCase() === 'live' && !modeReason.trim())
+                  }
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select trading mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Simulation">Simulation</SelectItem>
-                    <SelectItem value="Dry-Run">Dry-Run</SelectItem>
-                    <SelectItem value="Live">Live</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Set Mode
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Confirm Trading Mode Change</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Change trading mode from <strong>{systemState.mode.toUpperCase()}</strong> to <strong>{selectedMode.toUpperCase()}</strong>?
+                    {selectedMode.toLowerCase() === 'live' && (
+                      <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
+                        <AlertTriangle className="h-4 w-4 inline mr-1" />
+                        <strong>Warning:</strong> Switching to live mode will enable real trading.
+                      </div>
+                    )}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleModeChange}>
+                    Confirm Change
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
 
-              <div>
-                <Label htmlFor="modeActor">Actor (Required for changes)</Label>
-                <Input
-                  id="modeActor"
-                  placeholder="Your email or identifier"
-                  value={modeChangeActor}
-                  onChange={(e) => setModeChangeActor(e.target.value)}
-                  disabled={systemState.isPaused}
-                />
-              </div>
-
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button 
-                    className="w-full" 
-                    disabled={systemState.isPaused || selectedMode === systemState.mode || !modeChangeActor.trim() || isProcessing}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Set Trading Mode
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Confirm Trading Mode Change</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Are you sure you want to change the trading mode from <strong>{systemState.mode}</strong> to <strong>{selectedMode}</strong>?
-                      This action will be logged in the audit trail.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleModeChange}>
-                      Confirm Change
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-
-              {systemState.isPaused && (
-                <Alert>
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    Trading mode cannot be changed while the system is paused.
-                  </AlertDescription>
-                </Alert>
-              )}
-            </div>
+            {systemState.isPaused && (
+              <Alert>
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription>
+                  Warning: System is paused but mode changes are allowed.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Audit Log */}
+      {/* Emergency Kill Switch */}
+      <Card className="border-l-4 border-l-red-500">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Skull className="h-5 w-5" />
+            <span>Emergency Kill Switch</span>
+          </CardTitle>
+          <CardDescription>
+            Immediately halt all trading operations. Use only in emergency situations.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+            <div>
+              <div className="font-medium">Kill Switch Status</div>
+              <div className="text-sm text-muted-foreground">
+                {systemState.killSwitchEnabled ? 'All trading disabled' : 'Trading allowed'}
+              </div>
+            </div>
+            <Switch
+              checked={systemState.killSwitchEnabled}
+              onCheckedChange={handleKillSwitchToggle}
+              disabled={isProcessing}
+            />
+          </div>
+
+          {!systemState.killSwitchEnabled && (
+            <div className="space-y-3">
+              <div>
+                <Label htmlFor="killSwitchActor">Actor (required for enabling)</Label>
+                <Input
+                  id="killSwitchActor"
+                  placeholder="Your email or identifier"
+                  value={killSwitchActor}
+                  onChange={(e) => setKillSwitchActor(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label htmlFor="killSwitchReason">Reason (mandatory when enabling, min 10 chars)</Label>
+                <Textarea
+                  id="killSwitchReason"
+                  placeholder="Emergency reason for activating kill switch"
+                  value={killSwitchReason}
+                  onChange={(e) => setKillSwitchReason(e.target.value)}
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  {killSwitchReason.length} characters (minimum 10 required)
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Audit Log Summary */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <FileText className="h-5 w-5" />
-            <span>System Audit Log</span>
+            <span>Recent Actions</span>
           </CardTitle>
           <CardDescription>
             Recent system control actions and changes
@@ -594,8 +884,8 @@ export default function AdminSystemControl() {
         <CardContent>
           <div className="space-y-3">
             {auditLog.length > 0 ? (
-              auditLog.map((entry) => (
-                <div key={entry.id} className="flex items-start space-x-3 p-4 border rounded-lg">
+              auditLog.slice(0, 10).map((entry) => (
+                <div key={entry.id} className="flex items-start space-x-3 p-3 border rounded-lg">
                   <div className="flex-shrink-0 mt-0.5">
                     {entry.success ? (
                       <CheckCircle className="h-4 w-4 text-accent" />
@@ -622,7 +912,7 @@ export default function AdminSystemControl() {
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Clock className="h-8 w-8 mx-auto mb-2" />
-                <p>No audit log entries found</p>
+                <p>No recent actions found</p>
               </div>
             )}
           </div>
