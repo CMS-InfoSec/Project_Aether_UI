@@ -197,7 +197,7 @@ export default function AppLayout() {
               />
               <div>
                 <h1 className="font-semibold text-white">AETHER</h1>
-                <p className="text-xs text-white/80">Trading Platform</p>
+                <p className="text-xs text-white/80">AI Trading Platform</p>
               </div>
             </div>
             <Button
