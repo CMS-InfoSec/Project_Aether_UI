@@ -204,17 +204,28 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
 
     console.log('Update trading settings request:', {
       hasSettings: !!settings,
+      settingsType: typeof settings,
+      settingsValue: settings,
       binance_key: binance_key === undefined ? 'undefined' : binance_key === '' ? 'empty' : 'has_value',
       binance_secret: binance_secret === undefined ? 'undefined' : binance_secret === '' ? 'empty' : 'has_value',
-      expires_at
+      expires_at,
+      fullRequestBody: req.body
     });
 
     const errors: string[] = [];
     let updatedSettings = null;
     let apiKeyResult = null;
 
-    // Special case: If this is ONLY an API key deletion request, handle it separately
-    const isApiKeyDeletionOnly = !settings && binance_key === '' && binance_secret === '';
+    // Check if this is an API key deletion request
+    const hasNoSettings = !settings || (typeof settings === 'object' && Object.keys(settings).length === 0);
+    const isApiKeyDeletion = binance_key === '' && binance_secret === '';
+    const isApiKeyDeletionOnly = hasNoSettings && isApiKeyDeletion;
+
+    console.log('Deletion check:', {
+      hasNoSettings,
+      isApiKeyDeletion,
+      isApiKeyDeletionOnly
+    });
 
     if (isApiKeyDeletionOnly) {
       console.log('Processing API key deletion only');
