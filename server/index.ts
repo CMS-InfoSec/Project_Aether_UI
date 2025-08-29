@@ -234,8 +234,23 @@ export function createServer() {
   app.get("/api/user/profile", handleGetUserProfile);
   app.patch("/api/user/profile", handleUpdateUserProfile);
   app.get("/api/user/trading-settings", handleGetTradingSettings);
-  app.patch("/api/users/settings", handleUpdateTradingSettings);
+
+  // Add request logging middleware for this specific route
+  app.patch("/api/users/settings", (req, res, next) => {
+    console.log('=== ROUTE HIT: /api/users/settings ===');
+    console.log('Method:', req.method);
+    console.log('Body:', req.body);
+    console.log('Headers:', req.headers);
+    next();
+  }, handleUpdateTradingSettings);
+
   app.get("/api/user/api-keys", handleGetApiKeys);
+
+  // Debug endpoint
+  app.post("/api/debug/test", (req, res) => {
+    console.log('Debug endpoint hit with body:', req.body);
+    res.json({ status: 'success', received: req.body });
+  });
 
   // Trades and positions routes
   app.get("/api/trades/recent", handleGetRecentTrades);
