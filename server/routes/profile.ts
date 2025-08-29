@@ -329,6 +329,7 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
     }
 
     if (errors.length > 0) {
+      console.log('Validation errors:', errors);
       return res.status(400).json({
         status: 'error',
         error: 'Validation failed',
