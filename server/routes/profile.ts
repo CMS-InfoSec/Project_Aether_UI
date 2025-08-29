@@ -351,9 +351,16 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
       if (apiKeyResult) {
         response.message = 'Settings and API keys updated successfully';
       } else {
-        response.message = 'Settings updated and API keys deleted successfully';
+        response.message = 'API keys deleted successfully';
       }
     }
+
+    console.log('Sending response:', {
+      status: response.status,
+      message: response.message,
+      hasSettings: !!response.data.settings,
+      apiKeyResult: apiKeyResult === null ? 'deleted' : apiKeyResult === undefined ? 'unchanged' : 'updated'
+    });
 
     res.json(response);
   } catch (error) {
