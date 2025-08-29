@@ -434,15 +434,17 @@ export default function ProfileSettings() {
 
     try {
       console.log('Sending delete API keys request...');
+      const requestBody = {
+        binance_key: '',
+        binance_secret: ''
+      };
+      console.log('Request body:', requestBody);
 
       const response = await handleApiRequest(
         () => fetch('/api/users/settings', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            binance_key: '',
-            binance_secret: ''
-          })
+          body: JSON.stringify(requestBody)
         }),
         'deleteApiKeys'
       );
