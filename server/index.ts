@@ -62,16 +62,16 @@ import {
   handleGetPortfolioStats
 } from "./routes/portfolio";
 import {
-  handleGetHedges,
-  handleGetBalances,
-  handleGetWithdrawable,
-  handleExecuteHedge,
+  handleGetWalletHedges,
+  handleGetWalletBalances,
+  handleGetWalletWithdrawable,
+  handlePostHedge,
   handleGetHedgePercent,
-  handleUpdateHedgePercent,
+  handlePatchHedgePercent,
   handleGetMarketConditions,
   handleUpdateMarketConditions,
   handleCloseHedge,
-  handleGetSnapshot
+  handleGetWalletSnapshot
 } from "./routes/hedge";
 import {
   handleGetProposals,
@@ -194,13 +194,13 @@ export function createServer() {
   app.get("/api/admin/portfolio/stats", handleGetPortfolioStats);
 
   // Hedge & Wallet routes
-  app.get("/api/wallet/hedges", handleGetHedges);
-  app.get("/api/wallet/balances", handleGetBalances);
-  app.get("/api/wallet/withdrawable", handleGetWithdrawable);
-  app.get("/api/wallet/snapshot", handleGetSnapshot);
-  app.post("/api/hedge", handleExecuteHedge);
+  app.get("/api/wallet/hedges", handleGetWalletHedges);
+  app.get("/api/wallet/balances", handleGetWalletBalances);
+  app.get("/api/wallet/withdrawable", handleGetWalletWithdrawable);
+  app.get("/api/wallet/snapshot", handleGetWalletSnapshot);
+  app.post("/api/hedge", handlePostHedge);
   app.get("/api/hedge/percent", handleGetHedgePercent);
-  app.post("/api/hedge/percent", handleUpdateHedgePercent);
+  app.patch("/api/hedge/percent", handlePatchHedgePercent);
   app.get("/api/hedge/market-conditions", handleGetMarketConditions);
   app.post("/api/hedge/market-conditions", handleUpdateMarketConditions);
   app.post("/api/hedge/close/:hedgeId", handleCloseHedge);
