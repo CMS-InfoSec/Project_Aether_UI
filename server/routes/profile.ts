@@ -414,6 +414,35 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
   }
 }
 
+// Delete API keys (dedicated endpoint)
+export function handleDeleteApiKeys(req: Request, res: Response) {
+  try {
+    // In production, extract user ID from authenticated session/JWT
+    const userId = 'user_1'; // Mock user ID
+
+    console.log(`Deleting API keys for user: ${userId}`);
+
+    // Delete the API keys
+    delete apiKeys[userId];
+
+    console.log(`API keys deleted successfully for user: ${userId}`);
+
+    res.json({
+      status: 'success',
+      message: 'API keys deleted successfully',
+      data: {
+        api_keys: null
+      }
+    });
+  } catch (error) {
+    console.error('Delete API keys error:', error);
+    res.status(500).json({
+      status: 'error',
+      error: 'Failed to delete API keys'
+    });
+  }
+}
+
 // Get API keys status
 export function handleGetApiKeys(req: Request, res: Response) {
   try {
