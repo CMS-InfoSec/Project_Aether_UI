@@ -202,6 +202,13 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
     // In production, extract user ID from authenticated session/JWT
     const userId = 'user_1'; // Mock user ID
 
+    console.log('Update trading settings request:', {
+      hasSettings: !!settings,
+      binance_key: binance_key === undefined ? 'undefined' : binance_key === '' ? 'empty' : 'has_value',
+      binance_secret: binance_secret === undefined ? 'undefined' : binance_secret === '' ? 'empty' : 'has_value',
+      expires_at
+    });
+
     const errors: string[] = [];
     let updatedSettings = null;
     let apiKeyResult = null;
