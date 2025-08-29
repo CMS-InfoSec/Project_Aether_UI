@@ -25,7 +25,8 @@ import {
   User,
   PieChart,
   Shield,
-  Download
+  Download,
+  Bot
 } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -48,6 +49,12 @@ const userNavigationItems = [
     title: 'Wallet & Hedge',
     href: '/wallet',
     icon: Wallet,
+    badge: null
+  },
+  {
+    title: 'AI Assistant',
+    href: '/assistant',
+    icon: Bot,
     badge: null
   },
   {
