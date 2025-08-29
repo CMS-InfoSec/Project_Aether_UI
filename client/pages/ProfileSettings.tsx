@@ -373,10 +373,10 @@ export default function ProfileSettings() {
     setIsLoading(prev => ({ ...prev, saveApiKeys: true }));
     setApiError('');
     setRetryAction(null);
-    
+
     try {
       const expirationISO = new Date(binanceCredentials.expiration + 'T00:00:00Z').toISOString();
-      
+
       const response = await handleApiRequest(
         () => fetch('/api/users/settings', {
           method: 'PATCH',
@@ -389,15 +389,21 @@ export default function ProfileSettings() {
         }),
         'saveApiKeys'
       );
-      
-      const data = await response.json();
-      
+
+      // Check status first, then read JSON once
       if (response.status === 400) {
-        // Handle specific validation errors (invalid scopes, etc.)
-        setApiError(data.error || 'Invalid API credentials');
+        const errorData = await response.json();
+        setApiError(errorData.error || 'Invalid API credentials');
         return;
       }
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
       if (data.status === 'success') {
         setExistingApiKeys(data.data.api_keys);
         setBinanceCredentials({ api_key: '', api_secret: '', expiration: '' });
@@ -419,7 +425,7 @@ export default function ProfileSettings() {
   const handleDeleteApiKeys = async () => {
     setIsLoading(prev => ({ ...prev, deleteApiKeys: true }));
     setApiError('');
-    
+
     try {
       const response = await handleApiRequest(
         () => fetch('/api/users/settings', {
@@ -432,9 +438,15 @@ export default function ProfileSettings() {
         }),
         'deleteApiKeys'
       );
-      
+
+      // Check response status first
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
       const data = await response.json();
-      
+
       if (data.status === 'success') {
         setExistingApiKeys(null);
         toast({
