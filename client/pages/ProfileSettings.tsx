@@ -321,7 +321,7 @@ export default function ProfileSettings() {
     setIsLoading(prev => ({ ...prev, saveSettings: true }));
     setApiError('');
     setRetryAction(null);
-    
+
     try {
       const response = await handleApiRequest(
         () => fetch('/api/users/settings', {
@@ -331,22 +331,28 @@ export default function ProfileSettings() {
         }),
         'saveSettings'
       );
-      
-      const data = await response.json();
-      
+
+      // Check status first before reading JSON
       if (response.status === 400) {
-        // Show validation errors from server
-        const errorMessage = data.details ? data.details.join(', ') : data.error;
+        const errorData = await response.json();
+        const errorMessage = errorData.details ? errorData.details.join(', ') : errorData.error;
         setApiError(errorMessage);
         return;
       }
-      
+
       if (response.status === 502) {
         setRetryAction('saveSettings');
         setApiError('Network error. Please try again.');
         return;
       }
-      
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
+      }
+
+      const data = await response.json();
+
       if (data.status === 'success') {
         setTradingSettings(data.data.settings);
         setOriginalTradingSettings(data.data.settings);
