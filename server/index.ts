@@ -113,6 +113,11 @@ import {
   handleGetOpenPositions,
   handleVetoTrade
 } from "./routes/trades";
+import {
+  handleAskLLM,
+  handleLLMStatus,
+  handleResetRateLimit
+} from "./routes/llm";
 
 export function createServer() {
   const app = express();
@@ -236,6 +241,11 @@ export function createServer() {
   app.get("/api/trades/recent", handleGetRecentTrades);
   app.get("/api/positions/open", handleGetOpenPositions);
   app.post("/api/admin/trades/veto", handleVetoTrade);
+
+  // LLM/AI Assistant routes
+  app.post("/api/llm/ask", handleAskLLM);
+  app.get("/api/llm/status", handleLLMStatus);
+  app.delete("/api/llm/rate-limit/:userId", handleResetRateLimit);
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
