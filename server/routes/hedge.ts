@@ -130,8 +130,8 @@ const marketConditions: MarketConditions = {
   lastUpdated: new Date().toISOString()
 };
 
-// Get hedge records with pagination
-export function handleGetHedges(req: Request, res: Response) {
+// GET /wallet/hedges - Get hedge records with pagination and summary
+export function handleGetWalletHedges(req: Request, res: Response) {
   const {
     userId = 'user_001', // In production, get from auth
     limit = '20',
@@ -146,12 +146,7 @@ export function handleGetHedges(req: Request, res: Response) {
     filteredHedges = filteredHedges.filter(hedge => hedge.status === status);
   }
 
-  // Apply pagination
-  const limitNum = parseInt(limit as string, 10) || 20;
-  const offsetNum = parseInt(offset as string, 10) || 0;
-  const paginatedHedges = filteredHedges.slice(offsetNum, offsetNum + limitNum);
-
-  // Calculate totals
+  // Calculate totals for summary
   const totalHedged = filteredHedges
     .filter(h => h.status === 'active')
     .reduce((sum, h) => sum + h.amount, 0);
@@ -159,24 +154,41 @@ export function handleGetHedges(req: Request, res: Response) {
   const totalPnl = filteredHedges.reduce((sum, h) => sum + h.pnl, 0);
   const totalFees = filteredHedges.reduce((sum, h) => sum + h.fees, 0);
 
+  // Calculate available to withdraw and max safe withdrawal
+  const totalValue = balances.reduce((sum, b) => sum + b.valueUsd, 0);
+  const lockedValue = balances.reduce((sum, b) => sum + (b.locked / b.total) * b.valueUsd, 0);
+  const safetyBuffer = totalValue * 0.10;
+  const availableToWithdraw = Math.max(0, totalValue - lockedValue - safetyBuffer);
+  const maxSafeWithdrawal = Math.max(0, availableToWithdraw - (totalHedged * 0.2));
+
+  // Apply pagination
+  const limitNum = parseInt(limit as string, 10) || 20;
+  const offsetNum = parseInt(offset as string, 10) || 0;
+  const paginatedHedges = filteredHedges.slice(offsetNum, offsetNum + limitNum);
+
   res.json({
     status: 'success',
-    data: paginatedHedges,
-    metadata: {
-      total: filteredHedges.length,
-      limit: limitNum,
-      offset: offsetNum,
-      totals: {
+    data: {
+      hedges: paginatedHedges,
+      summary: {
         totalHedged,
+        availableToWithdraw,
+        maxSafeWithdrawal,
         totalPnl,
         totalFees
+      },
+      pagination: {
+        total: filteredHedges.length,
+        limit: limitNum,
+        offset: offsetNum,
+        hasNext: (offsetNum + limitNum) < filteredHedges.length
       }
     }
   });
 }
 
-// Get wallet balances
-export function handleGetBalances(req: Request, res: Response) {
+// GET /wallet/balances - Get wallet balances
+export function handleGetWalletBalances(req: Request, res: Response) {
   const totalValue = balances.reduce((sum, b) => sum + b.valueUsd, 0);
   const totalAvailable = balances.reduce((sum, b) => sum + (b.available / b.total) * b.valueUsd, 0);
   const totalLocked = balances.reduce((sum, b) => sum + (b.locked / b.total) * b.valueUsd, 0);
@@ -195,8 +207,8 @@ export function handleGetBalances(req: Request, res: Response) {
   });
 }
 
-// Calculate withdrawable funds
-export function handleGetWithdrawable(req: Request, res: Response) {
+// GET /wallet/withdrawable - Calculate withdrawable funds
+export function handleGetWalletWithdrawable(req: Request, res: Response) {
   const totalValue = balances.reduce((sum, b) => sum + b.valueUsd, 0);
   const lockedValue = balances.reduce((sum, b) => sum + (b.locked / b.total) * b.valueUsd, 0);
   
@@ -229,8 +241,8 @@ export function handleGetWithdrawable(req: Request, res: Response) {
   });
 }
 
-// Execute hedge
-export function handleExecuteHedge(req: Request, res: Response) {
+// POST /hedge - Execute hedge
+export function handlePostHedge(req: Request, res: Response) {
   const {
     amount,
     type = 'manual_hedge',
@@ -326,8 +338,8 @@ export function handleGetHedgePercent(req: Request, res: Response) {
   });
 }
 
-// Update user hedge settings
-export function handleUpdateHedgePercent(req: Request, res: Response) {
+// PATCH /hedge/percent - Update user hedge settings
+export function handlePatchHedgePercent(req: Request, res: Response) {
   const {
     hedgePercent,
     autoAdjust,
@@ -415,8 +427,8 @@ export function handleUpdateMarketConditions(req: Request, res: Response) {
   });
 }
 
-// Get wallet snapshot (live vs stored portfolio)
-export function handleGetSnapshot(req: Request, res: Response) {
+// GET /wallet/snapshot - Get wallet snapshot (live vs stored portfolio)
+export function handleGetWalletSnapshot(req: Request, res: Response) {
   const userId = req.query.userId as string || 'user_001'; // In production, get from auth
 
   // Simulate snapshot data
