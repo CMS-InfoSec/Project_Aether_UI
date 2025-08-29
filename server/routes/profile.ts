@@ -213,6 +213,22 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
     let updatedSettings = null;
     let apiKeyResult = null;
 
+    // Special case: If this is ONLY an API key deletion request, handle it separately
+    const isApiKeyDeletionOnly = !settings && binance_key === '' && binance_secret === '';
+
+    if (isApiKeyDeletionOnly) {
+      console.log('Processing API key deletion only');
+      delete apiKeys[userId];
+
+      return res.json({
+        status: 'success',
+        message: 'API keys deleted successfully',
+        data: {
+          api_keys: null
+        }
+      });
+    }
+
     // Handle trading settings update
     if (settings) {
       const { sl_multiplier, tp_multiplier, use_news_analysis, trailing_stop, risk_tier } = settings;
