@@ -268,49 +268,57 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
       }
     }
 
-    // Handle Binance API credentials update
-    if (binance_key && binance_secret) {
-      // Validate API key format
-      if (!validateBinanceApiKey(binance_key)) {
-        errors.push('Binance API key must be a 64-character alphanumeric string');
+    // Handle Binance API credentials
+    if (binance_key !== undefined || binance_secret !== undefined) {
+      // Check if this is a deletion request (both empty strings)
+      if (binance_key === '' && binance_secret === '') {
+        console.log(`Deleting API keys for user: ${userId}`);
+        delete apiKeys[userId];
+        apiKeyResult = null;
       }
-
-      if (!binance_secret || binance_secret.length < 10) {
-        errors.push('Binance API secret is required and must be at least 10 characters');
-      }
-
-      if (errors.length === 0) {
-        // Verify API key scopes
-        const scopeValidation = verifyBinanceApiKeyScopes(binance_key, binance_secret);
-
-        if (!scopeValidation.valid) {
-          return res.status(400).json({
-            status: 'error',
-            error: scopeValidation.error || 'Invalid API key scopes'
-          });
+      // Check if this is an addition/update request (both have values)
+      else if (binance_key && binance_secret) {
+        // Validate API key format
+        if (!validateBinanceApiKey(binance_key)) {
+          errors.push('Binance API key must be a 64-character alphanumeric string');
         }
 
-        // Encrypt and store API credentials
-        const { encryptedKey, encryptedSecret } = encryptApiCredentials(binance_key, binance_secret);
+        if (!binance_secret || binance_secret.length < 10) {
+          errors.push('Binance API secret is required and must be at least 10 characters');
+        }
 
-        // Calculate expiration date (default to 90 days)
-        const expirationDate = expires_at || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+        if (errors.length === 0) {
+          // Verify API key scopes
+          const scopeValidation = verifyBinanceApiKeyScopes(binance_key, binance_secret);
 
-        apiKeys[userId] = {
-          key_masked: maskApiKey(binance_key),
-          expires_at: expirationDate,
-          created_at: new Date().toISOString(),
-          scopes_verified: true
-        };
+          if (!scopeValidation.valid) {
+            return res.status(400).json({
+              status: 'error',
+              error: scopeValidation.error || 'Invalid API key scopes'
+            });
+          }
 
-        apiKeyResult = apiKeys[userId];
+          // Encrypt and store API credentials
+          const { encryptedKey, encryptedSecret } = encryptApiCredentials(binance_key, binance_secret);
+
+          // Calculate expiration date (default to 90 days)
+          const expirationDate = expires_at || new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
+
+          console.log(`Saving API keys for user: ${userId}`);
+          apiKeys[userId] = {
+            key_masked: maskApiKey(binance_key),
+            expires_at: expirationDate,
+            created_at: new Date().toISOString(),
+            scopes_verified: true
+          };
+
+          apiKeyResult = apiKeys[userId];
+        }
       }
-    }
-
-    // Handle API key deletion (empty key/secret)
-    if (binance_key === '' && binance_secret === '') {
-      delete apiKeys[userId];
-      apiKeyResult = null;
+      // Invalid combination (one empty, one not)
+      else {
+        errors.push('Both API key and secret must be provided together, or both must be empty for deletion');
+      }
     }
 
     if (errors.length > 0) {
