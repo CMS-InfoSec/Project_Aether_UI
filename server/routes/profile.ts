@@ -361,6 +361,14 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
 
     if (errors.length > 0) {
       console.log('Validation errors:', errors);
+      console.log('Full context when validation failed:', {
+        settings,
+        binance_key,
+        binance_secret,
+        hasNoSettings,
+        isApiKeyDeletion,
+        isApiKeyDeletionOnly: hasNoSettings && (binance_key === '' && binance_secret === '')
+      });
       return res.status(400).json({
         status: 'error',
         error: 'Validation failed',
@@ -397,9 +405,11 @@ export function handleUpdateTradingSettings(req: Request, res: Response) {
     res.json(response);
   } catch (error) {
     console.error('Update trading settings error:', error);
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     res.status(500).json({
       status: 'error',
-      error: 'Failed to update trading settings'
+      error: 'Failed to update trading settings',
+      details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
 }
