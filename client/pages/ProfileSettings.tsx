@@ -433,6 +433,8 @@ export default function ProfileSettings() {
     setApiError('');
 
     try {
+      console.log('Sending delete API keys request...');
+
       const response = await handleApiRequest(
         () => fetch('/api/users/settings', {
           method: 'PATCH',
@@ -445,13 +447,35 @@ export default function ProfileSettings() {
         'deleteApiKeys'
       );
 
+      console.log('Delete API keys response status:', response.status);
+
       // Check response status first
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || `HTTP ${response.status}`);
+        let errorMessage = `HTTP ${response.status}`;
+        try {
+          const errorData = await response.json();
+          console.log('Error response data:', errorData);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+          if (errorData.details) {
+            errorMessage += ': ' + errorData.details.join(', ');
+          }
+        } catch (jsonError) {
+          console.log('Could not parse error response as JSON:', jsonError);
+          try {
+            const textError = await response.text();
+            console.log('Error response text:', textError);
+            if (textError) {
+              errorMessage = textError;
+            }
+          } catch (textError) {
+            console.log('Could not read error response as text:', textError);
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log('Delete API keys success response:', data);
 
       if (data.status === 'success') {
         setExistingApiKeys(null);
@@ -461,7 +485,7 @@ export default function ProfileSettings() {
           variant: "destructive"
         });
       } else {
-        throw new Error(data.error || 'Failed to delete API keys');
+        throw new Error(data.error || data.message || 'Failed to delete API keys');
       }
     } catch (error) {
       console.error('Delete API keys error:', error);
