@@ -196,6 +196,10 @@ function maskApiKey(key: string): string {
 
 // Update user trading settings (enhanced to handle API keys)
 export function handleUpdateTradingSettings(req: Request, res: Response) {
+  console.log('handleUpdateTradingSettings called with method:', req.method);
+  console.log('Raw request body:', req.body);
+  console.log('Request headers:', req.headers);
+
   try {
     const { settings, binance_key, binance_secret, expires_at }: SettingsUpdateRequest = req.body;
 
