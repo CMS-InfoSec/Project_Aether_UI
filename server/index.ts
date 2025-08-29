@@ -98,7 +98,8 @@ import {
   handleUpdateUserProfile,
   handleGetTradingSettings,
   handleUpdateTradingSettings,
-  handleGetApiKeys
+  handleGetApiKeys,
+  handleDeleteApiKeys
 } from "./routes/profile";
 import {
   handleGetBootstrapStatus,
@@ -245,6 +246,7 @@ export function createServer() {
   }, handleUpdateTradingSettings);
 
   app.get("/api/user/api-keys", handleGetApiKeys);
+  app.delete("/api/user/api-keys", handleDeleteApiKeys);
 
   // Debug endpoint
   app.post("/api/debug/test", (req, res) => {
