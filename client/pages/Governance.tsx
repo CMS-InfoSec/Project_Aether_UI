@@ -751,17 +751,16 @@ export default function Governance() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Deployment</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deploy proposal "{deployingProposal?.id}"?
-              <div className="mt-4 p-3 bg-muted rounded-lg">
-                <div className="text-sm">
-                  <div><strong>Proposal:</strong> {deployingProposal?.id}</div>
-                  <div><strong>Description:</strong> {deployingProposal?.description}</div>
-                  <div><strong>Approvals:</strong> {deployingProposal?.votes.filter(v => v.approve).length}/{deployingProposal?.requiredVotes}</div>
-                  <div><strong>Deployment Time:</strong> {new Date().toLocaleString()}</div>
-                </div>
-              </div>
-              This action cannot be undone.
+              Are you sure you want to deploy proposal "{deployingProposal?.id}"? This action cannot be undone.
             </AlertDialogDescription>
+            <div className="mt-4 p-3 bg-muted rounded-lg">
+              <div className="text-sm">
+                <div><strong>Proposal:</strong> {deployingProposal?.id}</div>
+                <div><strong>Description:</strong> {deployingProposal?.description}</div>
+                <div><strong>Approvals:</strong> {deployingProposal?.votes.filter(v => v.approve).length}/{deployingProposal?.requiredVotes}</div>
+                <div><strong>Deployment Time:</strong> {new Date().toLocaleString()}</div>
+              </div>
+            </div>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setDeployingProposal(null)}>
