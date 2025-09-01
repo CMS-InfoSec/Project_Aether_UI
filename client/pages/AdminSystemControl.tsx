@@ -188,27 +188,79 @@ export default function AdminSystemControl() {
     }
   };
 
+  // Test backend connection
+  const testBackendConnection = async () => {
+    setIsTestingConnection(true);
+    setConnectionStatus('testing');
+
+    try {
+      const testUrl = backendUrl.replace(/\/+$/, '') + '/api/system/status';
+      const response = await fetch(testUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': API_KEY,
+        },
+        timeout: 10000, // 10 second timeout
+      });
+
+      if (response.ok) {
+        setConnectionStatus('connected');
+        toast({
+          title: "Connection Successful",
+          description: `Successfully connected to backend at ${backendUrl}`,
+        });
+      } else {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
+    } catch (error) {
+      setConnectionStatus('disconnected');
+      toast({
+        title: "Connection Failed",
+        description: error instanceof Error ? error.message : "Failed to connect to backend server",
+        variant: "destructive"
+      });
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
+  // Save backend URL
+  const saveBackendUrl = () => {
+    const cleanUrl = backendUrl.replace(/\/+$/, ''); // Remove trailing slashes
+    setBackendUrl(cleanUrl);
+    localStorage.setItem('aether-backend-url', cleanUrl);
+    setConnectionStatus('unknown'); // Reset connection status when URL changes
+
+    toast({
+      title: "Backend URL Saved",
+      description: `Backend URL updated to: ${cleanUrl}`,
+    });
+  };
+
   // Load initial data
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
-      
+
       try {
         await Promise.all([
           fetchSystemState(),
           fetchCurrentMode(),
           fetchAuditLog()
         ]);
+        setConnectionStatus('connected'); // If we can load data, we're connected
       } catch (error) {
         setError(error instanceof Error ? error.message : 'Failed to load data');
+        setConnectionStatus('disconnected');
       } finally {
         setIsLoading(false);
       }
     };
-    
+
     loadData();
-  }, []);
+  }, [backendUrl]); // Re-run when backend URL changes
 
   // Handle pause system
   const handlePauseSystem = async () => {
