@@ -787,13 +787,13 @@ export default function AdminSystemControl() {
                   <AlertDialogTitle>Confirm Trading Mode Change</AlertDialogTitle>
                   <AlertDialogDescription>
                     Change trading mode from <strong>{systemState.mode.toUpperCase()}</strong> to <strong>{selectedMode.toUpperCase()}</strong>?
-                    {selectedMode.toLowerCase() === 'live' && (
-                      <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
-                        <AlertTriangle className="h-4 w-4 inline mr-1" />
-                        <strong>Warning:</strong> Switching to live mode will enable real trading.
-                      </div>
-                    )}
                   </AlertDialogDescription>
+                  {selectedMode.toLowerCase() === 'live' && (
+                    <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
+                      <AlertTriangle className="h-4 w-4 inline mr-1" />
+                      <strong>Warning:</strong> Switching to live mode will enable real trading.
+                    </div>
+                  )}
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
