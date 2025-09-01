@@ -1077,6 +1077,15 @@ export default function AdminSystemControl() {
               </div>
             </div>
           )}
+
+          {connectionStatus === 'disconnected' && (
+            <Alert variant="destructive">
+              <WifiOff className="h-4 w-4" />
+              <AlertDescription>
+                Kill switch controls disabled: Backend server is not connected.
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
 
