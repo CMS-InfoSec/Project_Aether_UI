@@ -994,7 +994,16 @@ export default function AdminSystemControl() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {systemState.isPaused && (
+            {connectionStatus === 'disconnected' && (
+              <Alert variant="destructive">
+                <WifiOff className="h-4 w-4" />
+                <AlertDescription>
+                  Controls disabled: Backend server is not connected.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {systemState.isPaused && connectionStatus !== 'disconnected' && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
