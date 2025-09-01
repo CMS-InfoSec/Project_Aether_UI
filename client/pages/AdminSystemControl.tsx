@@ -818,7 +818,7 @@ export default function AdminSystemControl() {
                     placeholder="Your email or identifier"
                     value={resumeActor}
                     onChange={(e) => setResumeActor(e.target.value)}
-                    disabled={systemState.killSwitchEnabled}
+                    disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
                   />
                 </div>
                 <div>
@@ -829,7 +829,7 @@ export default function AdminSystemControl() {
                     value={resumeReason}
                     onChange={(e) => setResumeReason(e.target.value)}
                     maxLength={200}
-                    disabled={systemState.killSwitchEnabled}
+                    disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
                   />
                   <div className="text-xs text-muted-foreground mt-1">
                     {resumeReason.length}/200 characters
@@ -862,6 +862,7 @@ export default function AdminSystemControl() {
                     placeholder="Your email or identifier"
                     value={pauseActor}
                     onChange={(e) => setPauseActor(e.target.value)}
+                    disabled={connectionStatus === 'disconnected'}
                   />
                 </div>
                 <div>
@@ -872,6 +873,7 @@ export default function AdminSystemControl() {
                     value={pauseReason}
                     onChange={(e) => setPauseReason(e.target.value)}
                     maxLength={200}
+                    disabled={connectionStatus === 'disconnected'}
                   />
                   <div className="text-xs text-muted-foreground mt-1">
                     {pauseReason.length}/200 characters
