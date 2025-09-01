@@ -25,8 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { 
-  Play, 
+import {
+  Play,
   Pause,
   Shield,
   Activity,
@@ -42,7 +42,12 @@ import {
   Eye,
   EyeOff,
   Power,
-  Lock
+  Lock,
+  Server,
+  Wifi,
+  WifiOff,
+  TestTube,
+  Save
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
