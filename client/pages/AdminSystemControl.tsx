@@ -877,10 +877,10 @@ export default function AdminSystemControl() {
                     {pauseReason.length}/200 characters
                   </div>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={handlePauseSystem} 
-                  disabled={isProcessing}
+                <Button
+                  variant="destructive"
+                  onClick={handlePauseSystem}
+                  disabled={isProcessing || connectionStatus === 'disconnected'}
                   className="w-full"
                 >
                   {isProcessing ? (
