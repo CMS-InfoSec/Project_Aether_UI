@@ -835,9 +835,9 @@ export default function AdminSystemControl() {
                     {resumeReason.length}/200 characters
                   </div>
                 </div>
-                <Button 
-                  onClick={handleResumeSystem} 
-                  disabled={isProcessing || systemState.killSwitchEnabled}
+                <Button
+                  onClick={handleResumeSystem}
+                  disabled={isProcessing || systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
                   className="w-full"
                 >
                   {isProcessing ? (
