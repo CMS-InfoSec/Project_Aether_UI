@@ -917,7 +917,7 @@ export default function AdminSystemControl() {
               <Select
                 value={selectedMode}
                 onValueChange={setSelectedMode}
-                disabled={systemState.killSwitchEnabled}
+                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select trading mode" />
@@ -937,7 +937,7 @@ export default function AdminSystemControl() {
                 placeholder="Your email or identifier"
                 value={modeActor}
                 onChange={(e) => setModeActor(e.target.value)}
-                disabled={systemState.killSwitchEnabled}
+                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
               />
             </div>
 
@@ -950,7 +950,7 @@ export default function AdminSystemControl() {
                 placeholder="Reason for changing trading mode"
                 value={modeReason}
                 onChange={(e) => setModeReason(e.target.value)}
-                disabled={systemState.killSwitchEnabled}
+                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
               />
             </div>
 
@@ -959,8 +959,9 @@ export default function AdminSystemControl() {
                 <Button 
                   className="w-full" 
                   disabled={
-                    isProcessing || 
+                    isProcessing ||
                     systemState.killSwitchEnabled ||
+                    connectionStatus === 'disconnected' ||
                     selectedMode === systemState.mode ||
                     (selectedMode.toLowerCase() === 'live' && !modeReason.trim())
                   }
@@ -1025,7 +1026,7 @@ export default function AdminSystemControl() {
             <Switch
               checked={systemState.killSwitchEnabled}
               onCheckedChange={handleKillSwitchToggle}
-              disabled={isProcessing}
+              disabled={isProcessing || connectionStatus === 'disconnected'}
             />
           </div>
 
