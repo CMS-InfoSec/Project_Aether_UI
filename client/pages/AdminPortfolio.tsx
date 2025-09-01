@@ -793,17 +793,16 @@ export default function AdminPortfolio() {
                   <AlertDialogHeader>
                     <AlertDialogTitle>Confirm System-Wide Rebalance</AlertDialogTitle>
                     <AlertDialogDescription>
-                      This will trigger a rebalance across all active portfolios using the provided prices and returns data. 
-                      This action cannot be undone.
-                      {stats && (
-                        <div className="mt-4 p-3 bg-muted rounded-lg">
-                          <div className="text-sm space-y-1">
-                            <div><strong>Active portfolios:</strong> {stats.modeDistribution.live + stats.modeDistribution.demo}</div>
-                            <div><strong>Total value:</strong> {formatCurrency(stats.totalValue)}</div>
-                          </div>
-                        </div>
-                      )}
+                      This will trigger a rebalance across all active portfolios using the provided prices and returns data. This action cannot be undone.
                     </AlertDialogDescription>
+                    {stats && (
+                      <div className="mt-4 p-3 bg-muted rounded-lg">
+                        <div className="text-sm space-y-1">
+                          <div><strong>Active portfolios:</strong> {stats.modeDistribution.live + stats.modeDistribution.demo}</div>
+                          <div><strong>Total value:</strong> {formatCurrency(stats.totalValue)}</div>
+                        </div>
+                      </div>
+                    )}
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
