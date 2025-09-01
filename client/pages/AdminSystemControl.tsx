@@ -556,6 +556,39 @@ export default function AdminSystemControl() {
     );
   };
 
+  const getConnectionBadge = () => {
+    switch (connectionStatus) {
+      case 'connected':
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 flex items-center space-x-1">
+            <Wifi className="h-3 w-3" />
+            <span>CONNECTED</span>
+          </Badge>
+        );
+      case 'disconnected':
+        return (
+          <Badge variant="destructive" className="flex items-center space-x-1">
+            <WifiOff className="h-3 w-3" />
+            <span>DISCONNECTED</span>
+          </Badge>
+        );
+      case 'testing':
+        return (
+          <Badge variant="secondary" className="flex items-center space-x-1">
+            <RefreshCw className="h-3 w-3 animate-spin" />
+            <span>TESTING</span>
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="flex items-center space-x-1">
+            <TestTube className="h-3 w-3" />
+            <span>UNKNOWN</span>
+          </Badge>
+        );
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-96">
