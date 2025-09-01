@@ -1039,6 +1039,7 @@ export default function AdminSystemControl() {
                   placeholder="Your email or identifier"
                   value={killSwitchActor}
                   onChange={(e) => setKillSwitchActor(e.target.value)}
+                  disabled={connectionStatus === 'disconnected'}
                 />
               </div>
               <div>
@@ -1048,6 +1049,7 @@ export default function AdminSystemControl() {
                   placeholder="Emergency reason for activating kill switch"
                   value={killSwitchReason}
                   onChange={(e) => setKillSwitchReason(e.target.value)}
+                  disabled={connectionStatus === 'disconnected'}
                 />
                 <div className="text-xs text-muted-foreground mt-1">
                   {killSwitchReason.length} characters (minimum 10 required)
