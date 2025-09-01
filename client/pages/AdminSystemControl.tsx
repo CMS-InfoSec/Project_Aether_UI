@@ -899,6 +899,15 @@ export default function AdminSystemControl() {
                 </Button>
               </div>
             )}
+
+            {connectionStatus === 'disconnected' && (
+              <Alert variant="destructive">
+                <WifiOff className="h-4 w-4" />
+                <AlertDescription>
+                  Pause/Resume controls disabled: Backend server is not connected.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
 
