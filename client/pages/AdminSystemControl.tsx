@@ -745,6 +745,23 @@ export default function AdminSystemControl() {
       </Card>
 
       {/* Emergency alerts */}
+      {connectionStatus === 'disconnected' && (
+        <Alert variant="destructive">
+          <WifiOff className="h-4 w-4" />
+          <AlertDescription>
+            <div className="space-y-1">
+              <div className="font-semibold">Backend Connection Lost</div>
+              <div className="text-sm">
+                Unable to connect to the backend server at: {backendUrl}
+              </div>
+              <div className="text-sm">
+                Please verify the URL is correct and the server is running, then test the connection.
+              </div>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {systemState.killSwitchEnabled && (
         <Alert variant="destructive">
           <Skull className="h-4 w-4" />
