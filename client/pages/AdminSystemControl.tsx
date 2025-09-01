@@ -635,6 +635,76 @@ export default function AdminSystemControl() {
         </Button>
       </div>
 
+      {/* Backend Connection Configuration */}
+      <Card className="border-l-4 border-l-orange-500">
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Server className="h-5 w-5" />
+            <span>Backend Server Connection</span>
+          </CardTitle>
+          <CardDescription>
+            Configure the backend server URL for system operations
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="md:col-span-2 space-y-3">
+              <div>
+                <Label htmlFor="backendUrl">Backend Server URL</Label>
+                <Input
+                  id="backendUrl"
+                  placeholder="http://localhost:3001 or https://api.yourserver.com"
+                  value={backendUrl}
+                  onChange={(e) => setBackendUrl(e.target.value)}
+                />
+                <div className="text-xs text-muted-foreground mt-1">
+                  Enter the complete URL including protocol (http:// or https://)
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={testBackendConnection}
+                  disabled={isTestingConnection || !backendUrl.trim()}
+                >
+                  {isTestingConnection ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Testing...
+                    </>
+                  ) : (
+                    <>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Test Connection
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={saveBackendUrl}
+                  disabled={!backendUrl.trim() || backendUrl === localStorage.getItem('aether-backend-url')}
+                >
+                  <Save className="h-4 w-4 mr-2" />
+                  Save URL
+                </Button>
+              </div>
+            </div>
+            <div className="flex items-center justify-center">
+              <div className="text-center">
+                <div className="mb-2">
+                  {getConnectionBadge()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  {connectionStatus === 'connected' && 'Backend is reachable'}
+                  {connectionStatus === 'disconnected' && 'Cannot reach backend'}
+                  {connectionStatus === 'testing' && 'Testing connection...'}
+                  {connectionStatus === 'unknown' && 'Connection not tested'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* System Status Banner */}
       <Card className="border-l-4 border-l-blue-500">
         <CardHeader>
@@ -652,7 +722,7 @@ export default function AdminSystemControl() {
               </div>
               {getModeBadge(systemState.mode)}
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Status</div>
@@ -662,7 +732,7 @@ export default function AdminSystemControl() {
               </div>
               {getStatusBadge()}
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div>
                 <div className="font-medium">Kill Switch</div>
