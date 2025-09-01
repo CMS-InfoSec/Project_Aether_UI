@@ -120,7 +120,10 @@ export default function AdminSystemControl() {
       ...options.headers,
     };
 
-    const response = await fetch(url, {
+    // Construct full URL using configured backend
+    const fullUrl = url.startsWith('http') ? url : `${backendUrl.replace(/\/+$/, '')}${url}`;
+
+    const response = await fetch(fullUrl, {
       ...options,
       headers,
     });
@@ -128,11 +131,11 @@ export default function AdminSystemControl() {
     if (response.status === 401) {
       throw new Error('API key required');
     }
-    
+
     if (response.status === 403) {
       throw new Error('Insufficient permissions');
     }
-    
+
     if (response.status >= 500) {
       throw new Error('Server error. Please try again.');
     }
