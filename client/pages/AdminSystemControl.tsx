@@ -105,6 +105,13 @@ export default function AdminSystemControl() {
   const [killSwitchActor, setKillSwitchActor] = useState('admin@example.com');
   const [killSwitchReason, setKillSwitchReason] = useState('');
 
+  // Backend connection state
+  const [backendUrl, setBackendUrl] = useState(() => {
+    return localStorage.getItem('aether-backend-url') || window.location.origin;
+  });
+  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'testing'>('unknown');
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
+
   // API request helper with X-API-Key header
   const apiRequest = async (url: string, options: RequestInit = {}) => {
     const headers = {
