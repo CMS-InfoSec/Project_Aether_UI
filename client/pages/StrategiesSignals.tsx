@@ -215,7 +215,13 @@ export default function StrategiesSignals() {
                   <div className="flex items-center justify-between">
                     <div className="text-sm text-muted-foreground">Results ready</div>
                     <div className="flex items-center gap-2">
-                      <Badge variant={pinned? 'default':'outline'} onClick={()=> setPinned(v=>!v)} className="cursor-pointer">{pinned? 'Pinned':'Pin this run'}</Badge>
+                      <Badge variant={pinned? 'default':'outline'} onClick={()=> { const nv=!pinned; setPinned(nv); if (strategyId){ localStorage.setItem(`stressTest.pinned.${strategyId}`, JSON.stringify(nv)); } }} className="cursor-pointer">{pinned? 'Pinned':'Pin this run'}</Badge>
+                      <Button variant="outline" size="sm" onClick={()=>{
+                        const rows = (stressResult.scenarios||[]).map((s:any)=> ({ name: s.name, ...s.parameters, ...s.metrics }));
+                        const headers = Array.from(rows.reduce((set:any,row:any)=>{ Object.keys(row).forEach(k=> set.add(k)); return set; }, new Set(['name'])));
+                        const csv = [headers.join(',')].concat(rows.map((r:any)=> headers.map((h:string)=> r[h]!==undefined? r[h]: '').join(','))).join('\n');
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `stress_${strategyId}.csv`; a.click();
+                      }}>Download CSV</Button>
                       <Button variant="ghost" size="sm" onClick={()=> setStressResult(null)}>Clear</Button>
                     </div>
                   </div>
