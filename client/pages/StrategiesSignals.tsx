@@ -132,10 +132,7 @@ export default function StrategiesSignals() {
               )}
 
               {/* Admin-only Replay News Failures */}
-              {(() => { try { const { user } = require('@/contexts/AuthContext'); } catch { return null; } })()}
-
-              {/* Simple admin-gated button using local role sniff */}
-              {(() => { try { const u = (window as any).__auth_user__; return u && u.role === 'admin'; } catch { return false; } })() ? (
+              {user?.role === 'admin' && (
                 <div className="border p-3 rounded">
                   <div className="flex items-center justify-between mb-2">
                     <div className="font-medium">Replay News Failures</div>
@@ -152,7 +149,7 @@ export default function StrategiesSignals() {
                   </div>
                   <div className="text-xs text-muted-foreground">Admin only</div>
                 </div>
-              ) : null}
+              )}
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
