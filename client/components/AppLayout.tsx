@@ -121,6 +121,36 @@ const adminNavigationItems = [
     href: '/admin/feedback',
     icon: MessageSquare,
     badge: null
+  },
+  {
+    title: 'Strategy Review',
+    href: '/admin/strategy-review',
+    icon: Vote,
+    badge: null
+  },
+  {
+    title: 'Plugins',
+    href: '/admin/plugins',
+    icon: Brain,
+    badge: null
+  },
+  {
+    title: 'Automation Social',
+    href: '/admin/automation-social',
+    icon: Activity,
+    badge: null
+  },
+  {
+    title: 'Push Console',
+    href: '/admin/push-console',
+    icon: Bell,
+    badge: null
+  },
+  {
+    title: 'System Tasks',
+    href: '/admin/system/tasks',
+    icon: Settings,
+    badge: null
   }
 ];
 
