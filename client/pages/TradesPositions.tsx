@@ -101,6 +101,13 @@ export default function TradesPositions() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(25);
+  const [symbol, setSymbol] = useState('');
+  const [size, setSize] = useState<number>(0);
+  const [includeContext, setIncludeContext] = useState({ strategies: true, risk: true, sentiment: false, exposure: false });
+  const [decision, setDecision] = useState<any | null>(null);
+  const [execSide, setExecSide] = useState<'buy'|'sell'|'flat'>('buy');
+  const [execSize, setExecSize] = useState<number>(0);
+  const [consoleLoading, setConsoleLoading] = useState(false);
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [vetoingTrades, setVetoingTrades] = useState<Set<string>>(new Set());
