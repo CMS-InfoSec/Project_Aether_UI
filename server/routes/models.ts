@@ -222,6 +222,19 @@ interface DatasetInfo {
   };
 }
 
+export function handleExplainModel(req: Request, res: Response) {
+  const { modelId } = req.params as { modelId: string };
+  // Return a simple features list for any model id
+  const features = [
+    { name: 'volume', importance: 0.32 },
+    { name: 'momentum', importance: 0.27 },
+    { name: 'volatility', importance: 0.18 },
+    { name: 'sentiment', importance: 0.12 },
+    { name: 'liquidity', importance: 0.11 },
+  ];
+  res.json({ features, modelId });
+}
+
 interface SentimentPipeline {
   id: string;
   type: 'twitter' | 'rss';

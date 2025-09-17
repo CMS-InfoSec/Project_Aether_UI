@@ -248,6 +248,47 @@ export function createServer() {
   app.get("/api/user/api-keys", handleGetApiKeys);
   app.delete("/api/user/api-keys", handleDeleteApiKeys);
 
+  // Health & observability routes
+  const { handleHealthLive, handleHealthReady, handleHealthReadyDetails, handleHealthDependencies, handleMetrics } = require('./routes/health');
+  app.get('/api/health/live', handleHealthLive);
+  app.get('/api/health/ready', handleHealthReady);
+  app.get('/api/health/ready/details', handleHealthReadyDetails);
+  app.get('/api/health/dependencies', handleHealthDependencies);
+  app.get('/api/metrics', handleMetrics);
+
+  // Events (audit/logs)
+  const { handleEventsTrades, handleEventsBalances } = require('./routes/events');
+  app.get('/api/events/trades', handleEventsTrades);
+  app.get('/api/events/balances', handleEventsBalances);
+
+  // Strategies & Signals
+  const {
+    handleGetStrategyFlags,
+    handleGetStrategyBreakdown,
+    handleNewsSentiment,
+    handleNewsLatest,
+    handleSocialLatest,
+    handleSignalsMetrics,
+    handleNewsReplayFailures,
+    handleSignalsIngest,
+    handleStrategiesExplain,
+    handleStrategiesStressTest,
+  } = require('./routes/strategies');
+  app.get('/api/strategies/flags', handleGetStrategyFlags);
+  app.get('/api/strategies/breakdown', handleGetStrategyBreakdown);
+  app.get('/api/news/sentiment', handleNewsSentiment);
+  app.get('/api/news/latest', handleNewsLatest);
+  app.get('/api/social/latest', handleSocialLatest);
+  app.get('/api/signals/metrics', handleSignalsMetrics);
+  app.post('/api/news/replay-failures', handleNewsReplayFailures);
+  app.post('/api/signals/ingest', handleSignalsIngest);
+  app.get('/api/strategies/explain', handleStrategiesExplain);
+  app.post('/api/strategies/stress-test', handleStrategiesStressTest);
+
+  // Models explainability
+  const { handleExplainModel } = require('./routes/models');
+  app.get('/api/models/explain/:modelId', handleExplainModel);
+
   // Debug endpoint
   app.post("/api/debug/test", (req, res) => {
     console.log('Debug endpoint hit with body:', req.body);
