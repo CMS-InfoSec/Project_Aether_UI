@@ -104,6 +104,9 @@ export default function TradesPositions() {
   const [sortField, setSortField] = useState<SortField>('timestamp');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [vetoingTrades, setVetoingTrades] = useState<Set<string>>(new Set());
+  const [wsStatus, setWsStatus] = useState<'connecting'|'connected'|'disconnected'>('connecting');
+  const wsRef = useRef<WebSocket | null>(null);
+  const pollRef = useRef<number | null>(null);
 
   const isAdmin = user?.role === 'admin';
 
@@ -294,6 +297,66 @@ export default function TradesPositions() {
     }
   }, [activeTab, fetchTrades, fetchPositions]);
 
+  // Live updates via WebSocket with 5s polling fallback
+  const startPolling = useCallback(() => {
+    if (pollRef.current) return; // already polling
+    pollRef.current = window.setInterval(() => {
+      if (activeTab === 'trades') fetchTrades(currentPage);
+      else fetchPositions(currentPage);
+    }, 5000);
+  }, [activeTab, currentPage, fetchTrades, fetchPositions]);
+
+  const stopPolling = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }, []);
+
+  const connectWs = useCallback(() => {
+    try {
+      setWsStatus('connecting');
+      const override = localStorage.getItem('aether-ws-url');
+      const base = override || `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/trades`;
+      const ws = new WebSocket(base);
+      wsRef.current = ws;
+      ws.onopen = () => { setWsStatus('connected'); stopPolling(); };
+      ws.onclose = () => { setWsStatus('disconnected'); startPolling(); };
+      ws.onerror = () => { setWsStatus('disconnected'); startPolling(); };
+      ws.onmessage = (evt) => {
+        try {
+          const msg = JSON.parse(evt.data);
+          if (msg.type === 'trade') {
+            setTrades(prev => {
+              const mapped = new Map(prev.map(t => [t.id, t]));
+              const t = msg.payload as Trade;
+              mapped.set(t.id, t);
+              return Array.from(mapped.values()).sort((a,b)=> new Date(b.timestamp).getTime()-new Date(a.timestamp).getTime());
+            });
+          } else if (msg.type === 'position') {
+            setPositions(prev => {
+              const mapped = new Map(prev.map(p => [p.id, p]));
+              const p = msg.payload as Position;
+              mapped.set(p.id, p);
+              return Array.from(mapped.values()).sort((a,b)=> new Date(b.timestamp).getTime()-new Date(a.timestamp).getTime());
+            });
+          }
+        } catch {}
+      };
+    } catch {
+      setWsStatus('disconnected');
+      startPolling();
+    }
+  }, [startPolling, stopPolling]);
+
+  useEffect(() => {
+    connectWs();
+    return () => {
+      stopPolling();
+      if (wsRef.current) { try { wsRef.current.close(); } catch {} wsRef.current = null; }
+    };
+  }, [connectWs, stopPolling]);
+
   // Filter and sort data
   const filteredTrades = useMemo(() => {
     let filtered = trades.filter(trade =>
@@ -438,6 +501,15 @@ export default function TradesPositions() {
               <Button variant="outline" size="sm" onClick={handleRefresh}>
                 Retry
               </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {wsStatus !== 'connected' && (
+          <Alert>
+            <AlertDescription className="flex items-center justify-between">
+              Live stream unavailable (status: {wsStatus}). Falling back to 5s polling.
+              <Button variant="outline" size="sm" onClick={()=>{ if (wsRef.current) { try { wsRef.current.close(); } catch {} } stopPolling(); connectWs(); }}>Reconnect</Button>
             </AlertDescription>
           </Alert>
         )}
