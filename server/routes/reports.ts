@@ -585,6 +585,37 @@ export function handleExportReportCSV(req: Request, res: Response) {
   }
 }
 
+// Notification preferences (mock in-memory)
+let notificationPreferences: { supported_channels: string[]; channels: Record<string, boolean> } = {
+  supported_channels: ['email','slack','telegram'],
+  channels: { email: true, slack: false, telegram: false }
+};
+
+export function handleGetNotificationPreferences(_req: Request, res: Response){
+  res.json({ status:'success', data: notificationPreferences });
+}
+
+export function handleSaveNotificationPreferences(req: Request, res: Response){
+  try{
+    const { channels } = req.body || {};
+    if (!channels || typeof channels !== 'object'){
+      return res.status(400).json({ status:'error', error:'invalid payload' });
+    }
+    const next: Record<string, boolean> = {};
+    for (const key of notificationPreferences.supported_channels){
+      if (Object.prototype.hasOwnProperty.call(channels, key)){
+        next[key] = Boolean(channels[key]);
+      } else {
+        next[key] = notificationPreferences.channels[key] || false;
+      }
+    }
+    notificationPreferences = { ...notificationPreferences, channels: next };
+    res.json({ status:'success', data: notificationPreferences });
+  }catch(e){
+    res.status(500).json({ status:'error', error:'failed to save preferences' });
+  }
+}
+
 // Create new notification (for system use)
 export function handleCreateNotification(req: Request, res: Response) {
   try {
