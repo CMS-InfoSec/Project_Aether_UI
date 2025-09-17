@@ -507,7 +507,7 @@ export default function AppLayout() {
                 </Dialog>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <a href="/api/openapi.json" target="_blank" rel="noreferrer">API Documentation</a>
+                  <a href="/docs" target="_blank" rel="noreferrer">API Documentation</a>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout} className="text-red-600">
                   <LogOut className="h-4 w-4 mr-2" /> Logout
