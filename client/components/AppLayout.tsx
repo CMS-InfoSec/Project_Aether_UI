@@ -159,6 +159,7 @@ export default function AppLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
   const { toast } = useToast();
+  const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
   // Top bar status polling
   const API_KEY = 'aether-admin-key-2024';
@@ -178,6 +179,8 @@ export default function AppLayout() {
         if (m.ok) { const d = await m.json(); if (!cancelled) setMode(d.data.mode); }
         const s = await apiRequest('/api/system/status');
         if (s.ok) { const j = await s.json(); if (!cancelled) { setKillSwitch(!!j.data.killSwitchEnabled); setStatusText(j.data.isPaused ? 'Paused' : 'Active'); } }
+        const h = await apiRequest('/api/health/live');
+        if (!cancelled) setApiHealthy(h.ok);
       } catch { /* ignore */ }
     };
     load();
@@ -521,6 +524,16 @@ export default function AppLayout() {
         <main className="flex-1 p-4 lg:p-6">
           <Outlet />
         </main>
+        <footer className="border-t border-border px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className={`inline-block w-2 h-2 rounded-full ${apiHealthy===null? 'bg-gray-400' : apiHealthy? 'bg-green-500' : 'bg-red-500'}`}></span>
+            <span>{apiHealthy===null? 'Checking API…' : apiHealthy? 'API Healthy' : 'API Unreachable'}</span>
+          </div>
+          <div className="space-x-3">
+            <a className="hover:underline" href="/docs" target="_blank" rel="noreferrer">Docs</a>
+            <a className="hover:underline" href="/api/openapi.json" target="_blank" rel="noreferrer">OpenAPI</a>
+          </div>
+        </footer>
       </div>
     </div>
   );
