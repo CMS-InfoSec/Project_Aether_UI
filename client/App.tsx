@@ -34,6 +34,7 @@ import AdminSystemConfig from "./pages/AdminSystemConfig";
 import AdminSystemControl from "./pages/AdminSystemControl";
 import AdminBacktest from "./pages/AdminBacktest";
 import AdminFeedback from "./pages/AdminFeedback";
+import AdminASC from "./pages/AdminASC";
 
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
