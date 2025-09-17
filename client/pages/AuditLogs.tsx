@@ -35,7 +35,24 @@ export default function AuditLogs() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Audit & Logs</h1>
-        <Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4 mr-2"/>Refresh</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={()=>{
+            const rows = trades.map(t=>({ type:'trade', ...t })).concat(balances.map(b=>({ type:'balance', ...b })));
+            const blob = new Blob([JSON.stringify(rows,null,2)],{type:'application/json'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'audit.json'; a.click();
+          }}>Export JSON</Button>
+          <Button variant="outline" onClick={()=>{
+            const headers = ['type','id','timestamp','symbol','side','size','price','pnl_usd','status','executor','account','delta','reason','request_id','hmac_verified'];
+            const rows:any[] = trades.map(t=>({ type:'trade', ...t })).concat(balances.map(b=>({ type:'balance', ...b })));
+            const csv = [headers.join(',')].concat(rows.map(r=> headers.map(h=> {
+              const v = (r as any)[h]; if (v===undefined||v===null) return '';
+              const s = typeof v==='string'? v.replace(/"/g,'""') : String(v);
+              return /[,"]/.test(s) ? `"${s}"` : s;
+            }).join(','))).join('\n');
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = 'audit.csv'; a.click();
+          }}>Export CSV</Button>
+          <Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4 mr-2"/>Refresh</Button>
+        </div>
       </div>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
@@ -58,7 +75,7 @@ export default function AuditLogs() {
         <CardContent>
           <div className="overflow-auto">
             <table className="w-full text-sm">
-              <thead><tr><th className="text-left p-2">Trade ID</th><th className="text-left p-2">Symbol</th><th className="text-left p-2">Side</th><th className="text-left p-2">Size</th><th className="text-left p-2">Price</th><th className="text-left p-2">Status</th><th className="text-left p-2">Request ID</th></tr></thead>
+              <thead><tr><th className="text-left p-2">Trade ID</th><th className="text-left p-2">Symbol</th><th className="text-left p-2">Side</th><th className="text-left p-2">Size</th><th className="text-left p-2">Price</th><th className="text-left p-2">Status</th><th className="text-left p-2">HMAC</th><th className="text-left p-2">Request ID</th></tr></thead>
               <tbody>
                 {trades.map(t => (
                   <tr key={t.id} className="border-t">
@@ -68,6 +85,7 @@ export default function AuditLogs() {
                     <td className="p-2">{t.size}</td>
                     <td className="p-2">{t.price}</td>
                     <td className="p-2">{t.status}</td>
+                    <td className="p-2"><span className={`px-2 py-0.5 text-xs rounded ${t.hmac_verified? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{t.hmac_verified? 'verified':'failed'}</span></td>
                     <td className="p-2">{t.request_id}</td>
                   </tr>
                 ))}
@@ -82,7 +100,7 @@ export default function AuditLogs() {
         <CardContent>
           <div className="overflow-auto">
             <table className="w-full text-sm">
-              <thead><tr><th className="text-left p-2">ID</th><th className="text-left p-2">Account</th><th className="text-left p-2">Symbol</th><th className="text-left p-2">Delta</th><th className="text-left p-2">Reason</th><th className="text-left p-2">Request ID</th></tr></thead>
+              <thead><tr><th className="text-left p-2">ID</th><th className="text-left p-2">Account</th><th className="text-left p-2">Symbol</th><th className="text-left p-2">Delta</th><th className="text-left p-2">Reason</th><th className="text-left p-2">HMAC</th><th className="text-left p-2">Request ID</th></tr></thead>
               <tbody>
                 {balances.map(b => (
                   <tr key={b.id} className="border-t">
@@ -91,6 +109,7 @@ export default function AuditLogs() {
                     <td className="p-2">{b.symbol}</td>
                     <td className="p-2">{b.delta}</td>
                     <td className="p-2">{b.reason}</td>
+                    <td className="p-2"><span className={`px-2 py-0.5 text-xs rounded ${b.hmac_verified? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{b.hmac_verified? 'verified':'failed'}</span></td>
                     <td className="p-2">{b.request_id}</td>
                   </tr>
                 ))}
