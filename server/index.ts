@@ -289,6 +289,13 @@ export function createServer() {
   const { handleExplainModel } = require('./routes/models');
   app.get('/api/models/explain/:modelId', handleExplainModel);
 
+  // Adaptive Strategy Controller
+  const { handleASCStatus, handleASCReweight, handleASCActivate, handleASCDeactivate } = require('./routes/asc');
+  app.get('/api/strategy/controller/status', handleASCStatus);
+  app.post('/api/strategy/controller/reweight', handleASCReweight);
+  app.post('/api/strategy/controller/policy/:name/activate', handleASCActivate);
+  app.post('/api/strategy/controller/policy/:name/deactivate', handleASCDeactivate);
+
   // Debug endpoint
   app.post("/api/debug/test", (req, res) => {
     console.log('Debug endpoint hit with body:', req.body);
