@@ -321,6 +321,8 @@ export function handleKillSwitch(req: Request, res: Response) {
   });
 }
 
+export function getSystemState() { return systemState; }
+
 // Get system audit log
 export function handleGetAuditLog(req: Request, res: Response) {
   if (!validateApiKey(req)) {
