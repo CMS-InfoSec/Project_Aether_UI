@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
 
+import type { Request, Response } from 'express';
+
 // Enhanced Types for AI Training Workflow
 interface TrainingJob {
   jobId: string;
