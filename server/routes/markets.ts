@@ -392,3 +392,40 @@ export function handleExportMarkets(req: Request, res: Response) {
     filename: filename
   });
 }
+
+// Admin: apply governance strategy override (allow/block) for a symbol
+export function handleStrategyOverride(req: Request, res: Response) {
+  try {
+    const { symbol, action, reason } = req.body || {};
+    if (!symbol || typeof symbol !== 'string') {
+      return res.status(400).json({ status: 'error', detail: 'symbol required' });
+    }
+    const sym = String(symbol).trim().toUpperCase();
+    if (!/^[A-Z0-9]+\/[A-Z0-9]+$/.test(sym)) {
+      return res.status(400).json({ status: 'error', detail: 'invalid symbol' });
+    }
+    if (action !== 'allow' && action !== 'block') {
+      return res.status(400).json({ status: 'error', detail: 'action must be allow or block' });
+    }
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+      return res.status(400).json({ status: 'error', detail: 'reason must be at least 10 characters' });
+    }
+
+    const idx = mockMarkets.findIndex(m => m.symbol.toUpperCase() === sym);
+    if (idx === -1) {
+      return res.status(404).json({ status: 'error', detail: 'symbol not found' });
+    }
+
+    // Simulate governance approval by immediately setting override; real system would queue proposal
+    mockMarkets[idx].override = action;
+    const audit_entry_id = `audit_${Date.now()}`;
+
+    return res.status(201).json({
+      status: 'success',
+      message: 'Override applied',
+      data: { symbol: sym, override: action, reason: reason.trim(), audit_entry_id }
+    });
+  } catch (e) {
+    return res.status(500).json({ status: 'error', detail: 'internal error' });
+  }
+}
