@@ -19,6 +19,9 @@ import AIAssistant from "./pages/AIAssistant";
 import ProfileSettings from "./pages/ProfileSettings";
 import UserNotifications from "./pages/UserNotifications";
 import UserReports from "./pages/UserReports";
+import Observability from "./pages/Observability";
+import AuditLogs from "./pages/AuditLogs";
+import StrategiesSignals from "./pages/StrategiesSignals";
 
 // Admin Pages (ADMIN only)
 import AdminDashboard from "./pages/AdminDashboard";
@@ -177,6 +180,9 @@ const AppRouter = () => {
         <Route path="profile" element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
         <Route path="notifications" element={<ErrorBoundary><UserNotifications /></ErrorBoundary>} />
         <Route path="reports" element={<ErrorBoundary><UserReports /></ErrorBoundary>} />
+        <Route path="observability" element={<ErrorBoundary><Observability /></ErrorBoundary>} />
+        <Route path="audit" element={<ErrorBoundary><AuditLogs /></ErrorBoundary>} />
+        <Route path="strategies" element={<ErrorBoundary><StrategiesSignals /></ErrorBoundary>} />
 
         {/* Admin Pages (ADMIN only) */}
         <Route path="admin/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
