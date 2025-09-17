@@ -527,6 +527,17 @@ export default function AdminMarkets() {
           </div>
         )}
 
+        {/* Spot Price Checker */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Spot Price Checker</CardTitle>
+            <CardDescription>Check latest price for a symbol (e.g., BTC/USDT)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SpotPriceChecker />
+          </CardContent>
+        </Card>
+
         {/* Results Header */}
         {marketData && (
           <Card>
