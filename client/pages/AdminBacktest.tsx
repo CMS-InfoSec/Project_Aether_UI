@@ -98,6 +98,10 @@ export default function AdminBacktest() {
   }>({ key: 'timestamp', direction: 'desc' });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(20);
+  const [compareA, setCompareA] = useState<string>('');
+  const [compareB, setCompareB] = useState<string>('');
+  const [cmpA, setCmpA] = useState<BacktestReport|null>(null);
+  const [cmpB, setCmpB] = useState<BacktestReport|null>(null);
 
   // Mock backtest report data
   const mockReport: BacktestReport = {
@@ -352,6 +356,40 @@ export default function AdminBacktest() {
           </Button>
         </div>
       </div>
+
+      {/* Comparison */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Comparison View</CardTitle>
+          <CardDescription>Load two report JSON URLs for side-by-side comparison</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid md:grid-cols-2 gap-3">
+            <Input placeholder="Report A URL (JSON)" value={compareA} onChange={(e)=> setCompareA(e.target.value)} />
+            <Input placeholder="Report B URL (JSON)" value={compareB} onChange={(e)=> setCompareB(e.target.value)} />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={async ()=>{
+              try{ const r = await fetch(compareA); const j = await r.json(); setCmpA(j as BacktestReport); }catch{ toast({ title:'Error', description:'Failed to load A', variant:'destructive' }); }
+              try{ const r = await fetch(compareB); const j = await r.json(); setCmpB(j as BacktestReport); }catch{ toast({ title:'Error', description:'Failed to load B', variant:'destructive' }); }
+            }}>Load</Button>
+            <Button variant="ghost" onClick={()=>{ setCmpA(null); setCmpB(null); }}>Clear</Button>
+          </div>
+          {(cmpA && cmpB) && (
+            <div className="grid md:grid-cols-2 gap-4">
+              {[{label:'Net PnL', key:'net_pnl'}, {label:'Return %', key:'return_percentage'}, {label:'Win Rate', key:'win_rate'}, {label:'Sharpe', key:'sharpe_ratio'}, {label:'Max DD', key:'max_drawdown'}].map((m)=> (
+                <div key={m.key} className="p-3 border rounded">
+                  <div className="text-sm font-medium mb-1">{m.label}</div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>A: {typeof (cmpA!.summary as any)[m.key]==='number'? (m.key==='net_pnl'? formatCurrency((cmpA!.summary as any)[m.key]) : formatNumber((cmpA!.summary as any)[m.key])): '—'}</div>
+                    <div>B: {typeof (cmpB!.summary as any)[m.key]==='number'? (m.key==='net_pnl'? formatCurrency((cmpB!.summary as any)[m.key]) : formatNumber((cmpB!.summary as any)[m.key])): '—'}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Summary Metrics */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
