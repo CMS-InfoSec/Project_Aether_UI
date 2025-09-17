@@ -192,6 +192,7 @@ export function createServer() {
   app.get("/api/markets/export", handleExportMarkets);
   const { handleMarketPrice } = require('./routes/market_price');
   app.get('/api/markets/price', handleMarketPrice);
+  app.post('/api/admin/strategy-override', handleStrategyOverride);
 
   // Portfolio routes
   app.get("/api/admin/portfolio", handleGetPortfolioOverview);
