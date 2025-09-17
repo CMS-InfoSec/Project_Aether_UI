@@ -128,6 +128,30 @@ export default function StrategiesSignals() {
                   <div className="text-xs">Flags: {Object.entries(sentiment.flags).filter(([_,v])=>v).map(([k])=>k).join(', ') || 'none'}</div>
                 </div>
               )}
+
+              {/* Admin-only Replay News Failures */}
+              {(() => { try { const { user } = require('@/contexts/AuthContext'); } catch { return null; } })()}
+
+              {/* Simple admin-gated button using local role sniff */}
+              {(() => { try { const u = (window as any).__auth_user__; return u && u.role === 'admin'; } catch { return false; } })() ? (
+                <div className="border p-3 rounded">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-medium">Replay News Failures</div>
+                    <Button size="sm" variant="outline" onClick={async ()=>{
+                      const ok = window.confirm('This will call POST /api/news/replay-failures to flush and replay failed news jobs. Continue?');
+                      if(!ok) return;
+                      try{
+                        const r = await fetch('/api/news/replay-failures',{method:'POST'});
+                        const j = await r.json();
+                        if (!r.ok) throw new Error(j.detail||'Failed');
+                        toast({ title:'Replayed', description:`Replayed ${j.flushed||0} items` });
+                      }catch(e:any){ toast({ title:'Error', description:e.message||'Failed', variant:'destructive' }); }
+                    }}>Replay Failures</Button>
+                  </div>
+                  <div className="text-xs text-muted-foreground">Admin only</div>
+                </div>
+              ) : null}
+
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <div className="font-medium mb-2">News</div>
