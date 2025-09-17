@@ -396,6 +396,9 @@ export default function StrategiesSignals() {
           <Card>
             <CardHeader><CardTitle>Manual Signal Ingest</CardTitle></CardHeader>
             <CardContent className="space-y-3">
+              <Button variant="outline" size="sm" onClick={async ()=>{
+                try{ const r = await fetch('/api/signals/metrics'); const j = await r.json(); alert(JSON.stringify(j,null,2)); }catch{}
+              }}>View Rate Limits</Button>
               <div>
                 <Label htmlFor="source">Source</Label>
                 <Input id="source" placeholder="tradingview" defaultValue="tradingview" />
