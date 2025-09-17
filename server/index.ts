@@ -246,6 +246,8 @@ export function createServer() {
   app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
   app.post("/api/notifications", handleCreateNotification);
+  app.get('/api/notifications/preferences', (require('./routes/reports').handleGetNotificationPreferences));
+  app.post('/api/notifications/preferences', (require('./routes/reports').handleSaveNotificationPreferences));
 
   // API docs
   const { handleOpenApiJson, handleSwaggerDocs } = require('./routes/docs');
