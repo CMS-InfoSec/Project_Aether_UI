@@ -11,7 +11,8 @@ const trades = Array.from({ length: 25 }).map((_, i) => ({
   pnl_usd: +((Math.random() - 0.5) * 200).toFixed(2),
   status: ["filled","pending","cancelled"][i % 3],
   executor: i % 2 === 0 ? "system" : "admin",
-  request_id: `req_${i + 1}`
+  request_id: `req_${i + 1}`,
+  hmac_verified: Math.random() > 0.1
 }));
 
 const balances = Array.from({ length: 10 }).map((_, i) => ({
@@ -21,7 +22,8 @@ const balances = Array.from({ length: 10 }).map((_, i) => ({
   symbol: ["USDT","BTC","ETH"][i % 3],
   delta: +(Math.random() * 100 - 50).toFixed(2),
   reason: ["trade_fill","deposit","withdrawal"][i % 3],
-  request_id: `bal_req_${i + 1}`
+  request_id: `bal_req_${i + 1}`,
+  hmac_verified: Math.random() > 0.1
 }));
 
 export function handleEventsTrades(req: Request, res: Response) {
