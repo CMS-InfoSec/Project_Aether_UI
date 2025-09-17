@@ -220,6 +220,18 @@ export function createServer() {
   app.post("/api/feedback", handleSubmitFeedback);
   app.get("/api/admin/feedback/all", handleGetAllFeedback);
 
+  // Strategy plugins
+  const { handlePluginsList, handlePluginPropose, handlePluginVote, handlePluginApprove } = require('./routes/plugins');
+  app.get('/api/governance/plugins', handlePluginsList);
+  app.post('/api/governance/plugins/propose', handlePluginPropose);
+  app.post('/api/governance/plugins/:name/vote', handlePluginVote);
+  app.post('/api/governance/plugins/:name/approve', handlePluginApprove);
+
+  // Strategy review
+  const { handlePendingStrategies, handleApproveStrategy } = require('./routes/strategyReview');
+  app.get('/api/strategy-review/strategies/pending', handlePendingStrategies);
+  app.post('/api/strategy-review/strategies/:strategyId/approve', handleApproveStrategy);
+
   // Reports and notifications routes
   app.get("/api/reports/daily", handleGetDailyReport);
   app.get("/api/reports/weekly", handleGetWeeklyReport);
@@ -306,6 +318,9 @@ export function createServer() {
   app.get("/api/trades/recent", handleGetRecentTrades);
   app.get("/api/positions/open", handleGetOpenPositions);
   app.post("/api/admin/trades/veto", handleVetoTrade);
+  const { handleTradeDecision, handleTradeExecute } = require('./routes/trades_decision');
+  app.post('/api/trades/decision', handleTradeDecision);
+  app.post('/api/trades/execute', handleTradeExecute);
 
   // LLM/AI Assistant routes
   app.post("/api/llm/ask", handleAskLLM);
@@ -319,6 +334,23 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Automation social ingest
+  const { handleAutomationLimitsMe, handleAutomationSocial } = require('./routes/automation');
+  app.get('/api/automation/limits/me', handleAutomationLimitsMe);
+  app.post('/api/automation/social', handleAutomationSocial);
+
+  // Mobile push console
+  const { handleMobileStatus, handleMobilePush } = require('./routes/mobile');
+  app.get('/api/mobile/status', handleMobileStatus);
+  app.post('/api/mobile/push', handleMobilePush);
+
+  // System tasks
+  const { handleUserDataRefresh, handleGlobalDataRefresh, handleDataPriceSeries, handleTaskStatus } = require('./routes/tasks');
+  app.post('/api/tasks/data-refresh', handleUserDataRefresh);
+  app.post('/api/data/refresh', handleGlobalDataRefresh);
+  app.get('/api/data/price-series', handleDataPriceSeries);
+  app.get('/api/tasks/:id', handleTaskStatus);
 
   return app;
 }
