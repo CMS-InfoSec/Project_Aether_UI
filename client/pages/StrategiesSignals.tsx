@@ -44,6 +44,7 @@ export default function StrategiesSignals() {
   const [news, setNews] = useState<any[]>([]);
   const [social, setSocial] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
 
   const loadRegistry = async () => {
     setError(null);
