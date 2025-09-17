@@ -26,6 +26,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   TrendingUp,
   Filter,
@@ -536,6 +537,52 @@ export default function AdminMarkets() {
           </CardHeader>
           <CardContent>
             <SpotPriceChecker />
+          </CardContent>
+        </Card>
+
+        {/* Governance Override (Admins) */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Governance Override</CardTitle>
+            <CardDescription>Allow or block trading for a symbol with audit reason.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid md:grid-cols-3 gap-3 items-end">
+              <div>
+                <Label>Symbol</Label>
+                <Input id="ov-symbol" placeholder="BTC/USDT" />
+              </div>
+              <div>
+                <Label>Action</Label>
+                <Select defaultValue="allow" onValueChange={(v)=> ((window as any)._ovAction = v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="allow">Allow</SelectItem>
+                    <SelectItem value="block">Block</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-3">
+                <Label>Reason</Label>
+                <Textarea id="ov-reason" rows={3} placeholder="Provide detailed justification (min 10 chars)" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="default" onClick={async ()=>{
+                const symbol = (document.getElementById('ov-symbol') as HTMLInputElement)?.value?.trim().toUpperCase();
+                const action = (window as any)._ovAction || 'allow';
+                const reason = (document.getElementById('ov-reason') as HTMLTextAreaElement)?.value || '';
+                if (!symbol || !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) { toast({ title:'Invalid symbol', description:'Use format BASE/QUOTE', variant:'destructive' }); return; }
+                if (reason.trim().length < 10){ toast({ title:'Reason too short', description:'Minimum 10 characters', variant:'destructive' }); return; }
+                try{
+                  const r = await fetch('/api/admin/strategy-override', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, action, reason }) });
+                  if (r.status === 201){ const j = await r.json(); toast({ title:'Override applied', description:`${j.data.symbol} → ${j.data.override}` }); fetchMarkets(filters); }
+                  else if (r.status === 403){ const j = await r.json().catch(()=>({detail:'Founder approvals required'})); toast({ title:'Approval required', description: j.detail || 'Founder approvals required', variant:'destructive' }); }
+                  else { const j = await r.json().catch(()=>({detail:'Failed'})); toast({ title:'Error', description: j.detail || 'Failed', variant:'destructive' }); }
+                }catch{ toast({ title:'Network error', description:'Please retry' , variant:'destructive' }); }
+              }}>Submit Override</Button>
+              <Button variant="outline" onClick={()=>{ (document.getElementById('ov-symbol') as HTMLInputElement).value=''; (document.getElementById('ov-reason') as HTMLTextAreaElement).value=''; }}>Clear</Button>
+            </div>
           </CardContent>
         </Card>
 
