@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -441,10 +443,110 @@ export default function TradesPositions() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="console">Console</TabsTrigger>
             <TabsTrigger value="trades">Recent Trades</TabsTrigger>
             <TabsTrigger value="positions">Open Positions</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="console">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Decision Request</CardTitle>
+                  <CardDescription>Request a trading decision with optional context.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label>Symbol</Label>
+                    <Input value={symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} placeholder="BTC/USDT" />
+                  </div>
+                  <div>
+                    <Label>Size</Label>
+                    <Input type="number" step="0.01" value={size} onChange={(e)=> setSize(parseFloat(e.target.value))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.strategies} onChange={e=> setIncludeContext(s=>({...s,strategies:e.target.checked}))} /><span>Active strategies</span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.risk} onChange={e=> setIncludeContext(s=>({...s,risk:e.target.checked}))} /><span>Risk limits</span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.sentiment} onChange={e=> setIncludeContext(s=>({...s,sentiment:e.target.checked}))} /><span>Sentiment</span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.exposure} onChange={e=> setIncludeContext(s=>({...s,exposure:e.target.checked}))} /><span>Exposure</span></label>
+                  </div>
+                  <Button disabled={consoleLoading} onClick={async ()=>{
+                    setConsoleLoading(true);
+                    try {
+                      const res = await fetch('/api/trades/decision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, size, include: includeContext }) });
+                      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                      const j = await res.json();
+                      setDecision(j.data);
+                      setExecSide((j.data?.recommended || 'buy'));
+                      setExecSize(j.data?.size || size);
+                    } catch (e) {
+                      toast({ title:'Error', description:'Decision request failed', variant:'destructive' });
+                    } finally { setConsoleLoading(false); }
+                  }}>Request Decision</Button>
+                  {decision && (
+                    <div className="space-y-2 border rounded p-3">
+                      <div className="text-sm text-muted-foreground">Decision ID</div>
+                      <div className="font-mono text-sm">{decision.decision_id}</div>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>Recommended: <Badge>{String(decision.recommended).toUpperCase()}</Badge></div>
+                        <div>Confidence: <Badge variant="outline">{decision.confidence}</Badge></div>
+                      </div>
+                      <div className="text-sm">{decision.rationale}</div>
+                      <div className="text-xs text-muted-foreground">Indicators: RSI {decision.indicators?.rsi}, MACD {decision.indicators?.macd}, ATR {decision.indicators?.atr}</div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Execution</CardTitle>
+                  <CardDescription>Execute using the latest decision.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <Label>Decision ID</Label>
+                    <Input value={decision?.decision_id || ''} readOnly placeholder="Request a decision first" />
+                  </div>
+                  <div>
+                    <Label>Symbol</Label>
+                    <Input value={decision?.symbol || symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} />
+                  </div>
+                  <div>
+                    <Label>Side</Label>
+                    <Select value={execSide} onValueChange={(v)=> setExecSide(v as any)}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="buy">Buy</SelectItem>
+                        <SelectItem value="sell">Sell</SelectItem>
+                        <SelectItem value="flat">Flat</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Size</Label>
+                    <Input type="number" step="0.01" value={execSize} onChange={(e)=> setExecSize(parseFloat(e.target.value))} />
+                  </div>
+                  <Button disabled={consoleLoading || !decision?.decision_id} onClick={async ()=>{
+                    setConsoleLoading(true);
+                    try {
+                      const res = await fetch('/api/trades/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision_id: decision.decision_id, symbol: decision.symbol, side: execSide, size: execSize }) });
+                      if (!res.ok) {
+                        const j = await res.json().catch(()=>({detail:'Failed'}));
+                        throw new Error(j.detail || `HTTP ${res.status}`);
+                      }
+                      const j = await res.json();
+                      toast({ title:'Order accepted', description:`Exec ${j.data.execution_id} @ ${j.data.fill_price}` });
+                      fetchTrades(1);
+                    } catch (e:any) {
+                      toast({ title:'Execution error', description: e.message || 'Failed', variant:'destructive' });
+                    } finally { setConsoleLoading(false); }
+                  }}>Execute Trade</Button>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
 
           {/* Summary Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
