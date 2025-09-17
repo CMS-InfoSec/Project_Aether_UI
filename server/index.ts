@@ -51,7 +51,8 @@ import {
 import {
   handleGetEligibleMarkets,
   handleGetMarketStats,
-  handleExportMarkets
+  handleExportMarkets,
+  handleStrategyOverride
 } from "./routes/markets";
 import {
   handleGetPortfolioOverview,
