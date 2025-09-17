@@ -49,6 +49,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import SpotPriceChecker from './components/SpotPriceChecker';
 
 // Types matching specification
 interface MarketItem {
