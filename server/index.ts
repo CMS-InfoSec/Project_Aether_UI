@@ -190,6 +190,8 @@ export function createServer() {
   app.get("/api/markets/eligible", handleGetEligibleMarkets);
   app.get("/api/markets/stats", handleGetMarketStats);
   app.get("/api/markets/export", handleExportMarkets);
+  const { handleMarketPrice } = require('./routes/market_price');
+  app.get('/api/markets/price', handleMarketPrice);
 
   // Portfolio routes
   app.get("/api/admin/portfolio", handleGetPortfolioOverview);
