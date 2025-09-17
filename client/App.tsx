@@ -35,6 +35,11 @@ import AdminSystemControl from "./pages/AdminSystemControl";
 import AdminBacktest from "./pages/AdminBacktest";
 import AdminFeedback from "./pages/AdminFeedback";
 import AdminASC from "./pages/AdminASC";
+import AdminStrategyReview from "./pages/AdminStrategyReview";
+import AdminPlugins from "./pages/AdminPlugins";
+import AdminAutomationSocial from "./pages/AdminAutomationSocial";
+import AdminPushConsole from "./pages/AdminPushConsole";
+import AdminSystemTasks from "./pages/AdminSystemTasks";
 
 import PlaceholderPage from "./pages/PlaceholderPage";
 import NotFound from "./pages/NotFound";
@@ -197,6 +202,11 @@ const AppRouter = () => {
         <Route path="admin/system/control" element={<ErrorBoundary><AdminSystemControl /></ErrorBoundary>} />
         <Route path="admin/backtest" element={<ErrorBoundary><AdminBacktest /></ErrorBoundary>} />
         <Route path="admin/feedback" element={<ErrorBoundary><AdminFeedback /></ErrorBoundary>} />
+        <Route path="admin/strategy-review" element={<ErrorBoundary><AdminStrategyReview /></ErrorBoundary>} />
+        <Route path="admin/plugins" element={<ErrorBoundary><AdminPlugins /></ErrorBoundary>} />
+        <Route path="admin/automation-social" element={<ErrorBoundary><AdminAutomationSocial /></ErrorBoundary>} />
+        <Route path="admin/push-console" element={<ErrorBoundary><AdminPushConsole /></ErrorBoundary>} />
+        <Route path="admin/system/tasks" element={<ErrorBoundary><AdminSystemTasks /></ErrorBoundary>} />
 
         {/* Placeholder for unimplemented sections */}
         <Route path="placeholder/:section" element={<ErrorBoundary><PlaceholderPage /></ErrorBoundary>} />
