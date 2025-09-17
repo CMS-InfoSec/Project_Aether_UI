@@ -345,6 +345,17 @@ export function handleGetWeeklyReport(_req: Request, res: Response) {
 }
 
 // Get notifications
+import fs from 'fs';
+import path from 'path';
+
+const prefsFile = path.join(process.cwd(), 'code', 'server', 'data', 'notification_prefs.json');
+function readPrefsFile(){
+  try{ const txt = fs.readFileSync(prefsFile,'utf-8'); return JSON.parse(txt); }catch{return null;}
+}
+function writePrefsFile(data:any){
+  try{ fs.mkdirSync(path.dirname(prefsFile), { recursive:true }); fs.writeFileSync(prefsFile, JSON.stringify(data,null,2)); }catch{}
+}
+
 export function handleGetNotifications(req: Request, res: Response) {
   try {
     const { 
@@ -374,6 +385,21 @@ export function handleGetNotifications(req: Request, res: Response) {
     filteredNotifications.sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
+
+    // Export formats
+    const { format } = req.query as any;
+    if (format === 'csv'){
+      const headers = ['id','title','message','severity','category','timestamp','read','actionRequired'];
+      const csv = [headers.join(',')].concat(filteredNotifications.map(n=> headers.map(h=> {
+        const v = (n as any)[h];
+        if (v === undefined || v === null) return '';
+        const s = typeof v === 'string' ? v.replace(/"/g,'""') : String(v);
+        return /[,"]/.test(s) ? `"${s}"` : s;
+      }).join(','))).join('\n');
+      res.setHeader('Content-Type','text/csv');
+      res.setHeader('Content-Disposition','attachment; filename="notifications.csv"');
+      return res.send(csv);
+    }
 
     // Apply pagination
     const limitNum = parseInt(limit as string, 10) || 20;
@@ -586,7 +612,7 @@ export function handleExportReportCSV(req: Request, res: Response) {
 }
 
 // Notification preferences (mock in-memory)
-let notificationPreferences: { supported_channels: string[]; channels: Record<string, boolean> } = {
+let notificationPreferences: { supported_channels: string[]; channels: Record<string, boolean> } = readPrefsFile() || {
   supported_channels: ['email','slack','telegram'],
   channels: { email: true, slack: false, telegram: false }
 };
@@ -610,6 +636,7 @@ export function handleSaveNotificationPreferences(req: Request, res: Response){
       }
     }
     notificationPreferences = { ...notificationPreferences, channels: next };
+    writePrefsFile(notificationPreferences);
     res.json({ status:'success', data: notificationPreferences });
   }catch(e){
     res.status(500).json({ status:'error', error:'failed to save preferences' });
