@@ -192,6 +192,7 @@ const AppRouter = () => {
         <Route path="admin/portfolio" element={<ErrorBoundary><AdminPortfolio /></ErrorBoundary>} />
         <Route path="admin/markets" element={<ErrorBoundary><AdminMarkets /></ErrorBoundary>} />
         <Route path="admin/models" element={<ErrorBoundary><AdminModels /></ErrorBoundary>} />
+        <Route path="admin/asc" element={<ErrorBoundary><AdminASC /></ErrorBoundary>} />
         <Route path="admin/system/config" element={<ErrorBoundary><AdminSystemConfig /></ErrorBoundary>} />
         <Route path="admin/system/control" element={<ErrorBoundary><AdminSystemControl /></ErrorBoundary>} />
         <Route path="admin/backtest" element={<ErrorBoundary><AdminBacktest /></ErrorBoundary>} />
