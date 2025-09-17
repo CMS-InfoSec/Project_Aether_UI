@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { RefreshCw } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function StrategiesSignals() {
   const [registry, setRegistry] = useState<any[]>([]);
