@@ -92,7 +92,9 @@ export default function UserNotifications() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
-  
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [prefs, setPrefs] = useState<{ supported_channels: string[]; channels: Record<string, boolean> }|null>(null);
+
   // URL-based filter and pagination state
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
   const pageSize = parseInt(searchParams.get('limit') || '10', 10);
@@ -149,6 +151,14 @@ export default function UserNotifications() {
   }, [searchParams, setSearchParams]);
 
   // Load notifications
+  const loadPreferences = useCallback(async ()=>{
+    try{
+      const r = await fetch('/api/notifications/preferences');
+      const j = await r.json();
+      if (j.status==='success') setPrefs(j.data);
+    }catch{}
+  },[]);
+
   const loadNotifications = useCallback(async () => {
     if (!isLoading) setIsRefreshing(true);
     
@@ -290,6 +300,16 @@ export default function UserNotifications() {
     loadNotifications();
   }, [loadNotifications]);
 
+  // Load preferences on mount
+  useEffect(()=>{ loadPreferences(); }, [loadPreferences]);
+
+  // Auto-refresh polling
+  useEffect(()=>{
+    if (!autoRefresh) return;
+    const t = window.setInterval(()=>{ loadNotifications(); }, 30000);
+    return ()=> window.clearInterval(t);
+  }, [autoRefresh, loadNotifications]);
+
   if (!user) {
     return (
       <div className="container mx-auto p-6">
@@ -317,13 +337,17 @@ export default function UserNotifications() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 mr-2 text-sm">
+            <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
+            <Label htmlFor="auto-refresh">Auto-refresh 30s</Label>
+          </div>
           {notifications?.summary.unread > 0 && (
             <Button variant="outline" onClick={markAllAsRead}>
               Mark All Read
             </Button>
           )}
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             onClick={loadNotifications}
             disabled={isRefreshing}
           >
@@ -451,6 +475,40 @@ export default function UserNotifications() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Preferences */}
+      {prefs && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Notification Preferences</CardTitle>
+            <CardDescription>Select channels for alerts</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid md:grid-cols-3 gap-3">
+              {prefs.supported_channels.includes('email') && (
+                <label className="flex items-center space-x-2"><input type="checkbox" checked={!!prefs.channels.email} onChange={(e)=> setPrefs(p=> p? ({...p, channels:{...p.channels, email: e.target.checked}}): p)} /><span>Email</span></label>
+              )}
+              {prefs.supported_channels.includes('slack') && (
+                <label className="flex items-center space-x-2"><input type="checkbox" checked={!!prefs.channels.slack} onChange={(e)=> setPrefs(p=> p? ({...p, channels:{...p.channels, slack: e.target.checked}}): p)} /><span>Slack</span></label>
+              )}
+              {prefs.supported_channels.includes('telegram') && (
+                <label className="flex items-center space-x-2"><input type="checkbox" checked={!!prefs.channels.telegram} onChange={(e)=> setPrefs(p=> p? ({...p, channels:{...p.channels, telegram: e.target.checked}}): p)} /><span>Telegram</span></label>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={async ()=>{
+                try{
+                  const r = await fetch('/api/notifications/preferences',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels: prefs.channels })});
+                  const j = await r.json();
+                  if (!r.ok || j.status!=='success') throw new Error(j.error||'Failed');
+                  toast({ title:'Saved', description:'Preferences updated' });
+                }catch(e:any){ toast({ title:'Error', description: e.message||'Failed', variant:'destructive' }); }
+              }}>Save Preferences</Button>
+              <Button variant="outline" onClick={loadPreferences}>Reload</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Notifications List */}
       <Card>
