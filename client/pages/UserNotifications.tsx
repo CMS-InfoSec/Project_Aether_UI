@@ -346,6 +346,16 @@ export default function UserNotifications() {
               Mark All Read
             </Button>
           )}
+          <Button variant="outline" onClick={async ()=>{
+            const r = await fetch(`/api/notifications?${new URLSearchParams(filters as any)}&format=csv`);
+            const txt = await r.text();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/csv'})); a.download = 'notifications.csv'; a.click();
+          }}>Export CSV</Button>
+          <Button variant="outline" onClick={async ()=>{
+            const r = await fetch(`/api/notifications?${new URLSearchParams(filters as any)}`);
+            const j = await r.json();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j.data.notifications,null,2)],{type:'application/json'})); a.download = 'notifications.json'; a.click();
+          }}>Export JSON</Button>
           <Button
             variant="outline"
             onClick={loadNotifications}
