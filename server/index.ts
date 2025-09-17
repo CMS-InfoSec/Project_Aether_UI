@@ -247,6 +247,11 @@ export function createServer() {
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
   app.post("/api/notifications", handleCreateNotification);
 
+  // API docs
+  const { handleOpenApiJson, handleSwaggerDocs } = require('./routes/docs');
+  app.get('/api/openapi.json', handleOpenApiJson);
+  app.get('/docs', handleSwaggerDocs);
+
   // User profile routes
   app.get("/api/user/profile", handleGetUserProfile);
   app.patch("/api/user/profile", handleUpdateUserProfile);

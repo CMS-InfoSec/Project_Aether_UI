@@ -76,6 +76,7 @@ export default function StrategiesSignals() {
   };
 
   useEffect(()=>{ loadRegistry(); loadModels(); loadExplainability(); }, []);
+  useEffect(()=>{ if (strategyId){ const p = localStorage.getItem(`stressTest.pinned.${strategyId}`); if (p){ setPinned(JSON.parse(p)); } } }, [strategyId]);
 
   return (
     <div className="space-y-6">
