@@ -4,12 +4,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Activity, Server } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export default function Observability() {
   const [ready, setReady] = useState<boolean | null>(null);
   const [deps, setDeps] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [liveness, setLiveness] = useState<any|null>(null);
+  const [auto, setAuto] = useState(false);
 
   const load = async () => {
     setError(null);
@@ -19,6 +23,8 @@ export default function Observability() {
       setReady(j.ready);
       const d = await fetch('/api/health/dependencies');
       setDeps(await d.json());
+      const l = await fetch('/api/health/ready/details');
+      setLiveness(await l.json());
     } catch (e:any) {
       setError(e.message || 'Failed to load');
     }
@@ -34,14 +40,20 @@ export default function Observability() {
   };
 
   useEffect(() => { load(); }, []);
+  useEffect(()=>{
+    if (!auto) return; const t = setInterval(load, 30000); return ()=> clearInterval(t);
+  },[auto]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Observability & Health</h1>
-        <Button variant="outline" onClick={load}>
-          <RefreshCw className="h-4 w-4 mr-2" /> Refresh
-        </Button>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-sm"><Switch id="auto" checked={auto} onCheckedChange={setAuto} /><Label htmlFor="auto">Auto-refresh 30s</Label></div>
+          <Button variant="outline" onClick={load}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -58,6 +70,7 @@ export default function Observability() {
           ) : (
             <Badge variant={ready ? 'default' : 'destructive'}>{ready ? 'Ready' : 'Not ready'}</Badge>
           )}
+          {!ready && <Alert className="mt-3" variant="destructive"><AlertDescription>Critical dependencies failing. See diagnostics below.</AlertDescription></Alert>}
         </CardContent>
       </Card>
 
@@ -78,6 +91,27 @@ export default function Observability() {
               </div>
             ))}
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2"><Server className="h-5 w-5" /><span>Liveness</span></CardTitle>
+        </CardHeader>
+        <CardContent>
+          {liveness ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              {liveness.dependencies?.map((d:any)=> (
+                <div key={d.name} className="p-3 border rounded">
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{d.name}</div>
+                    <Badge variant={d.ok? 'default':'destructive'}>{d.ok? 'Healthy':'Unavailable'}</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">Checked: {new Date(d.checked_at).toLocaleString()} • Timeout: {d.timeout}ms</div>
+                </div>
+              ))}
+            </div>
+          ) : <div className="text-muted-foreground">Loading…</div>}
         </CardContent>
       </Card>
 
