@@ -185,21 +185,38 @@ export function handleAskLLM(req: Request, res: Response) {
       // 3. Call OpenAI API with context and question
       // 4. Return structured response
       
-      // Mock context gathering
+      // Mock context gathering with include controls
+      const wantTrades = include?.trades !== false;
+      const wantRegime = include?.regime !== false;
+      const wantSentiment = include?.sentiment !== false;
+      const wantSignals = include?.signals !== false;
+
       const context: LLMContext = {
-        trades: mockTrades.slice(0, 5), // Last 5 trades
-        strategy: 'Momentum DCA Strategy v2.1',
-        regime: 'Consolidation Phase',
-        sentiment: 'Cautiously Bearish',
+        trades: wantTrades ? mockTrades.slice(0, 5) : [],
+        strategy: wantSignals ? 'Momentum DCA Strategy v2.1' : 'Strategy context omitted',
+        regime: wantRegime ? 'Consolidation Phase' : 'Regime context omitted',
+        sentiment: wantSentiment ? 'Cautiously Bearish' : 'Sentiment context omitted',
         documents: mockDocuments
       };
-      
+
+      // Simulate degradation and warnings
+      const supabaseDegraded = Math.random() < 0.05;
+      const weaviateFailed = Math.random() < 0.05;
+      const warnings: string[] = [];
+      if (supabaseDegraded) warnings.push('Partial context: Supabase data unavailable');
+      if (weaviateFailed) warnings.push('Vector search degraded: Weaviate timeout, used fallback retriever');
+
       // Generate mock answer
-      const answer = generateMockAnswer(question);
-      
+      let answer = generateMockAnswer(question);
+      if (weaviateFailed) {
+        answer += '\n\nNote: Some document sources were unavailable; fallback context used.';
+      }
+
       const response: LLMResponse = {
         answer,
-        context
+        context,
+        warnings,
+        supabase_degraded: supabaseDegraded
       };
       
       console.log(`LLM question from ${userId}: "${question.substring(0, 50)}..."`);
