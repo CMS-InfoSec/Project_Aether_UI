@@ -642,6 +642,23 @@ export default function AIAssistant() {
               </CardContent>
             </Card>
           )}
+
+          {/* Conversation Stream (previous messages) */}
+          {history.length > 1 && (
+            <div className="space-y-3">
+              {history.slice(1).map(item => (
+                <Card key={item.id}>
+                  <CardHeader>
+                    <CardTitle className="text-sm">{new Date(item.timestamp).toLocaleString()}</CardTitle>
+                    <CardDescription className="text-xs">Q: {item.question}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">{item.answer}</div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Question History Sidebar */}
