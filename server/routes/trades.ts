@@ -305,3 +305,24 @@ export const handleVetoTrade: RequestHandler = (req, res) => {
     });
   }
 };
+
+// GET /api/trades/:id - diagnostics and detail
+export const handleGetTradeDetail: RequestHandler = (req, res) => {
+  try {
+    const id = String(req.params.id || '').trim();
+    if (!id) return res.status(400).json({ status:'error', error:'id required' });
+    const t = mockTrades.find(tr => tr.id === id || tr.trade_id === id);
+    if (!t) return res.status(404).json({ status:'error', error:'trade not found' });
+    const detail: any = { ...t };
+    if (t.status === 'failed') {
+      detail.rejection_reasons = [
+        'Kill-switch active at request time',
+        'Insufficient free balance',
+        'Upstream price feed timeout'
+      ].slice(0, 1 + Math.floor(Math.random()*3));
+    }
+    res.json({ status:'success', data: detail });
+  } catch (e) {
+    res.status(500).json({ status:'error', error:'internal error' });
+  }
+};
