@@ -3,6 +3,12 @@ import { Request, Response } from 'express';
 // Types
 interface LLMQuestion {
   question: string;
+  include?: {
+    signals?: boolean;
+    trades?: boolean;
+    sentiment?: boolean;
+    regime?: boolean;
+  };
 }
 
 interface Trade {
