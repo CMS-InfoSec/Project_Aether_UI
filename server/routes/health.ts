@@ -41,5 +41,15 @@ export function handleHealthDependencies(_req: Request, res: Response) {
 
 export function handleMetrics(_req: Request, res: Response) {
   res.setHeader("Content-Type", "text/plain");
-  res.status(200).send(`# HELP aether_requests_total Total number of HTTP requests\n# TYPE aether_requests_total counter\naether_requests_total{route="/api"} 1024\n# HELP aether_latency_ms Request latency in ms\n# TYPE aether_latency_ms summary\naether_latency_ms{quantile="0.5"} 12\naether_latency_ms{quantile="0.9"} 35\naether_latency_ms{quantile="0.99"} 75\naether_latency_ms_sum 51234\naether_latency_ms_count 4096\n`);
+  res.status(200).send(`# HELP aether_requests_total Total number of HTTP requests\n# TYPE aether_requests_total counter\naether_requests_total{route="/api"} 1024\n# HELP aether_latency_ms Request latency in ms\n# TYPE aether_latency_ms summary\naether_latency_ms{quantile=\"0.5\"} 12\naether_latency_ms{quantile=\"0.9\"} 35\naether_latency_ms{quantile=\"0.99\"} 75\naether_latency_ms_sum 51234\naether_latency_ms_count 4096\n`);
+}
+
+export function handleHealthLiveDetails(_req: Request, res: Response) {
+  const now = new Date().toISOString();
+  // Simulate DB and message-bus checks
+  const deps = [
+    { name: 'Database', ok: true, code: 200, checked_at: now, timeout: 1200, skipped: false },
+    { name: 'MessageBus', ok: true, code: 200, checked_at: now, timeout: 800, skipped: false },
+  ];
+  res.status(200).json({ ok: deps.every(d=>d.ok), checked_at: now, dependencies: deps });
 }

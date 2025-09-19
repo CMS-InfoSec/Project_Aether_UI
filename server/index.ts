@@ -284,6 +284,7 @@ export function createServer() {
   app.get('/api/health/ready', handleHealthReady);
   app.get('/api/health/ready/details', handleHealthReadyDetails);
   app.get('/api/health/dependencies', handleHealthDependencies);
+  app.get('/api/health/live/details', (require('./routes/health').handleHealthLiveDetails));
   app.get('/api/metrics', handleMetrics);
 
   // Events (audit/logs)
