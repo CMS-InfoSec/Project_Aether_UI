@@ -155,15 +155,33 @@ export default function UserNotifications() {
     setSearchParams(params);
   }, [searchParams, setSearchParams]);
 
-  // Load notifications
-  const loadPreferences = useCallback(async ()=>{
-    try{
-      const r = await fetch('/api/notifications/preferences');
-      const j = await r.json();
-      if (j.status==='success') setPrefs(j.data);
-    }catch{}
-  },[]);
+  // Helper: safe fetch with timeout
+  const safeFetch = async (input: RequestInfo, init?: RequestInit, timeout = 10000) => {
+    const controller = new AbortController();
+    const id = window.setTimeout(() => controller.abort(), timeout);
+    try {
+      const response = await fetch(input, { signal: controller.signal, ...(init || {}) } as RequestInit);
+      clearTimeout(id);
+      return response;
+    } catch (err) {
+      clearTimeout(id);
+      throw err;
+    }
+  };
 
+  // Load preferences (graceful)
+  const loadPreferences = useCallback(async () => {
+    try {
+      const r = await safeFetch('/api/notifications/preferences');
+      if (!r.ok) return;
+      const j = await r.json().catch(() => null);
+      if (j?.status === 'success') setPrefs(j.data);
+    } catch (e) {
+      console.warn('loadPreferences error', e);
+    }
+  }, []);
+
+  // Load notifications with better error handling
   const loadNotifications = useCallback(async () => {
     if (!isLoading) setIsRefreshing(true);
     try {
@@ -175,24 +193,37 @@ export default function UserNotifications() {
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
       if (unreadOnly) params.set('unreadOnly', 'true');
 
-      const response = await fetch(`/api/notifications?${params}`);
-      if (response.status === 503) {
+      let response: Response;
+      try {
+        response = await safeFetch(`/api/notifications?${params}`);
+      } catch (networkErr) {
+        console.error('Network error fetching notifications', networkErr);
         setDegraded(true);
-        const cached = await response.json();
-        if (!notifications) setNotifications(cached.data);
+        toast({ title: 'Network error', description: 'Unable to reach notifications backend. Showing cached data if available.', variant: 'destructive' });
         return;
       }
+
+      if (response.status === 503) {
+        setDegraded(true);
+        const cached = await response.json().catch(() => null);
+        if (!notifications && cached?.data) setNotifications(cached.data);
+        return;
+      }
+
       setDegraded(false);
-      const data = await response.json();
-      if (data.status === 'success') {
+
+      const data = await response.json().catch(() => null);
+      if (!data) throw new Error('Invalid response from notifications API');
+
+      if (data.status === 'success' && data.data) {
         setNotifications(data.data);
         setNextCursor(data.data.nextCursor || null);
       } else {
         throw new Error(data.error || 'Failed to load notifications');
       }
-    } catch (error:any) {
+    } catch (error: any) {
       console.error('Load notifications error:', error);
-      toast({ title: 'Error', description: error.message || 'Failed to load notifications', variant: 'destructive' });
+      toast({ title: 'Error', description: error?.message || 'Failed to load notifications', variant: 'destructive' });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
