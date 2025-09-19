@@ -686,6 +686,17 @@ export default function AdminPortfolio() {
                               <TableCell className="text-sm text-muted-foreground">
                                 {new Date(portfolio.last_updated).toLocaleString()}
                               </TableCell>
+                              <TableCell className="text-sm">
+                                {new Date(new Date(portfolio.last_updated).getTime() + 7*24*60*60*1000).toLocaleString()}
+                              </TableCell>
+                              <TableCell className="text-right space-x-2">
+                                <a href={`/audit?query=user_id:${encodeURIComponent(portfolio.user_id)}`} className="text-xs inline-flex items-center text-primary hover:underline">
+                                  <ExternalLink className="h-3 w-3 mr-1" /> Audit
+                                </a>
+                                <Button size="sm" variant="outline" onClick={() => { setSelected(portfolio); setDetailOpen(true); setRowError(null); setRowAck(false); setRowPricesJson(pricesJson); setRowReturnsJson(returnsJson); }}>
+                                  Details
+                                </Button>
+                              </TableCell>
                             </TableRow>
                           ))
                         ) : (
