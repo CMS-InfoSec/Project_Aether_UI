@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import crypto from 'crypto';
 
 // Types
 interface DailyReport {
@@ -309,10 +310,29 @@ let notifications: Notification[] = [
 ];
 
 // Get daily report
-export function handleGetDailyReport(_req: Request, res: Response) {
+export function handleGetDailyReport(req: Request, res: Response) {
   try {
+    const { offset = '0', simulate } = req.query as any;
+
+    if (simulate === 'supabase_down') {
+      return res.json({ status: 'success', data: {
+        totalReturn: 0,
+        totalReturnPercent: 0,
+        activePortfolios: 0,
+        avgPerformance: 0,
+        topPerformer: { asset: '', performance: 0 },
+        bottomPerformer: { asset: '', performance: 0 },
+        dailyReturnsData: [],
+        riskMetrics: { volatility: 0, sharpeRatio: 0, maxDrawdown: 0 },
+        lastUpdated: new Date().toISOString(),
+        degraded: true,
+        appliedOffset: Number(offset) || 0
+      }});
+    }
+
     const report = generateDailyReport();
-    
+    (report as any).appliedOffset = Number(offset) || 0;
+
     res.json({
       status: 'success',
       data: report
@@ -330,17 +350,11 @@ export function handleGetDailyReport(_req: Request, res: Response) {
 export function handleGetWeeklyReport(_req: Request, res: Response) {
   try {
     const report = generateWeeklyReport();
-    
-    res.json({
-      status: 'success',
-      data: report
-    });
+    (report as any).degraded = false;
+    res.json({ status: 'success', data: report });
   } catch (error) {
     console.error('Get weekly report error:', error);
-    res.status(500).json({
-      status: 'error',
-      error: 'Failed to generate weekly report'
-    });
+    res.status(500).json({ status: 'error', error: 'Failed to generate weekly report' });
   }
 }
 
@@ -511,63 +525,67 @@ export function handleMarkAllNotificationsRead(_req: Request, res: Response) {
 export function handleGetPerAssetReport(_req: Request, res: Response) {
   try {
     const report = generatePerAssetReport();
+    (report as any).ASSET_METRICS_DEGRADED = false;
 
-    res.json({
-      status: 'success',
-      data: report
-    });
+    res.json({ status: 'success', data: report });
   } catch (error) {
     console.error('Get per-asset report error:', error);
-    res.status(500).json({
-      status: 'error',
-      error: 'Failed to generate per-asset report'
-    });
+    res.status(500).json({ status: 'error', error: 'Failed to generate per-asset report' });
   }
 }
 
 // Download backtest report
-export function handleGetBacktestReport(_req: Request, res: Response) {
+export function handleGetBacktestReport(req: Request, res: Response) {
   try {
-    // Simulate checking for backtest report availability
-    const hasBacktest = Math.random() > 0.3; // 70% chance report exists
+    const { format = 'json', path: reportPath } = req.query as any;
 
-    if (!hasBacktest) {
-      return res.status(404).json({
-        status: 'error',
-        error: 'No backtest report available. Please run a backtest first.'
-      });
+    const hasBacktest = Math.random() > 0.2;
+    if (!hasBacktest) return res.status(404).json({ status: 'error', error: 'No backtest report available. Please run a backtest first.' });
+
+    const allowed = new Set(['json','trades','daily','pdf']);
+    if (!allowed.has(String(format))) return res.status(400).json({ status:'error', error:'Invalid format' });
+
+    if (reportPath) {
+      if (typeof reportPath !== 'string' || reportPath.includes('..') || !/^[A-Za-z0-9_\/-]+$/.test(reportPath)) {
+        return res.status(400).json({ status:'error', error:'Invalid report path' });
+      }
     }
 
-    // Generate mock CSV content
-    const csvContent = [
-      'Date,Strategy,Benchmark,Returns,Drawdown,Sharpe,Trades,Win_Rate',
-      ...Array.from({ length: 100 }, (_, i) => {
-        const date = new Date();
-        date.setDate(date.getDate() - (99 - i));
-        const strategyReturn = (Math.random() - 0.4) * 5;
-        const benchmarkReturn = (Math.random() - 0.5) * 3;
-        const drawdown = -(Math.random() * 8);
-        const sharpe = 1.2 + Math.random() * 1.5;
-        const trades = Math.floor(Math.random() * 10);
-        const winRate = 0.6 + Math.random() * 0.3;
+    const checksum = (buf: Buffer) => crypto.createHash('sha256').update(buf).digest('hex');
 
-        return `${date.toISOString().split('T')[0]},${strategyReturn.toFixed(2)},${benchmarkReturn.toFixed(2)},${(strategyReturn - benchmarkReturn).toFixed(2)},${drawdown.toFixed(2)},${sharpe.toFixed(2)},${trades},${winRate.toFixed(2)}`;
-      })
-    ].join('\n');
+    if (format === 'json') {
+      const payload = {
+        equityCurve: Array.from({ length: 180 }, (_, i) => ({ t: i, equity: 100000 + Math.round((i*250) + (Math.random()-0.5)*1500) })),
+        sharpe: +(1.8 + Math.random()*0.8).toFixed(2),
+        sortino: +(2.2 + Math.random()*0.8).toFixed(2),
+        maxDrawdown: +(Math.random()*-0.2).toFixed(3),
+        profitFactor: +(1.4 + Math.random()*0.8).toFixed(2),
+        expectancy: +(Math.random()*50 - 10).toFixed(2),
+        totals: { fees: +(Math.random()*1500).toFixed(2), slippage: +(Math.random()*800).toFixed(2) },
+        factorAttribution: [ { factor:'momentum', contribution: +(Math.random()*0.5).toFixed(3) }, { factor:'mean_reversion', contribution: +(Math.random()*0.3).toFixed(3) } ],
+        hypotheticalTrades: Math.random()>0.5 ? { count: Math.floor(Math.random()*200), avgPnl: +(Math.random()*30-5).toFixed(2) } : undefined
+      };
+      const buf = Buffer.from(JSON.stringify({ status:'success', data: payload }));
+      res.setHeader('Content-Type','application/json');
+      res.setHeader('X-Checksum-SHA256', checksum(buf));
+      return res.send(buf);
+    }
 
-    // Set headers for file download
-    const filename = `backtest-report-${new Date().toISOString().split('T')[0]}.csv`;
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.setHeader('Content-Length', Buffer.byteLength(csvContent));
+    if (format === 'trades' || format === 'daily') {
+      const headers = format === 'trades' ? ['id','date','symbol','side','qty','price','pnl','fees','slippage'] : ['date','equity','return','drawdown'];
+      const rows = Array.from({ length: 100 }, (_, i) => headers.map((_, j) => j===0 ? (format==='trades'?`t${i+1}`: new Date(Date.now()- (99-i)*86400000).toISOString().split('T')[0]) : (Math.random()*1000).toFixed(2)).join(','));
+      const csv = [headers.join(',')].concat(rows).join('\n');
+      const buf = Buffer.from(csv);
+      res.setHeader('Content-Type','text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="backtest-${format}.csv"`);
+      res.setHeader('X-Checksum-SHA256', checksum(buf));
+      return res.send(buf);
+    }
 
-    res.send(csvContent);
+    return res.status(400).json({ status:'error', error:'PDF export not supported in this environment' });
   } catch (error) {
     console.error('Get backtest report error:', error);
-    res.status(500).json({
-      status: 'error',
-      error: 'Failed to download backtest report'
-    });
+    res.status(500).json({ status: 'error', error: 'Failed to download backtest report' });
   }
 }
 
@@ -656,6 +674,23 @@ export function handleSaveNotificationPreferences(req: Request, res: Response){
     res.json({ status:'success', data: notificationPreferences });
   }catch(e){
     res.status(500).json({ status:'error', error:'failed to save preferences' });
+  }
+}
+
+// Execution efficiency metrics
+export function handleGetExecutionMetrics(_req: Request, res: Response){
+  try{
+    const baseDir = path.join(process.cwd(),'code','server','data','reports','execution');
+    const file = path.join(baseDir,'metrics.json');
+    try{
+      const txt = fs.readFileSync(file,'utf-8');
+      const data = JSON.parse(txt);
+      return res.json({ status:'success', data: { stale:false, metrics:data, lastUpdated: data.lastUpdated || new Date().toISOString() } });
+    }catch(e){
+      return res.json({ status:'success', data: { stale:true, metrics:null, lastUpdated:null } });
+    }
+  }catch(err){
+    return res.status(500).json({ status:'error', error:'Failed to read execution metrics' });
   }
 }
 
