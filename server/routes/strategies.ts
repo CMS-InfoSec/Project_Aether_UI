@@ -82,3 +82,16 @@ export function handleStrategiesStressTest(_req: Request, res: Response) {
     { name: 'Illiquidity', parameters: { illiquidity_magnitude: 0.5 }, metrics: { max_drawdown: -0.12, var: -0.05 } }
   ]});
 }
+
+export function handlePostBacktest(req: Request, res: Response){
+  try{
+    const { config } = (req.body||{}) as any;
+    // Validate minimal payload
+    if (config && typeof config !== 'object') return res.status(422).json({ status:'error', error:'invalid config' });
+    const jobId = `bt_${Date.now()}`;
+    const report_path = 'reports/latest';
+    return res.status(202).json({ status:'accepted', jobId, report_path: `/api/reports/backtest?format=json&path=${encodeURIComponent(report_path)}` });
+  }catch(e){
+    return res.status(500).json({ status:'error', error:'failed to start backtest' });
+  }
+}
