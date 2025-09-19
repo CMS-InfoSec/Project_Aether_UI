@@ -598,6 +598,23 @@ export default function AIAssistant() {
             </Card>
           )}
 
+          {/* Warnings and degraded state */}
+          {response && (
+            <>
+              {response.supabase_degraded && (
+                <Alert className="-mt-4 mb-4">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>Context may be incomplete due to degraded data source.</AlertDescription>
+                </Alert>
+              )}
+              {response.warnings?.length ? (
+                <div className="-mt-2 mb-2 flex flex-wrap gap-2">
+                  {response.warnings.map((w: string, i: number)=>(<Badge key={i} variant="secondary">{w}</Badge>))}
+                </div>
+              ) : null}
+            </>
+          )}
+
           {/* No response state */}
           {!response && !requestState.isLoading && (
             <Card>
