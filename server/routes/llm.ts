@@ -159,9 +159,9 @@ export function handleAskLLM(req: Request, res: Response) {
   }
   
   if (question.length > 500) {
-    return res.status(400).json({
+    return res.status(413).json({
       status: 'error',
-      message: 'Question must be 500 characters or less'
+      message: 'Question too long (max 500 characters)'
     });
   }
   
