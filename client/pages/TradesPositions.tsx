@@ -10,12 +10,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  CandlestickChart, 
-  TrendingUp, 
-  TrendingDown, 
+import {
+  CandlestickChart,
+  TrendingUp,
+  TrendingDown,
   DollarSign,
   Activity,
   Search,
@@ -29,9 +30,11 @@ import {
   AlertTriangle,
   Ban,
   Info,
-  LineChart
+  LineChart,
+  Download
 } from 'lucide-react';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
+import SpotPriceChecker from './components/SpotPriceChecker';
 
 // Types
 interface Trade {
@@ -69,6 +72,7 @@ interface RecentTradesResponse {
   total_pnl: number;
   win_rate: number;
   fee_threshold: number;
+  supabase_degraded?: boolean;
 }
 
 interface OpenPositionsResponse {
@@ -77,6 +81,7 @@ interface OpenPositionsResponse {
   next: string | null;
   total_pnl: number;
   fee_threshold: number;
+  supabase_degraded?: boolean;
 }
 
 type SortField = 'timestamp' | 'net_pnl' | 'symbol';
@@ -114,6 +119,13 @@ export default function TradesPositions() {
   const [wsStatus, setWsStatus] = useState<'connecting'|'connected'|'disconnected'>('connecting');
   const wsRef = useRef<WebSocket | null>(null);
   const pollRef = useRef<number | null>(null);
+  const [eligibleSymbols, setEligibleSymbols] = useState<string[]>([]);
+  const [supabaseDegradedTrades, setSupabaseDegradedTrades] = useState<boolean>(false);
+  const [supabaseDegradedPositions, setSupabaseDegradedPositions] = useState<boolean>(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [vetoOpen, setVetoOpen] = useState(false);
+  const [vetoContext, setVetoContext] = useState<{symbol:string; tradeId:string} | null>(null);
+  const [vetoRationale, setVetoRationale] = useState('');
 
   const isAdmin = user?.role === 'admin';
 
@@ -138,18 +150,18 @@ export default function TradesPositions() {
   const fetchTrades = useCallback(async (page = 1) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const offset = (page - 1) * itemsPerPage;
       const response = await fetch(`/api/trades/recent?limit=${itemsPerPage}&offset=${offset}`, {
         cache: 'no-cache',
         headers: { 'Cache-Control': 'no-cache' }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data: RecentTradesResponse = await response.json();
       setTrades(data.items);
       setTradesTotal(data.total);
@@ -157,6 +169,7 @@ export default function TradesPositions() {
       setWinRate(data.win_rate);
       setFeeThreshold(data.fee_threshold);
       setNextPage(data.next);
+      setSupabaseDegradedTrades(!!data.supabase_degraded);
     } catch (error) {
       console.error('Failed to fetch trades:', error);
       setError('Failed to load trades. Please try again.');
@@ -168,24 +181,25 @@ export default function TradesPositions() {
   const fetchPositions = useCallback(async (page = 1) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const offset = (page - 1) * itemsPerPage;
       const response = await fetch(`/api/positions/open?limit=${itemsPerPage}&offset=${offset}`, {
         cache: 'no-cache',
         headers: { 'Cache-Control': 'no-cache' }
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data: OpenPositionsResponse = await response.json();
       setPositions(data.items);
       setPositionsTotal(data.total);
       setTotalPnL(data.total_pnl);
       setFeeThreshold(data.fee_threshold);
       setNextPage(data.next);
+      setSupabaseDegradedPositions(!!data.supabase_degraded);
     } catch (error) {
       console.error('Failed to fetch positions:', error);
       setError('Failed to load positions. Please try again.');
@@ -196,14 +210,14 @@ export default function TradesPositions() {
 
   const handleVetoTrade = async (symbol: string, tradeId: string) => {
     setVetoingTrades(prev => new Set(prev).add(tradeId));
-    
+
     try {
       const response = await fetch('/api/admin/trades/veto', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ symbol, trade_id: tradeId }),
+        body: JSON.stringify({ symbol, trade_id: tradeId, rationale: vetoRationale || 'operator veto' }),
       });
 
       if (response.status === 403) {
@@ -238,7 +252,6 @@ export default function TradesPositions() {
         description: `Successfully vetoed trade ${tradeId}`,
       });
 
-      // Refresh trades data
       fetchTrades(currentPage);
     } catch (error) {
       console.error('Failed to veto trade:', error);
@@ -253,6 +266,9 @@ export default function TradesPositions() {
         newSet.delete(tradeId);
         return newSet;
       });
+      setVetoOpen(false);
+      setVetoRationale('');
+      setVetoContext(null);
     }
   };
 
@@ -285,6 +301,19 @@ export default function TradesPositions() {
     }
   };
 
+  const exportTradesCsv = () => {
+    const headers = ['symbol','action','amount','price','fee_cost','slippage_cost','pnl','net_pnl','timestamp','status','trade_id'];
+    const rows = filteredTrades.map(t => [t.symbol, t.action, t.amount, t.price, t.fee_cost, t.slippage_cost, t.pnl, t.net_pnl, t.timestamp, t.status, t.trade_id]);
+    const csv = [headers.join(',')].concat(rows.map(r => r.join(','))).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `recent_trades_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
     if (activeTab === 'trades') {
@@ -303,6 +332,17 @@ export default function TradesPositions() {
       setCurrentPage(1);
     }
   }, [activeTab, fetchTrades, fetchPositions]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch('/api/markets/eligible?limit=100');
+        const j = await r.json();
+        const syms = (j.items || []).map((m: any) => m.symbol);
+        setEligibleSymbols(syms);
+      } catch {}
+    })();
+  }, []);
 
   // Live updates via WebSocket with 5s polling fallback
   const startPolling = useCallback(() => {
@@ -521,6 +561,17 @@ export default function TradesPositions() {
           </Alert>
         )}
 
+        {(supabaseDegradedTrades && activeTab==='trades') && (
+          <Alert>
+            <AlertDescription>Degraded storage detected. Some trade history may be delayed.</AlertDescription>
+          </Alert>
+        )}
+        {(supabaseDegradedPositions && activeTab==='positions') && (
+          <Alert>
+            <AlertDescription>Degraded storage detected. Position updates may be delayed.</AlertDescription>
+          </Alert>
+        )}
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="console">Console</TabsTrigger>
@@ -538,7 +589,15 @@ export default function TradesPositions() {
                 <CardContent className="space-y-3">
                   <div>
                     <Label>Symbol</Label>
-                    <Input value={symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} placeholder="BTC/USDT" />
+                    <div className="flex gap-2">
+                      <Input value={symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} placeholder="BTC/USDT" />
+                      <Select onValueChange={(v)=> setSymbol(v)}>
+                        <SelectTrigger className="w-[160px]"><SelectValue placeholder="Select" /></SelectTrigger>
+                        <SelectContent>
+                          {eligibleSymbols.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   <div>
                     <Label>Size</Label>
@@ -575,6 +634,9 @@ export default function TradesPositions() {
                       <div className="text-xs text-muted-foreground">Indicators: RSI {decision.indicators?.rsi}, MACD {decision.indicators?.macd}, ATR {decision.indicators?.atr}</div>
                     </div>
                   )}
+                  <div className="pt-4">
+                    <SpotPriceChecker />
+                  </div>
                 </CardContent>
               </Card>
 
@@ -607,21 +669,39 @@ export default function TradesPositions() {
                     <Label>Size</Label>
                     <Input type="number" step="0.01" value={execSize} onChange={(e)=> setExecSize(parseFloat(e.target.value))} />
                   </div>
-                  <Button disabled={consoleLoading || !decision?.decision_id} onClick={async ()=>{
-                    setConsoleLoading(true);
-                    try {
-                      const res = await fetch('/api/trades/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision_id: decision.decision_id, symbol: decision.symbol, side: execSide, size: execSize }) });
-                      if (!res.ok) {
-                        const j = await res.json().catch(()=>({detail:'Failed'}));
-                        throw new Error(j.detail || `HTTP ${res.status}`);
-                      }
-                      const j = await res.json();
-                      toast({ title:'Order accepted', description:`Exec ${j.data.execution_id} @ ${j.data.fill_price}` });
-                      fetchTrades(1);
-                    } catch (e:any) {
-                      toast({ title:'Execution error', description: e.message || 'Failed', variant:'destructive' });
-                    } finally { setConsoleLoading(false); }
-                  }}>Execute Trade</Button>
+                  <Button disabled={consoleLoading || !decision?.decision_id} onClick={()=> setConfirmOpen(true)}>Execute Trade</Button>
+
+                  <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Confirm Execution</DialogTitle>
+                        <DialogDescription>Are you sure you want to execute this trade?</DialogDescription>
+                      </DialogHeader>
+                      <div className="text-sm space-y-1">
+                        <div><span className="text-muted-foreground">Symbol:</span> {decision?.symbol || symbol}</div>
+                        <div><span className="text-muted-foreground">Side:</span> {execSide.toUpperCase()}</div>
+                        <div><span className="text-muted-foreground">Size:</span> {execSize}</div>
+                      </div>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={()=> setConfirmOpen(false)}>Cancel</Button>
+                        <Button onClick={async ()=>{
+                          setConsoleLoading(true);
+                          try {
+                            const res = await fetch('/api/trades/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision_id: decision?.decision_id, symbol: decision?.symbol || symbol, side: execSide, size: execSize }) });
+                            if (!res.ok) {
+                              const j = await res.json().catch(()=>({detail:'Failed'}));
+                              throw new Error(j.detail || `HTTP ${res.status}`);
+                            }
+                            const j = await res.json();
+                            toast({ title:'Order accepted', description:`Exec ${j.data.execution_id} @ ${j.data.fill_price}` });
+                            fetchTrades(1);
+                          } catch (e:any) {
+                            toast({ title:'Execution error', description: e.message || 'Failed', variant:'destructive' });
+                          } finally { setConsoleLoading(false); setConfirmOpen(false); }
+                        }}>Confirm</Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardContent>
               </Card>
             </div>
@@ -814,6 +894,9 @@ export default function TradesPositions() {
                         className="pl-9 w-64"
                       />
                     </div>
+                    <Button variant="outline" size="sm" onClick={exportTradesCsv}>
+                      <Download className="h-4 w-4 mr-1" /> Export CSV
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -898,16 +981,18 @@ export default function TradesPositions() {
                           {isAdmin && (
                             <TableCell>
                               {trade.status === 'pending' && (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleVetoTrade(trade.symbol, trade.trade_id)}
-                                  disabled={vetoingTrades.has(trade.trade_id)}
-                                  className="text-red-600 border-red-200 hover:bg-red-50"
-                                >
-                                  <Ban className="h-3 w-3 mr-1" />
-                                  {vetoingTrades.has(trade.trade_id) ? 'Vetoing...' : 'Veto'}
-                                </Button>
+                                <>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => { setVetoContext({ symbol: trade.symbol, tradeId: trade.trade_id }); setVetoOpen(true); }}
+                                    disabled={vetoingTrades.has(trade.trade_id)}
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                  >
+                                    <Ban className="h-3 w-3 mr-1" />
+                                    {vetoingTrades.has(trade.trade_id) ? 'Vetoing...' : 'Veto'}
+                                  </Button>
+                                </>
                               )}
                             </TableCell>
                           )}
@@ -1115,6 +1200,26 @@ export default function TradesPositions() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <Dialog open={vetoOpen} onOpenChange={setVetoOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Founder Veto</DialogTitle>
+              <DialogDescription>Provide rationale and confirm veto for this trade.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div><span className="text-muted-foreground">Trade:</span> {vetoContext?.tradeId} • {vetoContext?.symbol}</div>
+              <div>
+                <Label>Rationale</Label>
+                <Input value={vetoRationale} onChange={(e)=> setVetoRationale(e.target.value)} placeholder="Reason for veto" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={()=> setVetoOpen(false)}>Cancel</Button>
+              <Button disabled={!vetoContext} onClick={()=> vetoContext && handleVetoTrade(vetoContext.symbol, vetoContext.tradeId)}>Submit Veto</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   );
