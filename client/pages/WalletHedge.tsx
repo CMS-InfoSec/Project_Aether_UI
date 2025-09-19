@@ -54,7 +54,8 @@ import {
   Copy,
   Eye,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  HelpCircle
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
