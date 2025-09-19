@@ -95,7 +95,8 @@ import {
   handleGetNotifications,
   handleMarkNotificationRead,
   handleMarkAllNotificationsRead,
-  handleCreateNotification
+  handleCreateNotification,
+  handleGetExecutionMetrics
 } from "./routes/reports";
 import {
   handleGetUserProfile,
@@ -250,6 +251,7 @@ export function createServer() {
   app.get("/api/reports/per-asset", handleGetPerAssetReport);
   app.get("/api/reports/backtest", handleGetBacktestReport);
   app.get("/api/reports/export", handleExportReportCSV);
+  app.get('/api/reports/execution', handleGetExecutionMetrics);
   app.get("/api/notifications", handleGetNotifications);
   app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
@@ -314,6 +316,7 @@ export function createServer() {
     handleSignalsIngest,
     handleStrategiesExplain,
     handleStrategiesStressTest,
+    handlePostBacktest,
   } = require('./routes/strategies');
   app.get('/api/strategies/flags', handleGetStrategyFlags);
   app.get('/api/strategies/breakdown', handleGetStrategyBreakdown);
@@ -326,6 +329,7 @@ export function createServer() {
   app.post('/api/signals/ingest', handleSignalsIngest);
   app.get('/api/strategies/explain', handleStrategiesExplain);
   app.post('/api/strategies/stress-test', handleStrategiesStressTest);
+  app.post('/api/strategies/backtest', handlePostBacktest);
 
   // Models explainability
   const { handleExplainModel } = require('./routes/models');
