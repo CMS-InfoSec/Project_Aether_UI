@@ -903,6 +903,79 @@ export default function AdminPortfolio() {
           </Card>
         </div>
       </div>
+
+      {/* Activity footer */}
+      {rebalanceHistory.length > 0 && (
+        <div className="mt-2 p-3 border rounded-md text-sm bg-muted/50">
+          <div className="flex items-center justify-between">
+            <div>
+              Last global rebalance: {new Date(rebalanceHistory[0].timestamp).toLocaleString()} • {rebalanceHistory[0].reason}
+            </div>
+            <a href={`/audit?ref=${rebalanceHistory[0].id}`} className="inline-flex items-center text-primary hover:underline">
+              <ExternalLink className="h-3 w-3 mr-1" /> View audit
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Row Details & Rebalance Drawer */}
+      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Portfolio Details</DialogTitle>
+            <DialogDescription>
+              {selected ? (
+                <div className="text-sm">
+                  <div className="font-mono">{selected.id}</div>
+                  <div>User: {selected.user_id} • Mode: {selected.mode.toUpperCase()}</div>
+                  <div>Last updated: {new Date(selected.last_updated).toLocaleString()}</div>
+                </div>
+              ) : 'Loading...'}
+            </DialogDescription>
+          </DialogHeader>
+          {rowError && (
+            <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{rowError}</AlertDescription></Alert>
+          )}
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Prices JSON</Label>
+              <Textarea rows={4} value={rowPricesJson} onChange={(e)=> setRowPricesJson(e.target.value)} className="font-mono text-xs" />
+            </div>
+            <div className="space-y-1">
+              <Label>Returns JSON</Label>
+              <Textarea rows={4} value={rowReturnsJson} onChange={(e)=> setRowReturnsJson(e.target.value)} className="font-mono text-xs" />
+            </div>
+            <div className="flex items-center gap-2 p-2 border rounded-md">
+              <input id="ack" type="checkbox" checked={rowAck} onChange={(e)=> setRowAck(e.target.checked)} />
+              <Label htmlFor="ack" className="text-xs">I understand this will rebalance active portfolios. Include this user in audit search.</Label>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=> setDetailOpen(false)}>Close</Button>
+            <Button onClick={async()=>{
+              setRowError(null);
+              if (!rowAck){ setRowError('Please acknowledge the action'); return; }
+              try{
+                const prices = JSON.parse(rowPricesJson);
+                const returns = JSON.parse(rowReturnsJson);
+                if (typeof prices !== 'object' || Array.isArray(prices)) throw new Error('Prices must be an object');
+                if (typeof returns !== 'object' || Array.isArray(returns)) throw new Error('Returns must be an object');
+              }catch(e:any){ setRowError(e.message||'Invalid JSON'); return; }
+              setRowIsSubmitting(true);
+              try{
+                const r = await fetch('/api/admin/portfolio/rebalance',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prices: JSON.parse(rowPricesJson), returns: JSON.parse(rowReturnsJson), actor:'admin@example.com', target_user_ids: selected ? [selected.user_id] : undefined }) });
+                const j = await r.json().catch(()=>({}));
+                if (!r.ok){ throw new Error(j.message || j.error || 'Rebalance failed'); }
+                toast({ title:'Rebalance Started', description:`Queued across ${j.rebalanced} portfolios` });
+                setTimeout(async()=>{ await Promise.all([fetchPortfolios(), fetchStats(), fetchRebalanceHistory()]); }, 2000);
+              }catch(e:any){ setRowError(e.message||'Failed'); }
+              finally{ setRowIsSubmitting(false); }
+            }} disabled={rowIsSubmitting}>
+              {rowIsSubmitting ? (<><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Submitting...</>) : 'Rebalance'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
