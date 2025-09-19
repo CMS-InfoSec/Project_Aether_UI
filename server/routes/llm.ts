@@ -140,7 +140,7 @@ function checkRateLimit(userId: string): { allowed: boolean; resetTime?: number 
 
 // POST /llm/ask - Ask LLM a question
 export function handleAskLLM(req: Request, res: Response) {
-  const { question } = req.body as LLMQuestion;
+  const { question, include } = req.body as LLMQuestion;
   const userId = req.query.userId as string || 'user_001'; // In production, get from auth
   
   // Input validation
