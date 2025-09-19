@@ -659,6 +659,8 @@ export default function AdminModels() {
   const [explain, setExplain] = useState<any|null>(null);
   const [shapInput, setShapInput] = useState<string>('');
   const [shapResult, setShapResult] = useState<any|null>(null);
+  const [rationales, setRationales] = useState<any[]>([]);
+  const [rationalesLoading, setRationalesLoading] = useState(false);
 
   const runExplain = async () => {
     if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
@@ -1362,10 +1364,11 @@ export default function AdminModels() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {models.length > 0 ? (
-                    models.map((model) => (
-                      <div key={model.modelId} className="border rounded-lg p-4 space-y-4">
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="lg:col-span-2 space-y-4">
+                    {models.length > 0 ? (
+                      models.map((model) => (
+                        <div key={model.modelId} className="border rounded-lg p-4 space-y-4">
                         {/* Model Header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
@@ -1593,6 +1596,65 @@ export default function AdminModels() {
                       <p className="text-sm text-muted-foreground mt-2">Complete a training job to see models here</p>
                     </div>
                   )}
+                  </div>
+                  <div className="space-y-4">
+                    <div className="border rounded-lg p-4 space-y-3">
+                      <div className="font-medium">Explainability & Diagnostics</div>
+                      <div className="space-y-2">
+                        <Label htmlFor="diagModel">Model ID</Label>
+                        <Input id="diagModel" value={diagModelId} onChange={(e)=> setDiagModelId(e.target.value)} placeholder="model_001" />
+                        <div className="flex gap-2">
+                          <Button onClick={runExplain} disabled={explainLoading}>Fetch Feature Importance</Button>
+                          <Button variant="outline" onClick={()=>{ (async()=>{ try{ setRationalesLoading(true); const r=await fetch('/api/strategies/explain'); const j=await r.json(); setRationales(j.items||j||[]);} catch{} finally{ setRationalesLoading(false);} })(); }}>Load Strategy Rationales</Button>
+                        </div>
+                        {explain && explain.features && (
+                          <div className="text-xs p-2 bg-muted rounded">
+                            <div className="font-medium mb-1">Top features</div>
+                            {explain.features.slice(0,5).map((f:any)=>(
+                              <div key={f.name} className="flex justify-between"><span>{f.name}</span><span>{(f.importance*100).toFixed(1)}%</span></div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Manual SHAP Input</Label>
+                        <Textarea rows={4} value={shapInput} onChange={(e)=> setShapInput(e.target.value)} placeholder='[1.2, 0.4, -0.1, 2.3]' />
+                        <div className="flex gap-2">
+                          <Button onClick={runShap}>Run SHAP</Button>
+                          {shapResult && (
+                            <Button variant="outline" onClick={()=>{ const blob = new Blob([JSON.stringify(shapResult,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`shap_${diagModelId||'model'}.json`; a.click(); }}>Download JSON</Button>
+                          )}
+                        </div>
+                        {shapResult && (
+                          <div className="overflow-auto">
+                            <table className="w-full text-xs">
+                              <thead><tr><th className="text-left p-1">Feature</th><th className="text-left p-1">SHAP</th></tr></thead>
+                              <tbody>
+                                {(shapResult.features||[]).map((f:any)=> (
+                                  <tr key={f.name} className="border-t"><td className="p-1">{f.name}</td><td className="p-1">{f.shap}</td></tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <div className="text-sm font-medium">Recent Strategy Rationales</div>
+                        {rationalesLoading ? (
+                          <div className="text-xs text-muted-foreground">Loading…</div>
+                        ) : (
+                          <div className="space-y-1 text-xs max-h-40 overflow-auto">
+                            {rationales.slice(0,10).map((it:any,idx:number)=> (
+                              <div key={idx} className="border-t pt-1">
+                                <div className="font-medium">{it.strategy || it.name || 'strategy'}</div>
+                                <div className="text-muted-foreground">{it.reason || it.rationale || ''}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
