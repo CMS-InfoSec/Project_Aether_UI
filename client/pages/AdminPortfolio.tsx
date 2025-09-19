@@ -851,9 +851,15 @@ export default function AdminPortfolio() {
                       </div>
                     )}
                   </AlertDialogHeader>
+                  <div className="px-6 -mt-4 mb-2">
+                    <div className="flex items-center gap-2 p-2 border rounded-md">
+                      <input id="ackGlobal" type="checkbox" checked={ackGlobal} onChange={(e)=> setAckGlobal(e.target.checked)} />
+                      <Label htmlFor="ackGlobal" className="text-xs">I understand this will trigger a bulk rebalance across active portfolios.</Label>
+                    </div>
+                  </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleRebalance}>
+                    <AlertDialogCancel onClick={()=> setAckGlobal(false)}>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleRebalance} disabled={!ackGlobal || isRebalancing}>
                       Confirm Rebalance
                     </AlertDialogAction>
                   </AlertDialogFooter>
