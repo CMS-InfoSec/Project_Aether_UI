@@ -69,10 +69,13 @@ import {
   handlePostHedge,
   handleGetHedgePercent,
   handlePatchHedgePercent,
+  handlePatchHedgeSettings,
   handleGetMarketConditions,
   handleUpdateMarketConditions,
   handleCloseHedge,
-  handleGetWalletSnapshot
+  handleGetWalletSnapshot,
+  handlePostWalletApiKeys,
+  handleGetWalletApiKeysStatus
 } from "./routes/hedge";
 import {
   handleGetProposals,
@@ -113,7 +116,8 @@ import {
 import {
   handleGetRecentTrades,
   handleGetOpenPositions,
-  handleVetoTrade
+  handleVetoTrade,
+  handleGetTradeDetail
 } from "./routes/trades";
 import {
   handleAskLLM,
@@ -208,9 +212,12 @@ export function createServer() {
   app.get("/api/wallet/balances", handleGetWalletBalances);
   app.get("/api/wallet/withdrawable", handleGetWalletWithdrawable);
   app.get("/api/wallet/snapshot", handleGetWalletSnapshot);
+  app.post("/api/wallet/api-keys", handlePostWalletApiKeys);
+  app.get("/api/wallet/api-keys/status", handleGetWalletApiKeysStatus);
   app.post("/api/hedge", handlePostHedge);
   app.get("/api/hedge/percent", handleGetHedgePercent);
   app.patch("/api/hedge/percent", handlePatchHedgePercent);
+  app.patch("/api/hedge/settings", handlePatchHedgeSettings);
   app.get("/api/hedge/market-conditions", handleGetMarketConditions);
   app.post("/api/hedge/market-conditions", handleUpdateMarketConditions);
   app.post("/api/hedge/close/:hedgeId", handleCloseHedge);
@@ -328,6 +335,7 @@ export function createServer() {
   // Trades and positions routes
   app.get("/api/trades/recent", handleGetRecentTrades);
   app.get("/api/positions/open", handleGetOpenPositions);
+  app.get("/api/trades/:id", handleGetTradeDetail);
   app.post("/api/admin/trades/veto", handleVetoTrade);
   const { handleTradeDecision, handleTradeExecute } = require('./routes/trades_decision');
   app.post('/api/trades/decision', handleTradeDecision);
