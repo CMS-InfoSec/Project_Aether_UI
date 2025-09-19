@@ -420,6 +420,12 @@ export default function AIAssistant() {
                   className="min-h-[100px] resize-none"
                   aria-describedby="char-count"
                 />
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.signals} onChange={e=> setIncludeOptions(o=>({...o, signals: e.target.checked}))} /> Signals</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.trades} onChange={e=> setIncludeOptions(o=>({...o, trades: e.target.checked}))} /> Trades</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.sentiment} onChange={e=> setIncludeOptions(o=>({...o, sentiment: e.target.checked}))} /> Sentiment</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.regime} onChange={e=> setIncludeOptions(o=>({...o, regime: e.target.checked}))} /> Market Regime</label>
+                </div>
                 <div className="flex items-center justify-between">
                   <div 
                     id="char-count"
