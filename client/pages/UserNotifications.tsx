@@ -364,12 +364,24 @@ export default function UserNotifications() {
             </Button>
           )}
           <Button variant="outline" onClick={async ()=>{
-            const r = await fetch(`/api/notifications?${new URLSearchParams(filters as any)}&format=csv`);
+            const params = new URLSearchParams();
+            params.set('limit', pageSize.toString());
+            params.set('offset', ((currentPage-1)*pageSize).toString());
+            if (severityFilter !== 'all') params.set('severity', severityFilter);
+            if (categoryFilter !== 'all') params.set('category', categoryFilter);
+            if (unreadOnly) params.set('unreadOnly','true');
+            const r = await fetch(`/api/notifications?${params}&format=csv`);
             const txt = await r.text();
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/csv'})); a.download = 'notifications.csv'; a.click();
           }}>Export CSV</Button>
           <Button variant="outline" onClick={async ()=>{
-            const r = await fetch(`/api/notifications?${new URLSearchParams(filters as any)}`);
+            const params = new URLSearchParams();
+            params.set('limit', pageSize.toString());
+            params.set('offset', ((currentPage-1)*pageSize).toString());
+            if (severityFilter !== 'all') params.set('severity', severityFilter);
+            if (categoryFilter !== 'all') params.set('category', categoryFilter);
+            if (unreadOnly) params.set('unreadOnly','true');
+            const r = await fetch(`/api/notifications?${params}`);
             const j = await r.json();
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j.data.notifications,null,2)],{type:'application/json'})); a.download = 'notifications.json'; a.click();
           }}>Export JSON</Button>
