@@ -119,3 +119,24 @@ export const handleLogout: RequestHandler = (req, res) => {
   // In a real app, you'd invalidate the tokens in your database
   res.json({ message: 'Logged out successfully' });
 };
+
+export const handleMe: RequestHandler = (req, res) => {
+  try {
+    const auth = req.headers['authorization'] || '';
+    const token = Array.isArray(auth) ? auth[0] : auth;
+    let accessToken = '';
+    if (token && token.toLowerCase().startsWith('bearer ')) {
+      accessToken = token.slice(7);
+    }
+    let user = mockUsers[0];
+    if (accessToken.startsWith('access_')) {
+      const parts = accessToken.split('_');
+      const userId = parts[1];
+      const found = mockUsers.find(u => u.id === userId);
+      if (found) user = found;
+    }
+    res.json({ id: user.id, email: user.email, role: user.role, access_token: accessToken || `access_${user.id}_${Date.now()}` });
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to resolve user' });
+  }
+};
