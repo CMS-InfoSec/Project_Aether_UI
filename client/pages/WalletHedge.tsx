@@ -533,6 +533,7 @@ export default function WalletHedge() {
     fetchWalletBalances();
     fetchWithdrawableFunds();
     fetchHedgeSettings();
+    (async()=>{ try{ const r=await fetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
   };
 
   // Pagination
