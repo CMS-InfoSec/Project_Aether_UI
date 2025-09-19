@@ -688,6 +688,15 @@ export default function WalletHedge() {
         </Card>
       </div>
 
+      {apiStatus && (!apiStatus.present || !apiStatus.valid || apiStatus.expiring_soon) && (
+        <Alert variant={(!apiStatus.present || !apiStatus.valid) ? 'destructive' : 'default'}>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            {!apiStatus.present ? 'No wallet API credentials found. Add Binance API keys below.' : !apiStatus.valid ? 'Invalid wallet API credentials. Please rotate your keys.' : 'API key expiry approaching. Rotate keys soon.'}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 1. Hedge History & Summary */}
         <Card className="lg:col-span-2">
