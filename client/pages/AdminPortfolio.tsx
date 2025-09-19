@@ -129,6 +129,15 @@ export default function AdminPortfolio() {
 
   const [jsonErrors, setJsonErrors] = useState({ prices: '', returns: '' });
 
+  // Row-level details & rebalance drawer
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selected, setSelected] = useState<PortfolioRecord | null>(null);
+  const [rowPricesJson, setRowPricesJson] = useState<string>('{}');
+  const [rowReturnsJson, setRowReturnsJson] = useState<string>('{}');
+  const [rowAck, setRowAck] = useState<boolean>(false);
+  const [rowError, setRowError] = useState<string | null>(null);
+  const [rowIsSubmitting, setRowIsSubmitting] = useState(false);
+
   // Update URL query parameters
   const updateUrl = useCallback(() => {
     const params = new URLSearchParams();
