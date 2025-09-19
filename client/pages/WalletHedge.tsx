@@ -167,6 +167,23 @@ export default function WalletHedge() {
   const [withdrawable, setWithdrawable] = useState<WithdrawableCalculation | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hedgeSettings, setHedgeSettings] = useState<HedgeSettings | null>(null);
+
+  // Wallet credentials state
+  const [apiKey, setApiKey] = useState('');
+  const [apiSecret, setApiSecret] = useState('');
+  const [apiExpiry, setApiExpiry] = useState('');
+  const [apiStatus, setApiStatus] = useState<{present:boolean; valid:boolean; expiring_soon:boolean; expires_at:string|null; key_masked:string|null} | null>(null);
+
+  // Risk panel state
+  const [runtimeConfig, setRuntimeConfig] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [tradeDiagId, setTradeDiagId] = useState('');
+  const [tradeDiag, setTradeDiag] = useState<any>(null);
+
+  // Personal overrides state
+  const [currentOverrides, setCurrentOverrides] = useState<any>(null);
+  const [overrideForm, setOverrideForm] = useState<{ sl_multiplier:number; tp_multiplier:number; trailing_stop:number; use_news_analysis:boolean }>({ sl_multiplier:0.5, tp_multiplier:2.0, trailing_stop:0.1, use_news_analysis:true });
+  const [confirmOverridesOpen, setConfirmOverridesOpen] = useState(false);
   
   // Loading states
   const [loading, setLoading] = useState({
