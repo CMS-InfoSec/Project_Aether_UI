@@ -137,6 +137,7 @@ export function createServer() {
   app.post("/api/auth/login", handleLogin);
   app.post("/api/auth/refresh", handleRefresh);
   app.post("/api/auth/logout", handleLogout);
+  app.get("/api/auth/me", (require('./routes/auth').handleMe));
 
   // Founder/Bootstrap routes (public)
   app.get("/api/founders/bootstrap-status", handleGetBootstrapStatus);
