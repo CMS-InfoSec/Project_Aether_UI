@@ -228,15 +228,16 @@ export default function AdminPortfolio() {
 
   // Initial data load
   useEffect(() => {
+    if (user?.role !== 'admin') return;
     const loadData = async () => {
       await Promise.all([
         fetchPortfolios(),
-        fetchStats(), 
+        fetchStats(),
         fetchRebalanceHistory()
       ]);
     };
     loadData();
-  }, [fetchPortfolios]);
+  }, [fetchPortfolios, user]);
 
   // Handle sorting
   const handleSort = (field: keyof PortfolioRecord) => {
