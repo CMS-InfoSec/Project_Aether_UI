@@ -317,8 +317,9 @@ export function createServer() {
   app.post('/api/strategies/stress-test', handleStrategiesStressTest);
 
   // Models explainability
-  const { handleExplainModel, handleSHAPExplore } = require('./routes/models');
+  const { handleExplainModel } = require('./routes/models');
   app.get('/api/models/explain/:modelId', handleExplainModel);
+  const { handleSHAPExplore } = require('./routes/shap');
   app.post('/api/shap/:modelId', handleSHAPExplore);
 
   // Adaptive Strategy Controller
