@@ -168,10 +168,7 @@ export default function WalletHedge() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [hedgeSettings, setHedgeSettings] = useState<HedgeSettings | null>(null);
 
-  // Wallet credentials state
-  const [apiKey, setApiKey] = useState('');
-  const [apiSecret, setApiSecret] = useState('');
-  const [apiExpiry, setApiExpiry] = useState('');
+  // Exchange API status (read-only; keys managed in Profile)
   const [apiStatus, setApiStatus] = useState<{present:boolean; valid:boolean; expiring_soon:boolean; expires_at:string|null; key_masked:string|null} | null>(null);
 
   // Risk panel state
@@ -194,7 +191,6 @@ export default function WalletHedge() {
     settings: true,
     executeHedge: false,
     saveSettings: false,
-    apiKeys: false,
     runtime: true,
     profile: true,
     overrides: false,
@@ -692,7 +688,7 @@ export default function WalletHedge() {
         <Alert variant={(!apiStatus.present || !apiStatus.valid) ? 'destructive' : 'default'}>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {!apiStatus.present ? 'No wallet API credentials found. Add Binance API keys below.' : !apiStatus.valid ? 'Invalid wallet API credentials. Please rotate your keys.' : 'API key expiry approaching. Rotate keys soon.'}
+            {!apiStatus.present ? 'No exchange API credentials found. Please add your Binance API keys in your Profile page.' : !apiStatus.valid ? 'Invalid exchange API credentials. Please rotate your keys in your Profile.' : 'API key expiry approaching. Rotate keys soon in your Profile.'}
           </AlertDescription>
         </Alert>
       )}
@@ -1163,43 +1159,26 @@ export default function WalletHedge() {
         </CardContent>
       </Card>
 
-      {/* 6. Wallet Credential Management */}
+      {/* 6. Exchange API Status (managed in Profile) */}
       <Card>
         <CardHeader>
-          <CardTitle>Binance API Keys</CardTitle>
-          <CardDescription>Store restricted API key and secret with expiry</CardDescription>
+          <CardTitle>Exchange API Status</CardTitle>
+          <CardDescription>Keys are managed in your Profile. This panel is read-only.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <Label>API Key</Label>
-              <Input value={apiKey} onChange={e=> setApiKey(e.target.value)} placeholder="64-char key" />
+        <CardContent className="space-y-3">
+          {apiStatus ? (
+            <div className="space-y-2 text-sm">
+              <div>Presence: <Badge variant={apiStatus.present ? 'default':'destructive'}>{apiStatus.present ? 'Present' : 'Missing'}</Badge></div>
+              <div>Validity: <Badge variant={apiStatus.valid ? 'default':'destructive'}>{apiStatus.valid ? 'Valid' : 'Invalid'}</Badge></div>
+              <div>Expiry: {apiStatus.expires_at ? new Date(apiStatus.expires_at).toLocaleString() : 'N/A'} {apiStatus.expiring_soon && (<Badge variant="destructive" className="ml-2">Expiring Soon</Badge>)}</div>
+              {apiStatus.key_masked && <div className="text-muted-foreground">Key: {apiStatus.key_masked}</div>}
             </div>
-            <div>
-              <Label>API Secret</Label>
-              <Input type="password" value={apiSecret} onChange={e=> setApiSecret(e.target.value)} placeholder="Secret" />
-            </div>
-            <div>
-              <Label>Expiry</Label>
-              <Input type="date" value={apiExpiry} onChange={e=> setApiExpiry(e.target.value)} />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={async()=>{
-              setLoading(prev=>({...prev, apiKeys:true}));
-              try{
-                const r=await fetch('/api/wallet/api-keys',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key: apiKey, secret: apiSecret, expires_at: apiExpiry ? new Date(apiExpiry).toISOString() : null }) });
-                if (!r.ok){ const j=await r.json().catch(()=>({error:'Failed'})); throw new Error(Array.isArray(j.details)? j.details.join(', ') : (j.error||'Failed')); }
-                const j=await r.json(); toast({ title:'Saved', description:'API keys saved' }); setApiStatus(j.data.api_keys? { present:true, valid:true, expiring_soon:false, expires_at:j.data.api_keys.expires_at, key_masked:j.data.api_keys.key_masked }: null);
-                setApiKey(''); setApiSecret(''); setApiExpiry('');
-              }catch(e:any){ toast({ title:'Validation error', description: e.message || 'Failed', variant:'destructive' }); }
-              finally{ setLoading(prev=>({...prev, apiKeys:false})); }
-            }} disabled={loading.apiKeys}>Save Keys</Button>
-            <Button variant="outline" onClick={()=>{ setApiKey(''); setApiSecret(''); setApiExpiry(''); }}>Reset</Button>
-          </div>
-          {apiStatus?.present && (
-            <div className="text-xs text-muted-foreground">Current: {apiStatus.key_masked} • Expires {apiStatus.expires_at ? new Date(apiStatus.expires_at).toLocaleDateString() : 'N/A'}</div>
+          ) : (
+            <div className="text-muted-foreground text-sm">Status unavailable</div>
           )}
+          <div>
+            <a href="/profile" className="inline-flex items-center px-3 py-2 border rounded-md text-sm">Manage in Profile</a>
+          </div>
         </CardContent>
       </Card>
 
