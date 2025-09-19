@@ -394,6 +394,35 @@ export function handlePatchHedgePercent(req: Request, res: Response) {
   });
 }
 
+// Alias: PATCH /hedge/settings
+export const handlePatchHedgeSettings = handlePatchHedgePercent;
+
+// Simple in-memory wallet API key store and validation (scoped for wallet routes)
+let walletApiKeys: { key_masked: string; expires_at: string; created_at: string; valid: boolean } | null = null;
+
+function maskKey(key: string) {
+  return key.length >= 8 ? key.slice(0,4) + '*'.repeat(key.length - 8) + key.slice(-4) : '****';
+}
+
+export function handlePostWalletApiKeys(req: Request, res: Response) {
+  const { key, secret, expires_at } = req.body || {};
+  const errors: string[] = [];
+  if (!key || typeof key !== 'string' || key.length < 32) errors.push('API key must be at least 32 characters');
+  if (!secret || typeof secret !== 'string' || secret.length < 16) errors.push('API secret must be at least 16 characters');
+  const exp = expires_at ? new Date(expires_at) : null;
+  if (!exp || isNaN(exp.getTime()) || exp.getTime() <= Date.now()) errors.push('Expiry must be a valid future date');
+  if (errors.length) return res.status(400).json({ status:'error', error:'Validation failed', details: errors });
+  walletApiKeys = { key_masked: maskKey(key), expires_at: exp!.toISOString(), created_at: new Date().toISOString(), valid: true };
+  res.json({ status:'success', message:'API keys saved. Remember to restrict scopes.', data:{ api_keys: walletApiKeys } });
+}
+
+export function handleGetWalletApiKeysStatus(_req: Request, res: Response) {
+  if (!walletApiKeys) return res.json({ status:'success', data:{ present:false, valid:false, expires_at: null, key_masked: null, expiring_soon: false } });
+  const expTs = new Date(walletApiKeys.expires_at).getTime();
+  const expiringSoon = expTs - Date.now() < 7 * 24 * 60 * 60 * 1000; // 7 days
+  res.json({ status:'success', data:{ present:true, valid: walletApiKeys.valid, expires_at: walletApiKeys.expires_at, key_masked: walletApiKeys.key_masked, expiring_soon: expiringSoon } });
+}
+
 // Get market conditions (for admin/debugging)
 export function handleGetMarketConditions(_req: Request, res: Response) {
   res.json({
