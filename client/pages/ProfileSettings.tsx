@@ -574,6 +574,11 @@ export default function ProfileSettings() {
             <p className="text-muted-foreground">
               Manage your personal risk profile, trading preferences, and API credentials
             </p>
+            <div className="mt-2 text-sm flex items-center gap-2">
+              <Badge variant="outline">{user?.email}</Badge>
+              <Badge variant={user?.role==='admin' ? 'destructive' : 'outline'}>{user?.role ?? 'user'}</Badge>
+              {userProfile && <Badge variant="secondary" className="capitalize">{userProfile.risk_tier}</Badge>}
+            </div>
           </div>
           <div className="flex items-center space-x-2">
             <Button variant="outline" onClick={handleResetToLastSaved}>
@@ -835,23 +840,44 @@ export default function ProfileSettings() {
               </Alert>
             )}
 
-            <Button 
-              onClick={handleSaveTradingSettings}
-              disabled={!tradingSettingsValid || isLoading.saveSettings}
-              className="w-full md:w-auto"
-            >
-              {isLoading.saveSettings ? (
-                <>
-                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Trading Settings
-                </>
-              )}
-            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button
+                onClick={async ()=>{
+                  const before = originalTradingSettings;
+                  const after = tradingSettings;
+                  const diff: Record<string, { from:any; to:any }> = {};
+                  (['sl_multiplier','tp_multiplier','trailing_stop','use_news_analysis'] as const).forEach(k=>{
+                    if ((before as any)[k] !== (after as any)[k]) diff[k] = { from: (before as any)[k], to: (after as any)[k] };
+                  });
+                  const ok = window.confirm(`Review changes before saving:\n\n${JSON.stringify(diff,null,2)}`);
+                  if (!ok) return;
+                  await handleSaveTradingSettings();
+                  try {
+                    await fetch('/api/config/user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: user?.id || 'user_1', settings: { trading: { ...after } } }) });
+                  } catch {}
+                }}
+                disabled={!tradingSettingsValid || isLoading.saveSettings}
+                className="w-full md:w-auto"
+              >
+                {isLoading.saveSettings ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Trading Settings
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={()=>{
+                const tier = selectedRiskTier;
+                const defaults = tier==='aggressive' ? { sl_multiplier: 0.8, tp_multiplier: 3.0, trailing_stop: 0.15, use_news_analysis: true } : tier==='balanced' ? { sl_multiplier: 0.5, tp_multiplier: 2.0, trailing_stop: 0.1, use_news_analysis: true } : { sl_multiplier: 0.3, tp_multiplier: 1.5, trailing_stop: 0.05, use_news_analysis: false };
+                setTradingSettings(defaults);
+                toast({ title:'Defaults applied', description:`Applied ${tier} tier defaults` });
+              }}>Reset to Tier Defaults</Button>
+            </div>
           </CardContent>
         </Card>
 
