@@ -438,6 +438,20 @@ export default function AdminPortfolio() {
     );
   };
 
+  // Guard unauthorized
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="space-y-4">
+        <Alert>
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Admin access required. You do not have permission to view portfolio data. Please navigate back to your dashboard.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
+
   // Error handling
   if (error) {
     return (
