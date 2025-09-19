@@ -367,6 +367,21 @@ export default function AIAssistant() {
           </p>
         </div>
         <div className="flex items-center space-x-2">
+          {history.length > 0 && (
+            <>
+              <Button variant="outline" onClick={() => {
+                const blob = new Blob([JSON.stringify(history, null, 2)], { type:'application/json' });
+                const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ask-aether-history.json'; a.click(); URL.revokeObjectURL(url);
+              }}>Export JSON</Button>
+              <Button variant="outline" onClick={() => {
+                const headers = ['timestamp','question','answer'];
+                const rows = history.map(h => [h.timestamp, '"'+h.question.replace(/"/g,'""')+'"', '"'+h.answer.replace(/"/g,'""')+'"']);
+                const csv = [headers.join(',')].concat(rows.map(r=> r.join(','))).join('\n');
+                const blob = new Blob([csv], { type:'text/csv' });
+                const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ask-aether-history.csv'; a.click(); URL.revokeObjectURL(url);
+              }}>Export CSV</Button>
+            </>
+          )}
           <Button variant="outline" onClick={handleClear} disabled={requestState.isLoading}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Clear
