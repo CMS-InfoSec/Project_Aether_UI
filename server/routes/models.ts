@@ -681,6 +681,41 @@ let sentimentPipelines: SentimentPipeline[] = [
 
 // API Handlers
 
+// Models history for catalog view
+export function handleGetModelsHistory(req: Request, res: Response) {
+  const { status, type, limit = 50, offset = 0, search } = req.query as any;
+  let list = [...models];
+  if (status) list = list.filter(m => m.status === status);
+  if (type) list = list.filter(m => m.type === type);
+  if (search && typeof search === 'string' && search.trim()) {
+    const q = search.trim().toLowerCase();
+    list = list.filter(m => m.name.toLowerCase().includes(q) || m.modelId.toLowerCase().includes(q));
+  }
+  const lim = Math.max(1, Math.min(200, parseInt(String(limit)) || 50));
+  const off = Math.max(0, parseInt(String(offset)) || 0);
+  const items = list
+    .sort((a,b)=> new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(off, off + lim)
+    .map(m => ({
+      modelId: m.modelId,
+      name: m.name,
+      version: m.version,
+      type: m.type,
+      status: m.status,
+      checksum: m.experiment.checksum,
+      metrics: {
+        sharpeRatio: m.performance.sharpeRatio,
+        winRate: m.performance.winRate,
+        maxDrawdown: m.performance.maxDrawdown,
+        profitFactor: m.performance.profitFactor,
+        sortino: m.performance.sortino
+      },
+      createdAt: m.createdAt,
+      deployedAt: m.deployedAt || null
+    }));
+  res.json({ status: 'success', data: items, metadata: { total: list.length, limit: lim, offset: off } });
+}
+
 // Start training job with enhanced workflow
 export function handleStartTraining(req: Request, res: Response) {
   const {

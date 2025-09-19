@@ -184,6 +184,7 @@ export function createServer() {
   app.delete("/api/models/train/:jobId", handleCancelTraining);
   app.post("/api/models/deploy/:modelId", handleDeployModel);
   app.get("/api/models", handleGetAllModels);
+  app.get("/api/models/history", (require('./routes/models').handleGetModelsHistory));
   app.post("/api/models/promote", handlePromoteModel);
   app.post("/api/models/shadow/start", handleStartShadow);
   app.post("/api/models/shadow/stop", handleStopShadow);

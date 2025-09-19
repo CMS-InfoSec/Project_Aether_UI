@@ -379,10 +379,30 @@ export default function AdminModels() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await fetch('/api/models');
+      const response = await fetch('/api/models/history');
       const data = await response.json();
       if (data.status === 'success') {
-        setModels(data.data);
+        // history items contain reduced fields; we will refetch full models for rich cards if needed
+        const fullResp = await fetch('/api/models');
+        const full = await fullResp.json().catch(()=>({status:'',data:[]}));
+        const map: Record<string, any> = {};
+        if (full.status === 'success') {
+          for (const m of full.data) map[m.modelId] = m;
+        }
+        const merged = data.data.map((h: any) => map[h.modelId] ? map[h.modelId] : ({
+          modelId: h.modelId,
+          name: h.name,
+          version: h.version,
+          type: h.type,
+          status: h.status,
+          accuracy: 0,
+          performance: { sharpeRatio: h.metrics?.sharpeRatio||0, maxDrawdown: h.metrics?.maxDrawdown||0, winRate: h.metrics?.winRate||0, profitFactor: h.metrics?.profitFactor||0, sortino: h.metrics?.sortino||0, calmar: 0, volatility: 0, beta: 0, alpha: 0, informationRatio: 0 },
+          algorithmInfo: { name: 'unknown', architecture: {}, hyperparameters: {} },
+          createdAt: h.createdAt,
+          createdBy: 'system',
+          experiment: { mlflowRunId: '', dvcHash: '', datasetVersion: '', checksum: h.checksum }
+        }));
+        setModels(merged);
       }
     } catch (error) {
       console.error('Failed to fetch models:', error);
@@ -598,42 +618,65 @@ export default function AdminModels() {
   // Deploy model
   const deployModel = async (modelId: string) => {
     if (!founderApproval) {
-      toast({
-        title: "Approval Required",
-        description: "Founder approval is required for model deployment",
-        variant: "destructive"
-      });
+      toast({ title: "Approval Required", description: "Founder approval is required for model deployment", variant: "destructive" });
       return;
     }
-
     try {
-      const response = await fetch(`/api/models/deploy/${modelId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ founderApproval }),
-      });
-
+      const response = await fetch(`/api/models/deploy/${modelId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ founderApproval }) });
       const data = await response.json();
-      
-      if (data.status === 'success') {
-        toast({
-          title: "Model Deployed",
-          description: "Model has been deployed to production successfully"
-        });
-        fetchModels();
-        setFounderApproval(false);
-      } else {
-        throw new Error(data.message);
-      }
-    } catch (error) {
-      toast({
-        title: "Deployment Failed",
-        description: error instanceof Error ? error.message : "Failed to deploy model",
-        variant: "destructive"
-      });
-    }
+      if (data.status === 'success') { toast({ title: "Model Deployed", description: "Model deployed" }); fetchModels(); setFounderApproval(false); } else { throw new Error(data.message); }
+    } catch (error) { toast({ title: "Deployment Failed", description: error instanceof Error ? error.message : "Failed to deploy model", variant: "destructive" }); }
+  };
+
+  const promoteModel = async (modelId: string) => {
+    if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for promotion', variant:'destructive' }); return; }
+    try {
+      const r = await fetch('/api/models/promote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId, founderApproval: true }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || 'Failed');
+      toast({ title:'Promoted', description:`Model ${modelId} promoted` });
+      setFounderApproval(false);
+      fetchModels();
+    } catch (e:any) { toast({ title:'Promotion Failed', description: e.message || 'Failed', variant:'destructive' }); }
+  };
+
+  const startShadow = async (modelId: string) => {
+    try { const r = await fetch('/api/models/shadow/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Started', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Failed', description:e.message||'Failed', variant:'destructive' }); }
+  };
+
+  const stopShadow = async (modelId: string) => {
+    try { const r = await fetch('/api/models/shadow/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Stopped', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Stop Failed', description:e.message||'Failed', variant:'destructive' }); }
+  };
+
+  const rollbackModel = async (fromModelId: string, toModelId: string) => {
+    if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for rollback', variant:'destructive' }); return; }
+    try { const r = await fetch('/api/models/rollback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Rollback Complete', description:`${fromModelId} → ${toModelId}` }); setFounderApproval(false); fetchModels(); } catch(e:any){ toast({ title:'Rollback Failed', description:e.message||'Failed', variant:'destructive' }); }
+  };
+
+  // Explainability panels state
+  const [diagModelId, setDiagModelId] = useState<string>('');
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [explain, setExplain] = useState<any|null>(null);
+  const [shapInput, setShapInput] = useState<string>('');
+  const [shapResult, setShapResult] = useState<any|null>(null);
+
+  const runExplain = async () => {
+    if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
+    setExplainLoading(true);
+    try { const r = await fetch(`/api/models/explain/${encodeURIComponent(diagModelId)}`); const j = await r.json(); setExplain(j); } catch { toast({ title:'Explain failed', description:'Request failed', variant:'destructive' }); } finally { setExplainLoading(false); }
+  };
+
+  const runShap = async () => {
+    if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
+    try {
+      const parsed = JSON.parse(shapInput || '[]');
+      if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
+      const r = await fetch(`/api/shap/${encodeURIComponent(diagModelId)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: parsed }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.detail || 'Failed');
+      setShapResult(j.data || j);
+      toast({ title:'SHAP ready', description:`Request ${(j.data?.request_id||j.request_id||'')}` });
+    } catch(e:any) { toast({ title:'SHAP failed', description: e.message || 'Failed', variant:'destructive' }); }
   };
 
   // Utility functions
@@ -1476,23 +1519,70 @@ export default function AdminModels() {
                         )}
 
                         {/* Model Actions */}
-                        <div className="flex items-center space-x-2 pt-2 border-t">
+                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                           {model.experiment.reproductionCommand && (
-                            <Button variant="outline" size="sm">
-                              <FileText className="h-3 w-3 mr-1" />
-                              Reproduction
+                            <Button variant="outline" size="sm"><FileText className="h-3 w-3 mr-1" />Reproduction</Button>
+                          )}
+                          <Button variant="outline" size="sm"><BarChart3 className="h-3 w-3 mr-1" />Performance Report</Button>
+                          {model.status === 'deployed' && (<Button variant="outline" size="sm"><Eye className="h-3 w-3 mr-1" />Live Monitoring</Button>)}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm"><Rocket className="h-3 w-3 mr-1" />Promote</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Promote Model</DialogTitle>
+                                <DialogDescription>Promote {model.name} to production (founder supermajority enforced server-side)</DialogDescription>
+                              </DialogHeader>
+                              <div className="flex items-center space-x-2">
+                                <Checkbox id={`prom_${model.modelId}`} checked={founderApproval} onCheckedChange={setFounderApproval} />
+                                <Label htmlFor={`prom_${model.modelId}`}>I have founder approval</Label>
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={()=> promoteModel(model.modelId)} disabled={!founderApproval}>Confirm Promote</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                          {model.status !== 'shadow' ? (
+                            <Button variant="outline" size="sm" onClick={()=> startShadow(model.modelId)}>
+                              <Play className="h-3 w-3 mr-1" /> Start Shadow
+                            </Button>
+                          ) : (
+                            <Button variant="outline" size="sm" onClick={()=> stopShadow(model.modelId)}>
+                              <Square className="h-3 w-3 mr-1" /> Stop Shadow
                             </Button>
                           )}
-                          <Button variant="outline" size="sm">
-                            <BarChart3 className="h-3 w-3 mr-1" />
-                            Performance Report
-                          </Button>
-                          {model.status === 'deployed' && (
-                            <Button variant="outline" size="sm">
-                              <Eye className="h-3 w-3 mr-1" />
-                              Live Monitoring
-                            </Button>
-                          )}
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm"><RotateCcw className="h-3 w-3 mr-1" />Rollback</Button>
+                            </DialogTrigger>
+                            <DialogContent>
+                              <DialogHeader>
+                                <DialogTitle>Rollback Model</DialogTitle>
+                                <DialogDescription>Select target model to rollback to</DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-3">
+                                <div>
+                                  <Label>Rollback target</Label>
+                                  <Select onValueChange={(v)=> setRollbackToModelId(v)}>
+                                    <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+                                    <SelectContent>
+                                      {models.filter(m=> m.modelId!==model.modelId).map(m => (
+                                        <SelectItem key={m.modelId} value={m.modelId}>{m.name} (v{m.version})</SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox id={`rb_${model.modelId}`} checked={founderApproval} onCheckedChange={setFounderApproval} />
+                                  <Label htmlFor={`rb_${model.modelId}`}>I have founder approval</Label>
+                                </div>
+                              </div>
+                              <DialogFooter>
+                                <Button onClick={()=> rollbackModel(model.modelId, rollbackToModelId)} disabled={!rollbackToModelId || !founderApproval}>Confirm Rollback</Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
                         </div>
                       </div>
                     ))
