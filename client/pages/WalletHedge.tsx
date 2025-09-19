@@ -1162,6 +1162,153 @@ export default function WalletHedge() {
           )}
         </CardContent>
       </Card>
+
+      {/* 6. Wallet Credential Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Binance API Keys</CardTitle>
+          <CardDescription>Store restricted API key and secret with expiry</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label>API Key</Label>
+              <Input value={apiKey} onChange={e=> setApiKey(e.target.value)} placeholder="64-char key" />
+            </div>
+            <div>
+              <Label>API Secret</Label>
+              <Input type="password" value={apiSecret} onChange={e=> setApiSecret(e.target.value)} placeholder="Secret" />
+            </div>
+            <div>
+              <Label>Expiry</Label>
+              <Input type="date" value={apiExpiry} onChange={e=> setApiExpiry(e.target.value)} />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={async()=>{
+              setLoading(prev=>({...prev, apiKeys:true}));
+              try{
+                const r=await fetch('/api/wallet/api-keys',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ key: apiKey, secret: apiSecret, expires_at: apiExpiry ? new Date(apiExpiry).toISOString() : null }) });
+                if (!r.ok){ const j=await r.json().catch(()=>({error:'Failed'})); throw new Error(Array.isArray(j.details)? j.details.join(', ') : (j.error||'Failed')); }
+                const j=await r.json(); toast({ title:'Saved', description:'API keys saved' }); setApiStatus(j.data.api_keys? { present:true, valid:true, expiring_soon:false, expires_at:j.data.api_keys.expires_at, key_masked:j.data.api_keys.key_masked }: null);
+                setApiKey(''); setApiSecret(''); setApiExpiry('');
+              }catch(e:any){ toast({ title:'Validation error', description: e.message || 'Failed', variant:'destructive' }); }
+              finally{ setLoading(prev=>({...prev, apiKeys:false})); }
+            }} disabled={loading.apiKeys}>Save Keys</Button>
+            <Button variant="outline" onClick={()=>{ setApiKey(''); setApiSecret(''); setApiExpiry(''); }}>Reset</Button>
+          </div>
+          {apiStatus?.present && (
+            <div className="text-xs text-muted-foreground">Current: {apiStatus.key_masked} • Expires {apiStatus.expires_at ? new Date(apiStatus.expires_at).toLocaleDateString() : 'N/A'}</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 7. Risk Oversight & Personal Overrides */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Risk Oversight</CardTitle>
+          <CardDescription>System defaults and personal overrides</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="p-3 border rounded">
+              <div className="text-xs text-muted-foreground">Daily Loss Cap</div>
+              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `${runtimeConfig['trading.risk_limit_percent']}%` : '—'}</div>
+            </div>
+            <div className="p-3 border rounded">
+              <div className="text-xs text-muted-foreground">Position Cap</div>
+              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `$${runtimeConfig['trading.max_position_size']}` : '—'}</div>
+            </div>
+            <div className="p-3 border rounded">
+              <div className="text-xs text-muted-foreground">Stop-loss Default</div>
+              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `${runtimeConfig['trading.stop_loss_percent']}%` : '—'}</div>
+            </div>
+          </div>
+          <div className="text-sm">User Tier: <Badge variant="outline" className="ml-2">{!loading.profile && userProfile ? userProfile.risk_tier.toUpperCase() : '—'}</Badge></div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <Label>Stop-loss Multiplier</Label>
+              <Input type="number" step="0.05" value={overrideForm.sl_multiplier} onChange={e=> setOverrideForm(f=>({...f, sl_multiplier: parseFloat(e.target.value)||0}))} />
+            </div>
+            <div>
+              <Label>Take-profit Multiplier</Label>
+              <Input type="number" step="0.1" value={overrideForm.tp_multiplier} onChange={e=> setOverrideForm(f=>({...f, tp_multiplier: parseFloat(e.target.value)||0}))} />
+            </div>
+            <div>
+              <Label>Trailing-stop (%)</Label>
+              <Input type="number" step="0.05" value={overrideForm.trailing_stop} onChange={e=> setOverrideForm(f=>({...f, trailing_stop: parseFloat(e.target.value)||0}))} />
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch checked={overrideForm.use_news_analysis} onCheckedChange={v=> setOverrideForm(f=>({...f, use_news_analysis: v}))} />
+              <span className="text-sm">News-aware trading</span>
+            </div>
+          </div>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={()=>{ if(currentOverrides) setOverrideForm(currentOverrides); }}>Reset to Current</Button>
+            <Button onClick={()=> setConfirmOverridesOpen(true)}>Save Overrides</Button>
+          </div>
+
+          <Dialog open={confirmOverridesOpen} onOpenChange={setConfirmOverridesOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Changes</DialogTitle>
+                <DialogDescription>Review differences before saving</DialogDescription>
+              </DialogHeader>
+              <div className="text-sm space-y-2">
+                {currentOverrides && Object.entries(overrideForm).map(([k,v])=> {
+                  const oldVal = (currentOverrides as any)[k];
+                  if (oldVal === v) return null;
+                  return <div key={k} className="flex justify-between"><span className="text-muted-foreground">{k}</span><span className="font-mono">{String(oldVal)} → {String(v)}</span></div>
+                })}
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={()=> setConfirmOverridesOpen(false)}>Cancel</Button>
+                <Button onClick={async()=>{
+                  setLoading(prev=>({...prev, overrides:true}));
+                  try{
+                    const body = { userId:'user_1', settings: overrideForm, actor:'self' };
+                    const r=await fetch('/api/config/user',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+                    if (!r.ok){ const j=await r.json().catch(()=>({error:'Failed'})); throw new Error(j.message||j.error||'Failed'); }
+                    const j=await r.json(); toast({ title:'Saved', description:'Overrides updated' }); setCurrentOverrides(overrideForm); setConfirmOverridesOpen(false);
+                  }catch(e:any){ toast({ title:'Save failed', description: e.message||'Failed', variant:'destructive' }); }
+                  finally{ setLoading(prev=>({...prev, overrides:false})); }
+                }}>Confirm</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          <Separator className="my-4" />
+
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Blocked-trade Diagnostics</div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <Label>Trade ID</Label>
+                <Input value={tradeDiagId} onChange={e=> setTradeDiagId(e.target.value)} placeholder="trade_002 or BTC_001_..." />
+              </div>
+              <Button onClick={async()=>{
+                setLoading(prev=>({...prev, tradeDiag:true}));
+                try{ const r=await fetch(`/api/trades/${encodeURIComponent(tradeDiagId)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const j=await r.json(); setTradeDiag(j.data); }
+                catch{ setTradeDiag(null); toast({ title:'Not found', description:'Trade not found or unavailable', variant:'destructive' }); }
+                finally{ setLoading(prev=>({...prev, tradeDiag:false})); }
+              }}>Lookup</Button>
+            </div>
+            {tradeDiag?.rejection_reasons?.length ? (
+              <Alert>
+                <HelpCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <div className="text-sm">Rejection reasons:</div>
+                  <ul className="list-disc ml-5 text-sm">
+                    {tradeDiag.rejection_reasons.map((r:string,i:number)=>(<li key={i}>{r}</li>))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
