@@ -306,6 +306,7 @@ export function createServer() {
   } = require('./routes/strategies');
   app.get('/api/strategies/flags', handleGetStrategyFlags);
   app.get('/api/strategies/breakdown', handleGetStrategyBreakdown);
+  app.patch('/api/strategies/:strategy/trading', (require('./routes/strategies').handlePatchStrategyTrading));
   app.get('/api/news/sentiment', handleNewsSentiment);
   app.get('/api/news/latest', handleNewsLatest);
   app.get('/api/social/latest', handleSocialLatest);
@@ -316,8 +317,9 @@ export function createServer() {
   app.post('/api/strategies/stress-test', handleStrategiesStressTest);
 
   // Models explainability
-  const { handleExplainModel } = require('./routes/models');
+  const { handleExplainModel, handleSHAPExplore } = require('./routes/models');
   app.get('/api/models/explain/:modelId', handleExplainModel);
+  app.post('/api/shap/:modelId', handleSHAPExplore);
 
   // Adaptive Strategy Controller
   const { handleASCStatus, handleASCReweight, handleASCActivate, handleASCDeactivate } = require('./routes/asc');
