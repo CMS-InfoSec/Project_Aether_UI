@@ -94,6 +94,11 @@ export default function UserNotifications() {
   const [expandedNotifications, setExpandedNotifications] = useState<Set<string>>(new Set());
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [prefs, setPrefs] = useState<{ supported_channels: string[]; channels: Record<string, boolean> }|null>(null);
+  const [degraded, setDegraded] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [channelStatus, setChannelStatus] = useState<any|null>(null);
+  const [pushStatus, setPushStatus] = useState<any|null>(null);
+  const [pushForm, setPushForm] = useState({ token:'', title:'', body:'', url:'', nonce:'' });
 
   // URL-based filter and pagination state
   const currentPage = parseInt(searchParams.get('page') || '1', 10);
@@ -161,46 +166,38 @@ export default function UserNotifications() {
 
   const loadNotifications = useCallback(async () => {
     if (!isLoading) setIsRefreshing(true);
-    
     try {
       const params = new URLSearchParams();
-      
-      // Pagination
       const offset = (currentPage - 1) * pageSize;
       params.set('limit', pageSize.toString());
       params.set('offset', offset.toString());
-      
-      // Filters
-      if (severityFilter !== 'all') {
-        params.set('severity', severityFilter);
-      }
-      if (categoryFilter !== 'all') {
-        params.set('category', categoryFilter);
-      }
-      if (unreadOnly) {
-        params.set('unreadOnly', 'true');
-      }
+      if (severityFilter !== 'all') params.set('severity', severityFilter);
+      if (categoryFilter !== 'all') params.set('category', categoryFilter);
+      if (unreadOnly) params.set('unreadOnly', 'true');
 
       const response = await fetch(`/api/notifications?${params}`);
+      if (response.status === 503) {
+        setDegraded(true);
+        const cached = await response.json();
+        if (!notifications) setNotifications(cached.data);
+        return;
+      }
+      setDegraded(false);
       const data = await response.json();
-      
       if (data.status === 'success') {
         setNotifications(data.data);
+        setNextCursor(data.data.nextCursor || null);
       } else {
         throw new Error(data.error || 'Failed to load notifications');
       }
-    } catch (error) {
+    } catch (error:any) {
       console.error('Load notifications error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load notifications. Please try again.",
-        variant: "destructive",
-      });
+      toast({ title: 'Error', description: error.message || 'Failed to load notifications', variant: 'destructive' });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [currentPage, pageSize, severityFilter, categoryFilter, unreadOnly]);
+  }, [currentPage, pageSize, severityFilter, categoryFilter, unreadOnly, notifications]);
 
   // Mark notification as read
   const markAsRead = async (notificationId: string, read: boolean = true) => {
@@ -286,8 +283,28 @@ export default function UserNotifications() {
   // Pagination controls
   const totalPages = notifications ? Math.ceil(notifications.pagination.total / pageSize) : 0;
   
-  const goToPage = (page: number) => {
-    updateFilters({ page: page.toString() });
+  const goToPage = (page: number) => { updateFilters({ page: page.toString() }); };
+
+  const loadMore = async () => {
+    if (!nextCursor) return;
+    try {
+      const params = new URLSearchParams();
+      params.set('limit', pageSize.toString());
+      params.set('offset', nextCursor);
+      if (severityFilter !== 'all') params.set('severity', severityFilter);
+      if (categoryFilter !== 'all') params.set('category', categoryFilter);
+      if (unreadOnly) params.set('unreadOnly', 'true');
+      const r = await fetch(`/api/notifications?${params}`);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      const j = await r.json();
+      setNotifications(prev => prev ? ({
+        ...j.data,
+        notifications: prev.notifications.concat(j.data.notifications),
+        summary: j.data.summary,
+        pagination: j.data.pagination
+      }) : j.data);
+      setNextCursor(j.data.nextCursor || null);
+    } catch (e:any) { toast({ title:'Error', description: e.message || 'Load more failed', variant:'destructive' }); }
   };
 
   const goToFirstPage = () => goToPage(1);
@@ -370,6 +387,9 @@ export default function UserNotifications() {
         </div>
       </div>
 
+      {degraded && (
+        <Alert variant="destructive"><AlertDescription>Degraded mode: using cached results until backend recovers.</AlertDescription></Alert>
+      )}
       {/* Summary Cards */}
       {notifications && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -486,6 +506,33 @@ export default function UserNotifications() {
         </CardContent>
       </Card>
 
+      {/* Channel Health & Escalation */}
+      <Card>
+        <CardHeader><CardTitle>Channel Health & Escalation</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/notifications/channels/status'); const j = await r.json(); setChannelStatus(j.data); }catch{} }}>Refresh Channels</Button>
+            <Button onClick={async()=>{ try{ const r = await fetch('/api/notifications/async_notify_channels',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','telegram','email'], message:'Test broadcast' }) }); if (r.status===202) toast({ title:'Queued', description:'Broadcast queued' }); }catch{} }}>Async Broadcast</Button>
+            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/notifications/notify_admins',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','email'], message:'Admin incident test' }) }); const j=await r.json(); toast({ title:'Dispatch', description: JSON.stringify(j.data.summary) }); }catch{} }}>Notify Admins</Button>
+          </div>
+          {channelStatus && (
+            <div className="grid md:grid-cols-3 gap-3">
+              {Object.entries(channelStatus).map(([k,v]: any)=> (
+                <div key={k} className={`p-3 border rounded ${v.healthy? '':'bg-destructive/5'}`}>
+                  <div className="flex items-center justify-between"><div className="font-medium capitalize">{k}</div><Badge variant={v.healthy? 'outline':'destructive'}>{v.healthy? 'healthy':'error'}</Badge></div>
+                  <div className="text-xs text-muted-foreground mt-1">Last: {new Date((v as any).last_dispatch).toLocaleString()} {(v as any).cooldown? `• cooldown ${(v as any).cooldown}s`: ''}</div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/alert_api_failure',{ method:'POST' }); toast({ title:'API failure alert sent' }); }}>Alert API Failure</Button>
+            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/alert_market_cap_failure',{ method:'POST' }); toast({ title:'Market Cap alert sent' }); }}>Alert Market-Cap</Button>
+            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/send_notification',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:'Manual', message:'Test', severity:'info', category:'system' }) }); toast({ title:'Manual notification sent' }); }}>Send Manual</Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Preferences */}
       {prefs && (
         <Card>
@@ -519,6 +566,49 @@ export default function UserNotifications() {
           </CardContent>
         </Card>
       )}
+
+      {/* Push / Mobile Delivery */}
+      <Card>
+        <CardHeader><CardTitle>Mobile / Push Delivery</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/mobile/status'); const j = await r.json(); setPushStatus(j.data); }catch{} }}>Check Status</Button>
+          </div>
+          {pushStatus && (
+            <div className="text-sm text-muted-foreground">Ready: {String(pushStatus.ready)} • Queue: {pushStatus.queue_depth} • Last nonce: {pushStatus.last_nonce}</div>
+          )}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <Label>Token(s) (comma-separated)</Label>
+              <Input value={pushForm.token} onChange={e=> setPushForm(p=> ({...p, token: e.target.value}))} placeholder="token1,token2" />
+            </div>
+            <div>
+              <Label>Nonce (must increase)</Label>
+              <Input value={pushForm.nonce} onChange={e=> setPushForm(p=> ({...p, nonce: e.target.value}))} placeholder="1001" />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Title</Label>
+              <Input value={pushForm.title} onChange={e=> setPushForm(p=> ({...p, title: e.target.value}))} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Body</Label>
+              <Input value={pushForm.body} onChange={e=> setPushForm(p=> ({...p, body: e.target.value}))} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>URL (optional)</Label>
+              <Input value={pushForm.url} onChange={e=> setPushForm(p=> ({...p, url: e.target.value}))} />
+            </div>
+          </div>
+          <Button onClick={async()=>{
+            try{
+              const payload:any = { token: pushForm.token.includes(',') ? pushForm.token.split(',').map(s=> s.trim()).filter(Boolean) : pushForm.token, title: pushForm.title, body: pushForm.body, url: pushForm.url || undefined, nonce: Number(pushForm.nonce) };
+              const r = await fetch('/api/mobile/push',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              const j = await r.json();
+              if (r.status===202) toast({ title:'Queued', description:`Queued ${j.data?.queued || ''}` }); else throw new Error(j.error || 'Failed');
+            }catch(e:any){ toast({ title:'Error', description: e.message || 'Failed', variant:'destructive' }); }
+          }}>Send Push</Button>
+        </CardContent>
+      </Card>
 
       {/* Notifications List */}
       <Card>
@@ -641,6 +731,9 @@ export default function UserNotifications() {
               </p>
             </div>
           )}
+          <div className="mt-3 flex items-center justify-center">
+            <Button variant="outline" disabled={!nextCursor} onClick={loadMore}>Load more</Button>
+          </div>
         </CardContent>
       </Card>
 
