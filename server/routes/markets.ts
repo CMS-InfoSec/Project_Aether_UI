@@ -12,6 +12,7 @@ interface MarketItem {
   last_refreshed: string;
   source: string;
   override: 'allow' | 'block' | null;
+  volume_reliable?: boolean;
 }
 
 interface MarketStats {
@@ -38,7 +39,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'ETH/USDT',
@@ -50,7 +52,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 1200000).toISOString(), // 20 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: 'allow'
+    override: 'allow',
+    volume_reliable: true
   },
   {
     symbol: 'BNB/USDT',
@@ -62,7 +65,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 2400000).toISOString(), // 40 minutes ago
     source: 'binance',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'XRP/USDT',
@@ -74,7 +78,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
     source: 'coingecko',
     status: 'monitoring',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'SOL/USDT',
@@ -86,7 +91,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 900000).toISOString(), // 15 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'ADA/USDT',
@@ -98,7 +104,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 3600000).toISOString(), // 60 minutes ago
     source: 'binance',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'AVAX/USDT',
@@ -110,7 +117,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 2700000).toISOString(), // 45 minutes ago
     source: 'binance',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'DOGE/USDT',
@@ -122,7 +130,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 1800000).toISOString(), // 30 minutes ago
     source: 'coingecko',
     status: 'inactive',
-    override: 'block'
+    override: 'block',
+    volume_reliable: false
   },
   {
     symbol: 'DOT/USDT',
@@ -134,7 +143,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 2100000).toISOString(), // 35 minutes ago
     source: 'binance',
     status: 'monitoring',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'MATIC/USDT',
@@ -146,7 +156,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 3000000).toISOString(), // 50 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'LTC/USDT',
@@ -158,7 +169,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 4200000).toISOString(), // 70 minutes ago
     source: 'coingecko',
     status: 'delisted',
-    override: 'block'
+    override: 'block',
+    volume_reliable: false
   },
   {
     symbol: 'LINK/USDT',
@@ -170,7 +182,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 2400000).toISOString(), // 40 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'ATOM/USDT',
@@ -182,7 +195,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 3300000).toISOString(), // 55 minutes ago
     source: 'binance',
     status: 'monitoring',
-    override: null
+    override: null,
+    volume_reliable: false
   },
   {
     symbol: 'NEAR/USDT',
@@ -194,7 +208,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 1500000).toISOString(), // 25 minutes ago
     source: 'coingecko',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: true
   },
   {
     symbol: 'FTM/USDT',
@@ -206,7 +221,8 @@ const mockMarkets: MarketItem[] = [
     last_refreshed: new Date(Date.now() - 3900000).toISOString(), // 65 minutes ago
     source: 'binance',
     status: 'active',
-    override: null
+    override: null,
+    volume_reliable: false
   }
 ];
 
@@ -221,16 +237,22 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
     min_volume,
     sort = 'symbol',
     limit = DEFAULT_PAGE_LIMIT.toString(),
-    offset = '0'
+    offset = '0',
+    symbol
   } = req.query;
 
   let filteredMarkets = [...mockMarkets];
 
   // Apply filters
-  if (status && typeof status === 'string' && status.trim()) {
+  if (status && typeof status === 'string' && status.trim() && status !== 'all') {
     filteredMarkets = filteredMarkets.filter(market => 
-      market.status === status.trim()
+      market.status === (status as string).trim()
     );
+  }
+
+  if (symbol && typeof symbol === 'string' && symbol.trim()) {
+    const s = symbol.trim().toUpperCase();
+    filteredMarkets = filteredMarkets.filter(m => m.symbol.toUpperCase().includes(s));
   }
 
   if (min_profitability && typeof min_profitability === 'string') {
@@ -254,8 +276,8 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
   // Apply sorting
   const sortField = sort as keyof MarketItem;
   filteredMarkets.sort((a, b) => {
-    let aVal = a[sortField];
-    let bVal = b[sortField];
+    let aVal = (a as any)[sortField];
+    let bVal = (b as any)[sortField];
 
     // Handle string comparisons
     if (typeof aVal === 'string' && typeof bVal === 'string') {
@@ -283,11 +305,13 @@ export function handleGetEligibleMarkets(req: Request, res: Response) {
   // Generate timestamps
   const lastRefreshed = new Date(Date.now() - 86400000).toISOString(); // 24 hours ago
   const dataSource = 'supabase';
+  const eligibilityVersion = 'v2025.09.19.1';
 
   // Set response headers as specified
   res.set({
     'X-Last-Refreshed': lastRefreshed,
-    'X-Source': dataSource
+    'X-Source': dataSource,
+    'X-Eligibility-Version': eligibilityVersion
   });
 
   // Response format matching specification
@@ -320,22 +344,28 @@ export function handleGetMarketStats(_req: Request, res: Response) {
   });
 }
 
-// Export markets to CSV (client-side conversion as specified)
+// Export markets (return JSON for client-side CSV/JSON conversion with header metadata)
 export function handleExportMarkets(req: Request, res: Response) {
   const {
     status,
     min_profitability,
     min_volume,
-    sort = 'symbol'
+    sort = 'symbol',
+    symbol
   } = req.query;
 
   let filteredMarkets = [...mockMarkets];
 
   // Apply same filters as the main endpoint
-  if (status && typeof status === 'string' && status.trim()) {
+  if (status && typeof status === 'string' && status.trim() && status !== 'all') {
     filteredMarkets = filteredMarkets.filter(market => 
       market.status === status.trim()
     );
+  }
+
+  if (symbol && typeof symbol === 'string' && symbol.trim()) {
+    const s = symbol.trim().toUpperCase();
+    filteredMarkets = filteredMarkets.filter(m => m.symbol.toUpperCase().includes(s));
   }
 
   if (min_profitability && typeof min_profitability === 'string') {
@@ -359,8 +389,8 @@ export function handleExportMarkets(req: Request, res: Response) {
   // Apply sorting
   const sortField = sort as keyof MarketItem;
   filteredMarkets.sort((a, b) => {
-    let aVal = a[sortField];
-    let bVal = b[sortField];
+    let aVal = (a as any)[sortField];
+    let bVal = (b as any)[sortField];
 
     if (typeof aVal === 'string' && typeof bVal === 'string') {
       aVal = aVal.toLowerCase();
@@ -375,21 +405,28 @@ export function handleExportMarkets(req: Request, res: Response) {
     return 0;
   });
 
-  // Set CSV response headers
-  const timestamp = new Date().toISOString().replace(/:/g, '-').split('.')[0];
-  const filename = `eligible_markets.csv`;
+  const lastRefreshed = new Date(Date.now() - 86400000).toISOString();
+  const dataSource = 'supabase';
+  const eligibilityVersion = 'v2025.09.19.1';
 
+  // Set response headers
   res.set({
     'Content-Type': 'application/json',
-    'X-Last-Refreshed': new Date(Date.now() - 86400000).toISOString(),
-    'X-Source': 'supabase'
+    'X-Last-Refreshed': lastRefreshed,
+    'X-Source': dataSource,
+    'X-Eligibility-Version': eligibilityVersion
   });
 
-  // Return data for client-side CSV conversion as specified
   res.json({
     status: 'success',
     data: filteredMarkets,
-    filename: filename
+    metadata: {
+      last_refreshed: lastRefreshed,
+      source: dataSource,
+      eligibility_version: eligibilityVersion,
+      total: filteredMarkets.length
+    },
+    filename: 'eligible_markets'
   });
 }
 
