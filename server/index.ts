@@ -256,6 +256,15 @@ export function createServer() {
   app.post("/api/notifications", handleCreateNotification);
   app.get('/api/notifications/preferences', (require('./routes/reports').handleGetNotificationPreferences));
   app.post('/api/notifications/preferences', (require('./routes/reports').handleSaveNotificationPreferences));
+  const notif = require('./routes/notifications');
+  app.get('/api/notifications/channels/status', notif.handleGetChannelStatus);
+  app.post('/api/notifications/async_notify_channels', notif.handleAsyncNotifyChannels);
+  app.post('/api/notifications/notify_channels', notif.handleNotifyChannels);
+  app.post('/api/notifications/notify_user', notif.handleNotifyUser);
+  app.post('/api/notifications/notify_admins', notif.handleNotifyAdmins);
+  app.post('/api/notifications/alert_api_failure', notif.handleAlertApiFailure);
+  app.post('/api/notifications/alert_market_cap_failure', notif.handleAlertMarketCapFailure);
+  app.post('/api/notifications/send_notification', notif.handleSendNotification);
 
   // API docs
   const { handleOpenApiJson, handleSwaggerDocs } = require('./routes/docs');
