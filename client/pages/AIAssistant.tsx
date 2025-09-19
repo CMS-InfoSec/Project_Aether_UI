@@ -208,10 +208,12 @@ export default function AIAssistant() {
     setRequestState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
+      const payload = { question: question.trim(), include: includeOptions };
+      lastRequestRef.current = payload;
       const response = await fetch('/api/llm/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: question.trim() }),
+        body: JSON.stringify(payload),
       });
 
       if (response.status === 429) {
