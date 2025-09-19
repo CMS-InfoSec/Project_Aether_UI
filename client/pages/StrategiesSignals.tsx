@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,11 +9,46 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
-import { RefreshCw } from 'lucide-react';
+import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
+interface StrategyFlag { name: string; weight: number; enabled: boolean; last_run: string }
+interface Breakdown { rsi:number; macd:number; ema:number; sma:number; atr:number; updated_at:string }
+interface SignalsMetrics { per_source: Record<string, { rate:number; limit:number }>; per_user: { rate:number; limit:number } }
+
 export default function StrategiesSignals() {
-  const [registry, setRegistry] = useState<any[]>([]);
+  const { user } = useAuth();
+
+  // Registry & weighting
+  const [registry, setRegistry] = useState<StrategyFlag[]>([]);
+  const [weights, setWeights] = useState<Record<string, number>>({});
+  const [loadingRegistry, setLoadingRegistry] = useState(false);
+
+  // Telemetry
+  const [asset, setAsset] = useState('BTC');
+  const [breakdown, setBreakdown] = useState<Breakdown | null>(null);
+  const lastBreakdown = useRef<Breakdown | null>(null);
+  const [telemetryLoading, setTelemetryLoading] = useState(false);
+
+  // Sentiment & external signals
+  const [sentiment, setSentiment] = useState<any | null>(null);
+  const [news, setNews] = useState<any[]>([]);
+  const [social, setSocial] = useState<any[]>([]);
+  const [metrics, setMetrics] = useState<SignalsMetrics | null>(null);
+
+  // Explainability
+  const [explainLimit, setExplainLimit] = useState<number>(10);
+  const [explainCaps, setExplainCaps] = useState<{default_limit:number; max_limit:number}|null>(null);
+  const [explainItems, setExplainItems] = useState<any[]>([]);
+  const [explainLoading, setExplainLoading] = useState(false);
+  const [models, setModels] = useState<any[]>([]);
+  const [modelId, setModelId] = useState<string>('');
+  const [series, setSeries] = useState<string>('');
+  const [modelExplain, setModelExplain] = useState<any|null>(null);
+  const [modelExplainLoading, setModelExplainLoading] = useState(false);
+  const [shapInput, setShapInput] = useState<string>('');
+  const [shapResult, setShapResult] = useState<any | null>(null);
+
   // Stress Tests
   const [strategyId, setStrategyId] = useState<string>('');
   const [initialEquity, setInitialEquity] = useState<string>('10000');
@@ -28,35 +63,67 @@ export default function StrategiesSignals() {
   const [stressLoading, setStressLoading] = useState(false);
   const [stressResult, setStressResult] = useState<any|null>(null);
   const [pinned, setPinned] = useState<boolean>(false);
-  // Strategies explainability
-  const [explainLimit, setExplainLimit] = useState<number>(10);
-  const [explainCaps, setExplainCaps] = useState<{default_limit:number; max_limit:number}|null>(null);
-  const [explainItems, setExplainItems] = useState<any[]>([]);
-  const [explainLoading, setExplainLoading] = useState(false);
-  // Forecast model explainability
-  const [models, setModels] = useState<any[]>([]);
-  const [modelId, setModelId] = useState<string>('');
-  const [series, setSeries] = useState<string>('');
-  const [modelExplain, setModelExplain] = useState<any|null>(null);
-  const [modelExplainLoading, setModelExplainLoading] = useState(false);
-  const [asset, setAsset] = useState('BTC');
-  const [sentiment, setSentiment] = useState<any | null>(null);
-  const [news, setNews] = useState<any[]>([]);
-  const [social, setSocial] = useState<any[]>([]);
-  const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
 
+  // Manual ingest console
+  const [ingSource, setIngSource] = useState<string>(localStorage.getItem('manualIngest.source') || 'tradingview');
+  const [ingUser, setIngUser] = useState<string>(localStorage.getItem('manualIngest.user') || '');
+  const [ingKey, setIngKey] = useState<string>(localStorage.getItem('manualIngest.key') || '');
+  const [ingAuth, setIngAuth] = useState<string>(localStorage.getItem('manualIngest.auth') || '');
+  const [ingSig, setIngSig] = useState<string>(localStorage.getItem('manualIngest.sig') || '');
+  const [ingPayload, setIngPayload] = useState<string>(localStorage.getItem('manualIngest.payload') || '{"symbol":"BTC/USDT","signal":"buy"}');
+
+  // Error banner
+  const [error, setError] = useState<string | null>(null);
+
+  const persistIngestDraft = () => {
+    localStorage.setItem('manualIngest.source', ingSource);
+    localStorage.setItem('manualIngest.user', ingUser);
+    localStorage.setItem('manualIngest.key', ingKey);
+    localStorage.setItem('manualIngest.auth', ingAuth);
+    localStorage.setItem('manualIngest.sig', ingSig);
+    localStorage.setItem('manualIngest.payload', ingPayload);
+  };
+
+  // Loaders
   const loadRegistry = async () => {
+    setLoadingRegistry(true);
     setError(null);
     try {
       const r = await fetch('/api/strategies/flags');
       const j = await r.json();
-      setRegistry(j.data || []);
-    } catch (e:any) { setError(e.message); }
+      const items: StrategyFlag[] = j.data || [];
+      setRegistry(items);
+      setWeights(Object.fromEntries(items.map(i => [i.name, i.weight])));
+    } catch (e: any) { setError(e.message); }
+    finally { setLoadingRegistry(false); }
   };
 
-  const loadModels = async () => { try { const r = await fetch('/api/models'); const j = await r.json(); setModels(j?.data || j || []); } catch {}
+  const loadTelemetry = async () => {
+    setTelemetryLoading(true);
+    try {
+      const r = await fetch('/api/strategies/breakdown');
+      const j = await r.json();
+      lastBreakdown.current = breakdown;
+      setBreakdown(j.data);
+    } catch {}
+    finally { setTelemetryLoading(false); }
   };
+
+  const loadSentiment = async () => {
+    const a = asset.trim().toUpperCase();
+    if (!/^[A-Z0-9]{1,20}$/.test(a)) { toast({ title:'Invalid symbol', description:'Use up to 20 alphanumerics', variant:'destructive' }); return; }
+    try {
+      const s = await fetch(`/api/news/sentiment?asset=${encodeURIComponent(a)}`);
+      if (s.status === 422) { toast({ title:'Invalid symbol', description:'Unsupported symbol', variant:'destructive' }); return; }
+      if (s.status === 502) { toast({ title:'Provider error', description:'Upstream sentiment provider failed', variant:'destructive' }); return; }
+      const sj = await s.json();
+      setSentiment(sj);
+      const n = await fetch('/api/news/latest'); setNews((await n.json()).items || []);
+      const so = await fetch('/api/social/latest'); setSocial((await so.json()).items || []);
+      const m = await fetch('/api/signals/metrics'); setMetrics(await m.json());
+    } catch {}
+  };
+
   const loadExplainability = async () => {
     setExplainLoading(true);
     try { const r = await fetch('/api/strategies/explain'); const j = await r.json(); setExplainCaps(j?.caps||null); setExplainItems(j?.items||[]); }
@@ -64,27 +131,48 @@ export default function StrategiesSignals() {
     finally { setExplainLoading(false); }
   };
 
-  const loadSentiment = async () => {
-    if (!/^[A-Z0-9]{1,20}$/.test(asset.trim().toUpperCase())) { toast({ title:'Invalid symbol', description:'Use up to 20 alphanumerics', variant:'destructive' }); return; }
-    try {
-      const a = asset.trim().toUpperCase();
-      const s = await fetch(`/api/news/sentiment?asset=${encodeURIComponent(a)}`);
-      if (s.status === 422) { toast({ title:'Invalid symbol', description:'Unsupported symbol', variant:'destructive' }); return; }
-      const sj = await s.json();
-      setSentiment(sj);
-      const n = await fetch('/api/news/latest'); setNews((await n.json()).items || []);
-      const so = await fetch('/api/social/latest'); setSocial((await so.json()).items || []);
-    } catch {}
+  const loadModels = async () => { try { const r = await fetch('/api/models'); const j = await r.json(); setModels(j?.data || j || []); } catch {} };
+
+  useEffect(()=>{ loadRegistry(); loadModels(); loadExplainability(); loadTelemetry(); }, []);
+  useEffect(()=>{ const id = setInterval(loadTelemetry, 30000); return ()=> clearInterval(id); }, [breakdown]);
+  useEffect(()=>{ if (strategyId){ const p = localStorage.getItem(`stressTest.pinned.${strategyId}`); if (p){ setPinned(JSON.parse(p)); } } }, [strategyId]);
+
+  const trend = (k: keyof Breakdown) => {
+    if (!breakdown || !lastBreakdown.current) return null;
+    const curr = breakdown[k]; const prev = lastBreakdown.current[k];
+    if (typeof curr !== 'number' || typeof prev !== 'number') return null;
+    if (curr > prev) return <ArrowUp className="h-4 w-4 text-green-600 inline"/>;
+    if (curr < prev) return <ArrowDown className="h-4 w-4 text-red-600 inline"/>;
+    return null;
   };
 
-  useEffect(()=>{ loadRegistry(); loadModels(); loadExplainability(); }, []);
-  useEffect(()=>{ if (strategyId){ const p = localStorage.getItem(`stressTest.pinned.${strategyId}`); if (p){ setPinned(JSON.parse(p)); } } }, [strategyId]);
+  const submitReweight = async () => {
+    try {
+      const r = await fetch('/api/strategy/controller/reweight', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ weights }) });
+      if (!r.ok) { const j = await r.json().catch(()=>({detail:'Failed'})); throw new Error(j.detail||'Failed'); }
+      toast({ title:'Reweighted', description:'Strategy weights updated' });
+      await loadRegistry();
+    } catch(e:any) { toast({ title:'Error', description: e.message||'Failed', variant:'destructive' }); }
+  };
+
+  const toggleTrading = async (name: string, enabled: boolean) => {
+    try {
+      const r = await fetch(`/api/strategies/${encodeURIComponent(name)}/trading`, { method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ enabled: !enabled }) });
+      const j = await r.json().catch(()=>({}));
+      if (!r.ok) throw new Error(j.detail || 'Failed');
+      setRegistry(prev => prev.map(p => p.name === name ? { ...p, enabled: !enabled, last_run: new Date().toISOString() } : p));
+      toast({ title: !enabled ? 'Enabled' : 'Disabled', description: `${name} trading ${!enabled ? 'enabled' : 'disabled'}` });
+    } catch(e:any) { toast({ title:'Error', description: e.message||'Failed', variant:'destructive' }); }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Strategies & Signals</h1>
-        <Button variant="outline" onClick={loadRegistry}><RefreshCw className="h-4 w-4 mr-2"/>Refresh</Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={loadRegistry}><RefreshCw className="h-4 w-4 mr-2"/>Refresh Registry</Button>
+          <Button variant="outline" onClick={loadTelemetry}><RefreshCw className="h-4 w-4 mr-2"/>Refresh Telemetry</Button>
+        </div>
       </div>
 
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
@@ -92,23 +180,53 @@ export default function StrategiesSignals() {
       <Tabs defaultValue="registry">
         <TabsList>
           <TabsTrigger value="registry">Registry</TabsTrigger>
+          <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
           <TabsTrigger value="stress">Stress Tests</TabsTrigger>
           <TabsTrigger value="explain">Explainability</TabsTrigger>
           <TabsTrigger value="ingest">Manual Ingest</TabsTrigger>
         </TabsList>
 
+        {/* Registry & weighting */}
         <TabsContent value="registry">
           <Card>
-            <CardHeader><CardTitle>Strategy Registry</CardTitle></CardHeader>
+            <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+              <CardTitle>Strategy Registry</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={submitReweight}>Submit Allocations</Button>
+              </div>
+            </CardHeader>
             <CardContent>
               <div className="overflow-auto">
                 <table className="w-full text-sm">
-                  <thead><tr><th className="text-left p-2">Name</th><th className="text-left p-2">Weight</th><th className="text-left p-2">Status</th><th className="text-left p-2">Last Run</th></tr></thead>
+                  <thead>
+                    <tr>
+                      <th className="text-left p-2">Name</th>
+                      <th className="text-left p-2">Weight</th>
+                      <th className="text-left p-2">Status</th>
+                      <th className="text-left p-2">Last Run</th>
+                      <th className="text-left p-2">Actions</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    {registry.map((r:any)=> (
-                      <tr key={r.name} className="border-t"><td className="p-2">{r.name}</td><td className="p-2">{r.weight}</td><td className="p-2">{r.enabled? 'enabled':'disabled'}</td><td className="p-2">{new Date(r.last_run).toLocaleString()}</td></tr>
+                    {registry.map((r)=> (
+                      <tr key={r.name} className="border-t">
+                        <td className="p-2 font-medium">{r.name}</td>
+                        <td className="p-2 w-40">
+                          <Input type="number" step="0.01" value={weights[r.name] ?? r.weight} onChange={(e)=> setWeights(prev=> ({ ...prev, [r.name]: Number(e.target.value) }))} />
+                        </td>
+                        <td className="p-2">
+                          <Badge variant={r.enabled ? 'outline' : 'destructive'}>{r.enabled ? 'enabled' : 'disabled'}</Badge>
+                        </td>
+                        <td className="p-2 whitespace-nowrap">{new Date(r.last_run).toLocaleString()}</td>
+                        <td className="p-2">
+                          <Button size="sm" variant="outline" onClick={()=> toggleTrading(r.name, r.enabled)}>{r.enabled ? 'Disable' : 'Enable'}</Button>
+                        </td>
+                      </tr>
                     ))}
+                    {registry.length === 0 && !loadingRegistry && (
+                      <tr><td className="p-2 text-muted-foreground" colSpan={5}>No strategies</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -116,6 +234,33 @@ export default function StrategiesSignals() {
           </Card>
         </TabsContent>
 
+        {/* Telemetry */}
+        <TabsContent value="telemetry">
+          <Card>
+            <CardHeader><CardTitle>Market Indicator Telemetry</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-end gap-2">
+                <div className="max-w-[200px] w-full">
+                  <Label>Asset</Label>
+                  <Input value={asset} onChange={(e)=> setAsset(e.target.value.toUpperCase())} placeholder="BTC" />
+                </div>
+                <Button onClick={loadTelemetry} disabled={telemetryLoading}>{telemetryLoading ? 'Loading…' : 'Fetch'}</Button>
+              </div>
+              {breakdown && (
+                <div className="grid md:grid-cols-5 gap-3">
+                  <Card><CardHeader><CardTitle className="text-sm">RSI</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.rsi} {trend('rsi')}</CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm">MACD</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.macd} {trend('macd')}</CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm">EMA</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.ema} {trend('ema')}</CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm">SMA</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.sma} {trend('sma')}</CardContent></Card>
+                  <Card><CardHeader><CardTitle className="text-sm">ATR</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.atr} {trend('atr')}</CardContent></Card>
+                </div>
+              )}
+              {!breakdown && <div className="text-sm text-muted-foreground">No telemetry yet.</div>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Sentiment */}
         <TabsContent value="sentiment">
           <Card>
             <CardHeader><CardTitle>Sentiment & Feeds</CardTitle></CardHeader>
@@ -124,6 +269,14 @@ export default function StrategiesSignals() {
                 <div className="flex-1"><Label>Asset</Label><Input value={asset} onChange={(e)=>setAsset(e.target.value.toUpperCase())} placeholder="BTC" /></div>
                 <Button onClick={loadSentiment}>Load</Button>
               </div>
+              {metrics && (
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(metrics.per_source || {}).map(([name, m])=> (
+                    <Badge key={name} variant={m.rate >= m.limit ? 'destructive' : 'outline'}>{name}: {m.rate}/{m.limit}</Badge>
+                  ))}
+                  <Badge variant={metrics.per_user.rate >= metrics.per_user.limit ? 'destructive' : 'outline'}>user: {metrics.per_user.rate}/{metrics.per_user.limit}</Badge>
+                </div>
+              )}
               {sentiment && (
                 <div className="flex items-center space-x-3">
                   <div>Sentiment: <strong>{sentiment.sentiment}</strong></div>
@@ -131,7 +284,6 @@ export default function StrategiesSignals() {
                 </div>
               )}
 
-              {/* Admin-only Replay News Failures */}
               {user?.role === 'admin' && (
                 <div className="border p-3 rounded">
                   <div className="flex items-center justify-between mb-2">
@@ -165,6 +317,7 @@ export default function StrategiesSignals() {
           </Card>
         </TabsContent>
 
+        {/* Stress Tests */}
         <TabsContent value="stress">
           <Card>
             <CardHeader><CardTitle>Strategy Stress Tests</CardTitle></CardHeader>
@@ -175,7 +328,7 @@ export default function StrategiesSignals() {
                   <Select value={strategyId} onValueChange={setStrategyId}>
                     <SelectTrigger><SelectValue placeholder="Select strategy" /></SelectTrigger>
                     <SelectContent>
-                      {registry.map((r:any)=> (<SelectItem key={r.name} value={r.name}>{r.name}</SelectItem>))}
+                      {registry.map((r)=> (<SelectItem key={r.name} value={r.name}>{r.name}</SelectItem>))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -241,8 +394,8 @@ export default function StrategiesSignals() {
                       <Badge variant={pinned? 'default':'outline'} onClick={()=> { const nv=!pinned; setPinned(nv); if (strategyId){ localStorage.setItem(`stressTest.pinned.${strategyId}`, JSON.stringify(nv)); } }} className="cursor-pointer">{pinned? 'Pinned':'Pin this run'}</Badge>
                       <Button variant="outline" size="sm" onClick={()=>{
                         const rows = (stressResult.scenarios||[]).map((s:any)=> ({ name: s.name, ...s.parameters, ...s.metrics }));
-                        const headers = Array.from(rows.reduce((set:any,row:any)=>{ Object.keys(row).forEach(k=> set.add(k)); return set; }, new Set(['name'])));
-                        const csv = [headers.join(',')].concat(rows.map((r:any)=> headers.map((h:string)=> r[h]!==undefined? r[h]: '').join(','))).join('\n');
+                        const headers = Array.from(rows.reduce((set:any,row:any)=>{ Object.keys(row).forEach(k=> set.add(k)); return set; }, new Set(['name'])) as Set<string>);
+                        const csv = [Array.from(headers).join(',')].concat(rows.map((r:any)=> Array.from(headers).map((h:string)=> r[h]!==undefined? r[h]: '').join(','))).join('\n');
                         const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download = `stress_${strategyId}.csv`; a.click();
                       }}>Download CSV</Button>
                       <Button variant="ghost" size="sm" onClick={()=> setStressResult(null)}>Clear</Button>
@@ -272,6 +425,7 @@ export default function StrategiesSignals() {
           </Card>
         </TabsContent>
 
+        {/* Explainability */}
         <TabsContent value="explain">
           <Card>
             <CardHeader><CardTitle>Explainability</CardTitle></CardHeader>
@@ -331,6 +485,7 @@ export default function StrategiesSignals() {
                 </div>
               )}
 
+              {/* Forecast model explainability */}
               <div className="pt-4 border-t">
                 <div className="font-medium mb-2">Forecast Model Explainability</div>
                 <div className="grid md:grid-cols-3 gap-3 items-end">
@@ -388,40 +543,132 @@ export default function StrategiesSignals() {
                   </div>
                 )}
               </div>
+
+              {/* Admin-only Manual SHAP explorer */}
+              {user?.role === 'admin' && (
+                <div className="pt-6 border-t space-y-2">
+                  <div className="font-medium">Manual SHAP Explorer (Admin)</div>
+                  <div className="grid md:grid-cols-3 gap-3 items-end">
+                    <div>
+                      <Label>Model</Label>
+                      <Select value={modelId} onValueChange={setModelId}>
+                        <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+                        <SelectContent>
+                          {models.map((m:any)=> (<SelectItem key={m.modelId} value={m.modelId}>{m.name || m.modelId}</SelectItem>))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Label>Input (JSON array or map of numbers)</Label>
+                      <Textarea rows={4} value={shapInput} onChange={(e)=> setShapInput(e.target.value)} placeholder='[1.2, 0.4, -0.1, 2.3]' />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button disabled={!modelId} onClick={async ()=>{
+                      try{
+                        const parsed = JSON.parse(shapInput);
+                        if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
+                        const r = await fetch(`/api/shap/${encodeURIComponent(modelId)}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ input: parsed }) });
+                        const j = await r.json();
+                        if (!r.ok) throw new Error(j.detail || 'Failed');
+                        setShapResult(j.data || j);
+                        toast({ title:'SHAP ready', description:`Request ${ (j.data?.request_id || j.request_id || '').toString() }` });
+                      }catch(e:any){ toast({ title:'Error', description: e.message || 'Failed', variant:'destructive' }); }
+                    }}>Run SHAP</Button>
+                    {shapResult && (
+                      <Button variant="outline" onClick={()=>{
+                        const blob = new Blob([JSON.stringify(shapResult,null,2)],{type:'application/json'});
+                        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `shap_${modelId}.json`; a.click();
+                      }}>Download JSON</Button>
+                    )}
+                  </div>
+                  {shapResult && (
+                    <div className="overflow-auto">
+                      <table className="w-full text-sm">
+                        <thead><tr><th className="text-left p-2">Feature</th><th className="text-left p-2">SHAP</th></tr></thead>
+                        <tbody>
+                          {(shapResult.features||[]).map((f:any)=> (
+                            <tr key={f.name} className="border-t"><td className="p-2">{f.name}</td><td className="p-2">{f.shap}</td></tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
 
+        {/* Manual ingest */}
         <TabsContent value="ingest">
           <Card>
             <CardHeader><CardTitle>Manual Signal Ingest</CardTitle></CardHeader>
             <CardContent className="space-y-3">
-              <Button variant="outline" size="sm" onClick={async ()=>{
-                try{ const r = await fetch('/api/signals/metrics'); const j = await r.json(); alert(JSON.stringify(j,null,2)); }catch{}
-              }}>View Rate Limits</Button>
-              <div>
-                <Label htmlFor="source">Source</Label>
-                <Input id="source" placeholder="tradingview" defaultValue="tradingview" />
+              <div className="flex flex-wrap gap-3">
+                <Button variant="outline" size="sm" onClick={async ()=>{
+                  try{ const r = await fetch('/api/signals/metrics'); const j = await r.json(); setMetrics(j); toast({ title:'Limits', description:'Fetched current limits' }); }catch{ toast({ title:'Error', description:'Failed to load metrics', variant:'destructive' }); }
+                }}>View Rate Limits</Button>
+                <Button variant="ghost" size="sm" onClick={persistIngestDraft}>Save draft</Button>
               </div>
-              <div>
-                <Label htmlFor="idk">X-Idempotency-Key</Label>
-                <Input id="idk" placeholder="unique-key" />
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="source">Source</Label>
+                  <Input id="source" placeholder="tradingview" value={ingSource} onChange={(e)=> setIngSource(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="user">Target User (optional)</Label>
+                  <Input id="user" placeholder="user_123" value={ingUser} onChange={(e)=> setIngUser(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="idk">X-Idempotency-Key</Label>
+                  <Input id="idk" placeholder="unique-key" value={ingKey} onChange={(e)=> setIngKey(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="auth">Authorization (Bearer …) (optional)</Label>
+                  <Input id="auth" placeholder="Bearer xxx" value={ingAuth} onChange={(e)=> setIngAuth(e.target.value)} />
+                </div>
+                <div>
+                  <Label htmlFor="sig">X-Provider-Signature (optional)</Label>
+                  <Input id="sig" placeholder="hex-signature" value={ingSig} onChange={(e)=> setIngSig(e.target.value)} />
+                </div>
+                <div className="md:col-span-2">
+                  <Label htmlFor="payload">Payload (JSON)</Label>
+                  <Textarea id="payload" rows={6} value={ingPayload} onChange={(e)=> setIngPayload(e.target.value)} />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="payload">Payload (JSON)</Label>
-                <Textarea id="payload" rows={6} defaultValue='{"symbol":"BTC/USDT","signal":"buy"}' />
-              </div>
+              {metrics && (
+                <div className="text-xs text-muted-foreground">Per-user: {metrics.per_user.rate}/{metrics.per_user.limit}. Sources: {Object.entries(metrics.per_source).map(([k,v])=> `${k} ${v.rate}/${v.limit}`).join(' • ')}</div>
+              )}
               <Button onClick={async ()=>{
-                const key = (document.getElementById('idk') as HTMLInputElement)?.value?.trim();
-                const bodyText = (document.getElementById('payload') as HTMLTextAreaElement)?.value || '{}';
                 try {
+                  const bodyText = ingPayload || '{}';
                   JSON.parse(bodyText);
                 } catch { toast({ title:'Invalid JSON', description:'Fix payload JSON', variant:'destructive' }); return; }
-                if (!key || !/^[A-Za-z0-9_-]+$/.test(key)) { toast({ title:'Invalid idempotency key', description:'Use A-Za-z0-9_-', variant:'destructive' }); return; }
-                const res = await fetch('/api/signals/ingest', { method:'POST', headers:{ 'Content-Type':'application/json', 'X-Idempotency-Key': key }, body: bodyText });
-                if (res.status === 202) { toast({ title:'Accepted', description:'Signal queued' }); }
-                else if (res.status === 409) { toast({ title:'Duplicate', description:'Duplicate detected' }); }
-                else { const j = await res.json().catch(()=>({detail:'Failed'})); toast({ title:'Error', description: j.detail || 'Failed', variant:'destructive' }); }
+                if (!ingKey || !/^[A-Za-z0-9_-]+$/.test(ingKey)) { toast({ title:'Invalid idempotency key', description:'Use A-Za-z0-9_-', variant:'destructive' }); return; }
+                if (ingPayload.length > 16 * 1024) { toast({ title:'Payload too large', description:'Max 16 KB', variant:'destructive' }); return; }
+                try {
+                  const headers: Record<string,string> = { 'Content-Type':'application/json', 'X-Idempotency-Key': ingKey };
+                  if (ingUser) headers['X-Target-User'] = ingUser;
+                  if (ingAuth) headers['Authorization'] = ingAuth;
+                  if (ingSig) headers['X-Provider-Signature'] = ingSig;
+                  const res = await fetch('/api/signals/ingest', { method:'POST', headers, body: ingPayload });
+                  if (res.status === 202) { toast({ title:'Accepted', description:'Signal queued' }); return; }
+                  const j = await res.json().catch(()=>({ detail: res.statusText || 'Failed' }));
+                  const map: Record<number,string> = {
+                    400: 'Bad request – check required fields and formats',
+                    401: 'Unauthorized – invalid or missing auth',
+                    403: 'Forbidden – your role lacks permission',
+                    409: 'Duplicate – idempotency key already used',
+                    413: 'Payload too large – reduce size',
+                    422: 'Validation failed – fix schema',
+                    429: 'Rate limited – slow down and retry later',
+                    500: 'Server error – try again later',
+                    502: 'Upstream provider error – try again later',
+                    503: 'Service unavailable – retry with backoff',
+                  };
+                  toast({ title:`HTTP ${res.status}`, description: j.detail || map[res.status] || 'Request failed', variant:'destructive' });
+                } catch { toast({ title:'Network error', description:'Please check connection', variant:'destructive' }); }
               }}>Validate & Send</Button>
             </CardContent>
           </Card>
