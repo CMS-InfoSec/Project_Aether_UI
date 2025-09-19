@@ -22,6 +22,7 @@ export interface RecentTradesResponse {
   total_pnl: number;
   win_rate: number;
   fee_threshold: number;
+  supabase_degraded?: boolean;
 }
 
 export interface Position {
@@ -43,6 +44,7 @@ export interface OpenPositionsResponse {
   next: string | null;
   total_pnl: number;
   fee_threshold: number;
+  supabase_degraded?: boolean;
 }
 
 export interface VetoTradeRequest {
@@ -189,7 +191,8 @@ export const handleGetRecentTrades: RequestHandler = (req, res) => {
       next: hasNext ? `?limit=${limit}&offset=${offset + limit}` : null,
       total_pnl,
       win_rate,
-      fee_threshold
+      fee_threshold,
+      supabase_degraded: Math.random() < 0.05
     };
     
     res.json(response);
@@ -223,7 +226,8 @@ export const handleGetOpenPositions: RequestHandler = (req, res) => {
       items: paginatedPositions,
       next: hasNext ? `?limit=${limit}&offset=${offset + limit}` : null,
       total_pnl,
-      fee_threshold
+      fee_threshold,
+      supabase_degraded: Math.random() < 0.05
     };
     
     res.json(response);
