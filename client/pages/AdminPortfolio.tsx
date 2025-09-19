@@ -128,6 +128,7 @@ export default function AdminPortfolio() {
 }`);
 
   const [jsonErrors, setJsonErrors] = useState({ prices: '', returns: '' });
+  const [ackGlobal, setAckGlobal] = useState(false);
 
   // Row-level details & rebalance drawer
   const [detailOpen, setDetailOpen] = useState(false);
