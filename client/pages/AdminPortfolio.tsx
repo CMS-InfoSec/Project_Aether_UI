@@ -654,7 +654,7 @@ export default function AdminPortfolio() {
                               {getSortIcon('hedged_balance')}
                             </div>
                           </TableHead>
-                          <TableHead 
+                          <TableHead
                             className="cursor-pointer hover:bg-muted/50"
                             onClick={() => handleSort('last_updated')}
                           >
@@ -662,6 +662,14 @@ export default function AdminPortfolio() {
                               <span>Last Updated</span>
                               {getSortIcon('last_updated')}
                             </div>
+                          </TableHead>
+                          <TableHead>
+                            <div className="flex items-center space-x-1">
+                              <span>Next Rebalance</span>
+                            </div>
+                          </TableHead>
+                          <TableHead>
+                            <span>Actions</span>
                           </TableHead>
                         </TableRow>
                       </TableHeader>
