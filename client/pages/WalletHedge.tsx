@@ -1066,6 +1066,21 @@ export default function WalletHedge() {
             <RefreshCw className="h-6 w-6 animate-spin" />
           ) : (
             <>
+              {/* Recent Hedge History (inline) */}
+              {hedgeData?.hedges?.length ? (
+                <div className="mb-4">
+                  <div className="text-sm font-medium mb-2">Recent Hedge Activity</div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {hedgeData.hedges.slice(0,3).map(h=> (
+                      <div key={h.id} className="p-2 border rounded">
+                        <div className="flex items-center justify-between"><span>{h.id}</span>{getTypeBadge(h.type)}</div>
+                        <div className="text-muted-foreground">{new Date(h.timestamp).toLocaleString()}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {/* Auto-Adjust Toggle */}
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="space-y-1">
