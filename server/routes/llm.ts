@@ -31,6 +31,8 @@ interface LLMContext {
 interface LLMResponse {
   answer: string;
   context: LLMContext;
+  warnings?: string[];
+  supabase_degraded?: boolean;
 }
 
 // Mock data for demonstration
