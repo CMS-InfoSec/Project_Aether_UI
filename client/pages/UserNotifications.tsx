@@ -155,12 +155,44 @@ export default function UserNotifications() {
     setSearchParams(params);
   }, [searchParams, setSearchParams]);
 
-  // Helper: safe fetch with timeout
+  // Helper: obtain a native fetch (bypasses patched window.fetch from extensions)
+  const getNativeFetch = async (): Promise<typeof fetch> => {
+    const w = window as any;
+    if (w.__nativeFetch) return w.__nativeFetch;
+    const isPatched = typeof w.fetch === 'function' && !/\[native code\]/.test(String(w.fetch));
+    if (!isPatched) {
+      w.__nativeFetch = w.fetch.bind(w);
+      return w.__nativeFetch;
+    }
+    // Create hidden iframe on same origin to obtain an unpatched fetch
+    return await new Promise((resolve) => {
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = window.location.origin;
+      const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
+      iframe.onload = () => {
+        try {
+          const nf = (iframe.contentWindow as any).fetch.bind(iframe.contentWindow);
+          (window as any).__nativeFetch = nf;
+          cleanup();
+          resolve(nf);
+        } catch {
+          cleanup();
+          resolve(window.fetch.bind(window));
+        }
+      };
+      document.body.appendChild(iframe);
+      window.setTimeout(() => { cleanup(); resolve(window.fetch.bind(window)); }, 3000);
+    });
+  };
+
+  // Helper: safe fetch with timeout using native fetch
   const safeFetch = async (input: RequestInfo, init?: RequestInit, timeout = 10000) => {
     const controller = new AbortController();
     const id = window.setTimeout(() => controller.abort(), timeout);
     try {
-      const response = await fetch(input, { signal: controller.signal, ...(init || {}) } as RequestInit);
+      const nativeFetch = await getNativeFetch();
+      const response = await nativeFetch(input as any, { signal: controller.signal, credentials: 'same-origin', cache: 'no-store', ...(init || {}) } as RequestInit);
       clearTimeout(id);
       return response;
     } catch (err) {
@@ -233,7 +265,7 @@ export default function UserNotifications() {
   // Mark notification as read
   const markAsRead = async (notificationId: string, read: boolean = true) => {
     try {
-      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+      const response = await safeFetch(`/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ read })
@@ -275,7 +307,7 @@ export default function UserNotifications() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/mark-all-read', {
+      const response = await safeFetch('/api/notifications/mark-all-read', {
         method: 'POST'
       });
 
@@ -325,7 +357,7 @@ export default function UserNotifications() {
       if (severityFilter !== 'all') params.set('severity', severityFilter);
       if (categoryFilter !== 'all') params.set('category', categoryFilter);
       if (unreadOnly) params.set('unreadOnly', 'true');
-      const r = await fetch(`/api/notifications?${params}`);
+      const r = await safeFetch(`/api/notifications?${params}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       setNotifications(prev => prev ? ({
@@ -401,7 +433,7 @@ export default function UserNotifications() {
             if (severityFilter !== 'all') params.set('severity', severityFilter);
             if (categoryFilter !== 'all') params.set('category', categoryFilter);
             if (unreadOnly) params.set('unreadOnly','true');
-            const r = await fetch(`/api/notifications?${params}&format=csv`);
+            const r = await safeFetch(`/api/notifications?${params}&format=csv`);
             const txt = await r.text();
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt],{type:'text/csv'})); a.download = 'notifications.csv'; a.click();
           }}>Export CSV</Button>
@@ -412,7 +444,7 @@ export default function UserNotifications() {
             if (severityFilter !== 'all') params.set('severity', severityFilter);
             if (categoryFilter !== 'all') params.set('category', categoryFilter);
             if (unreadOnly) params.set('unreadOnly','true');
-            const r = await fetch(`/api/notifications?${params}`);
+            const r = await safeFetch(`/api/notifications?${params}`);
             const j = await r.json();
             const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(j.data.notifications,null,2)],{type:'application/json'})); a.download = 'notifications.json'; a.click();
           }}>Export JSON</Button>
@@ -554,9 +586,9 @@ export default function UserNotifications() {
         <CardHeader><CardTitle>Channel Health & Escalation</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/notifications/channels/status'); const j = await r.json(); setChannelStatus(j.data); }catch{} }}>Refresh Channels</Button>
-            <Button onClick={async()=>{ try{ const r = await fetch('/api/notifications/async_notify_channels',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','telegram','email'], message:'Test broadcast' }) }); if (r.status===202) toast({ title:'Queued', description:'Broadcast queued' }); }catch{} }}>Async Broadcast</Button>
-            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/notifications/notify_admins',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','email'], message:'Admin incident test' }) }); const j=await r.json(); toast({ title:'Dispatch', description: JSON.stringify(j.data.summary) }); }catch{} }}>Notify Admins</Button>
+            <Button variant="outline" onClick={async()=>{ try{ const r = await safeFetch('/api/notifications/channels/status'); const j = await r.json(); setChannelStatus(j.data); }catch{} }}>Refresh Channels</Button>
+            <Button onClick={async()=>{ try{ const r = await safeFetch('/api/notifications/async_notify_channels',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','telegram','email'], message:'Test broadcast' }) }); if (r.status===202) toast({ title:'Queued', description:'Broadcast queued' }); }catch{} }}>Async Broadcast</Button>
+            <Button variant="outline" onClick={async()=>{ try{ const r = await safeFetch('/api/notifications/notify_admins',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels:['slack','email'], message:'Admin incident test' }) }); const j=await r.json(); toast({ title:'Dispatch', description: JSON.stringify(j.data.summary) }); }catch{} }}>Notify Admins</Button>
           </div>
           {channelStatus && (
             <div className="grid md:grid-cols-3 gap-3">
@@ -569,9 +601,9 @@ export default function UserNotifications() {
             </div>
           )}
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/alert_api_failure',{ method:'POST' }); toast({ title:'API failure alert sent' }); }}>Alert API Failure</Button>
-            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/alert_market_cap_failure',{ method:'POST' }); toast({ title:'Market Cap alert sent' }); }}>Alert Market-Cap</Button>
-            <Button variant="outline" onClick={async()=>{ await fetch('/api/notifications/send_notification',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:'Manual', message:'Test', severity:'info', category:'system' }) }); toast({ title:'Manual notification sent' }); }}>Send Manual</Button>
+            <Button variant="outline" onClick={async()=>{ await safeFetch('/api/notifications/alert_api_failure',{ method:'POST' }); toast({ title:'API failure alert sent' }); }}>Alert API Failure</Button>
+            <Button variant="outline" onClick={async()=>{ await safeFetch('/api/notifications/alert_market_cap_failure',{ method:'POST' }); toast({ title:'Market Cap alert sent' }); }}>Alert Market-Cap</Button>
+            <Button variant="outline" onClick={async()=>{ await safeFetch('/api/notifications/send_notification',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title:'Manual', message:'Test', severity:'info', category:'system' }) }); toast({ title:'Manual notification sent' }); }}>Send Manual</Button>
           </div>
         </CardContent>
       </Card>
@@ -598,7 +630,7 @@ export default function UserNotifications() {
             <div className="flex gap-2">
               <Button onClick={async ()=>{
                 try{
-                  const r = await fetch('/api/notifications/preferences',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels: prefs.channels })});
+                  const r = await safeFetch('/api/notifications/preferences',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ channels: prefs.channels })});
                   const j = await r.json();
                   if (!r.ok || j.status!=='success') throw new Error(j.error||'Failed');
                   toast({ title:'Saved', description:'Preferences updated' });
@@ -615,7 +647,7 @@ export default function UserNotifications() {
         <CardHeader><CardTitle>Mobile / Push Delivery</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={async()=>{ try{ const r = await fetch('/api/mobile/status'); const j = await r.json(); setPushStatus(j.data); }catch{} }}>Check Status</Button>
+            <Button variant="outline" onClick={async()=>{ try{ const r = await safeFetch('/api/mobile/status'); const j = await r.json(); setPushStatus(j.data); }catch{} }}>Check Status</Button>
           </div>
           {pushStatus && (
             <div className="text-sm text-muted-foreground">Ready: {String(pushStatus.ready)} • Queue: {pushStatus.queue_depth} • Last nonce: {pushStatus.last_nonce}</div>
@@ -645,7 +677,7 @@ export default function UserNotifications() {
           <Button onClick={async()=>{
             try{
               const payload:any = { token: pushForm.token.includes(',') ? pushForm.token.split(',').map(s=> s.trim()).filter(Boolean) : pushForm.token, title: pushForm.title, body: pushForm.body, url: pushForm.url || undefined, nonce: Number(pushForm.nonce) };
-              const r = await fetch('/api/mobile/push',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+              const r = await safeFetch('/api/mobile/push',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
               const j = await r.json();
               if (r.status===202) toast({ title:'Queued', description:`Queued ${j.data?.queued || ''}` }); else throw new Error(j.error || 'Failed');
             }catch(e:any){ toast({ title:'Error', description: e.message || 'Failed', variant:'destructive' }); }
