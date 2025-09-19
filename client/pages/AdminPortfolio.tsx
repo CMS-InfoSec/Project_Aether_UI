@@ -43,7 +43,8 @@ import {
   Clock,
   TrendingUp,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  ExternalLink
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
