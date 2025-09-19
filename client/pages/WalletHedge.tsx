@@ -193,7 +193,12 @@ export default function WalletHedge() {
     snapshot: false,
     settings: true,
     executeHedge: false,
-    saveSettings: false
+    saveSettings: false,
+    apiKeys: false,
+    runtime: true,
+    profile: true,
+    overrides: false,
+    tradeDiag: false
   });
   
   // Error states
