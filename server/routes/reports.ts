@@ -364,7 +364,20 @@ export function handleGetNotifications(req: Request, res: Response) {
       severity, 
       category, 
       unreadOnly = 'false' 
-    } = req.query;
+    } = req.query as any;
+
+    // Optional degraded-mode simulation
+    if ((req.query as any).simulate === 'degraded') {
+      return res.status(503).json({
+        status: 'success',
+        data: {
+          notifications: [],
+          summary: { total: 0, unread: 0, actionRequired: 0, severityCounts: { error:0, warning:0, info:0, success:0 } },
+          pagination: { total: 0, limit: 0, offset: 0, hasMore: false },
+          nextCursor: null
+        }
+      });
+    }
 
     let filteredNotifications = [...notifications];
 
@@ -402,9 +415,11 @@ export function handleGetNotifications(req: Request, res: Response) {
     }
 
     // Apply pagination
-    const limitNum = parseInt(limit as string, 10) || 20;
-    const offsetNum = parseInt(offset as string, 10) || 0;
+    const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10) || 20));
+    const offsetNum = Math.max(0, parseInt(offset as string, 10) || 0);
     const paginatedNotifications = filteredNotifications.slice(offsetNum, offsetNum + limitNum);
+    const hasMore = offsetNum + limitNum < filteredNotifications.length;
+    const nextCursor = hasMore ? String(offsetNum + limitNum) : null;
 
     // Calculate summary stats
     const summary = {
@@ -428,8 +443,9 @@ export function handleGetNotifications(req: Request, res: Response) {
           total: filteredNotifications.length,
           limit: limitNum,
           offset: offsetNum,
-          hasMore: offsetNum + limitNum < filteredNotifications.length
-        }
+          hasMore
+        },
+        nextCursor
       }
     });
   } catch (error) {
