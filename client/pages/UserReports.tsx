@@ -259,7 +259,7 @@ export default function UserReports() {
         });
       }, 200);
 
-      const response = await fetch('/api/reports/backtest');
+      const response = await fetch('/api/reports/backtest?format=daily');
       
       clearInterval(progressInterval);
       setBacktestProgress(100);
