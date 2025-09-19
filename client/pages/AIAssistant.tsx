@@ -255,8 +255,23 @@ export default function AIAssistant() {
       }
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `HTTP ${response.status}`);
+        let detail = `HTTP ${response.status}`;
+        try { const errorData = await response.json(); detail = errorData.message || detail; } catch {}
+        if (response.status === 413) {
+          setRequestState(prev => ({ ...prev, isLoading: false, error: detail }));
+          toast({ title: 'Too long', description: detail, variant: 'destructive' });
+          return;
+        }
+        if (response.status === 502 || response.status === 503) {
+          setRequestState(prev => ({ ...prev, isLoading: false, error: detail }));
+          toast({ title: 'Upstream error', description: detail, variant: 'destructive', action: (
+            <Button variant="outline" size="sm" onClick={()=> { if (lastRequestRef.current) { setTimeout(handleSubmit, 100); } }}>
+              Retry
+            </Button>
+          )});
+          return;
+        }
+        throw new Error(detail);
       }
 
       const data = await response.json();
