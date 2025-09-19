@@ -515,7 +515,12 @@ export default function WalletHedge() {
     fetchWalletBalances();
     fetchWithdrawableFunds();
     fetchHedgeSettings();
-  }, [fetchHedgeHistory, fetchWalletBalances, fetchWithdrawableFunds, fetchHedgeSettings]);
+    fetchLiveSnapshot();
+    (async()=>{ try{ const r=await fetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
+    (async()=>{ try{ const r=await fetch('/api/config/runtime'); const j=await r.json(); setRuntimeConfig(j.data);}catch{} finally { setLoading(prev=>({...prev,runtime:false})); }})();
+    (async()=>{ try{ const r=await fetch('/api/user/profile'); const j=await r.json(); setUserProfile(j.data);}catch{} finally { setLoading(prev=>({...prev,profile:false})); }})();
+    (async()=>{ try{ const r=await fetch('/api/user/trading-settings'); const j=await r.json(); setCurrentOverrides(j.data.settings); setOverrideForm(j.data.settings);}catch{}})();
+  }, [fetchHedgeHistory, fetchWalletBalances, fetchWithdrawableFunds, fetchHedgeSettings, fetchLiveSnapshot]);
 
   // Refresh data when page changes
   useEffect(() => {
