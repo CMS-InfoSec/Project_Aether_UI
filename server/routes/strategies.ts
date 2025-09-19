@@ -1,11 +1,24 @@
 import type { Request, Response } from "express";
 
+let strategyFlags = [
+  { name: 'mean_reversion', weight: 0.3, enabled: true, last_run: new Date().toISOString() },
+  { name: 'momentum', weight: 0.5, enabled: true, last_run: new Date().toISOString() },
+  { name: 'breakout', weight: 0.2, enabled: false, last_run: new Date().toISOString() },
+];
+
 export function handleGetStrategyFlags(_req: Request, res: Response) {
-  res.json({ status: 'success', data: [
-    { name: 'mean_reversion', weight: 0.3, enabled: true, last_run: new Date().toISOString() },
-    { name: 'momentum', weight: 0.5, enabled: true, last_run: new Date().toISOString() },
-    { name: 'breakout', weight: 0.2, enabled: false, last_run: new Date().toISOString() },
-  ]});
+  res.json({ status: 'success', data: strategyFlags });
+}
+
+export function handlePatchStrategyTrading(req: Request, res: Response) {
+  const { strategy } = req.params as { strategy: string };
+  const { enabled } = (req.body || {}) as { enabled?: boolean };
+  const idx = strategyFlags.findIndex((s) => s.name === strategy);
+  if (idx === -1) return res.status(404).json({ detail: 'strategy not found' });
+  if (typeof enabled === 'boolean') strategyFlags[idx].enabled = enabled;
+  else strategyFlags[idx].enabled = !strategyFlags[idx].enabled;
+  strategyFlags[idx].last_run = new Date().toISOString();
+  return res.json({ status: 'success', data: strategyFlags[idx] });
 }
 
 export function handleGetStrategyBreakdown(_req: Request, res: Response) {
