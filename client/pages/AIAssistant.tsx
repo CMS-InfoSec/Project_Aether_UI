@@ -86,6 +86,8 @@ export default function AIAssistant() {
   // State
   const [question, setQuestion] = useState('');
   const [response, setResponse] = useState<LLMResponse | null>(null);
+  const [includeOptions, setIncludeOptions] = useState({ signals: true, trades: true, sentiment: true, regime: true });
+  const lastRequestRef = useRef<{ question: string; include: typeof includeOptions } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showContext, setShowContext] = useState(false);
   const [isContextExpanded, setIsContextExpanded] = useState(false);
