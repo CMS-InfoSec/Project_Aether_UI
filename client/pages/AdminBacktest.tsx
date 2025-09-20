@@ -104,6 +104,23 @@ export default function AdminBacktest() {
   const [cmpA, setCmpA] = useState<BacktestReport|null>(null);
   const [cmpB, setCmpB] = useState<BacktestReport|null>(null);
 
+  // Launch form state
+  const [pricesJson, setPricesJson] = useState<string>('');
+  const [actionsJson, setActionsJson] = useState<string>('');
+  const [volumesJson, setVolumesJson] = useState<string>('');
+  const [seed, setSeed] = useState<string>('');
+  const [startingBalance, setStartingBalance] = useState<string>('100000');
+  const [feeRate, setFeeRate] = useState<string>('0.001');
+  const [launching, setLaunching] = useState(false);
+  const [launchError, setLaunchError] = useState<string|null>(null);
+
+  // History of report paths
+  const [history, setHistory] = useState<string[]>(()=>{
+    try { return JSON.parse(localStorage.getItem('backtest_history')||'[]') } catch { return []; }
+  });
+  const [selectedReportPath, setSelectedReportPath] = useState<string>('');
+  const [lastChecksum, setLastChecksum] = useState<string>('');
+
   // Mock backtest report data
   const mockReport: BacktestReport = {
     summary: {
