@@ -182,6 +182,32 @@ export default function Login() {
           <p>© 2024 Project Aether. All rights reserved.</p>
         </div>
       </div>
+
+      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Password Reset</DialogTitle>
+            <DialogDescription>Enter your email to receive a reset link.</DialogDescription>
+          </DialogHeader>
+          {resetMsg && (<Alert variant="destructive"><AlertDescription>{resetMsg}</AlertDescription></Alert>)}
+          <div className="space-y-2">
+            <Label htmlFor="resetEmail">Email</Label>
+            <Input id="resetEmail" type="email" value={resetEmail} onChange={e=> { setResetEmail(e.target.value); setResetMsg(null); }} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=> setResetOpen(false)} disabled={resetSubmitting}>Cancel</Button>
+            <Button onClick={async()=>{
+              setResetSubmitting(true); setResetMsg(null);
+              try {
+                const r = await fetch('/api/auth/reset/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: resetEmail }) });
+                if (r.status === 202) { setResetOpen(false); }
+                else { const j = await r.json().catch(()=>({detail:'Failed'})); setResetMsg(j.detail || 'Failed'); }
+              } catch (e:any) { setResetMsg(e?.message || 'Network error'); }
+              finally { setResetSubmitting(false); }
+            }} disabled={resetSubmitting || !resetEmail}>Send Reset</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
