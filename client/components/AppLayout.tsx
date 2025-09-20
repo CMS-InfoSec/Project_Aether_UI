@@ -135,12 +135,6 @@ const adminNavigationItems = [
     badge: null
   },
   {
-    title: 'Push Console',
-    href: '/admin/push-console',
-    icon: Bell,
-    badge: null
-  },
-  {
     title: 'System Tasks',
     href: '/admin/system/tasks',
     icon: Settings,
