@@ -348,43 +348,31 @@ export default function AdminSystemConfig() {
   };
 
   const handleSaveSystemSettings = async () => {
+    setConfirmSystemOpen(true);
+  };
+
+  const applySystemSettings = async () => {
     setIsProcessing(true);
     try {
       const response = await fetch('/api/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: systemSettings,
-          actor: 'admin@example.com'
-        }),
+        body: JSON.stringify({ config: systemSettings, actor: 'admin@example.com' }),
       });
-
       const data = await response.json();
-      
       if (response.status === 400) {
-        toast({
-          title: "Validation Error",
-          description: data.message || "Invalid configuration keys",
-          variant: "destructive"
-        });
+        toast({ title: 'Validation Error', description: data.message || 'Invalid configuration keys', variant: 'destructive' });
         return;
       }
-
       if (data.status === 'success') {
         setSystemSettings(data.data);
-        toast({
-          title: "Success",
-          description: "System settings updated successfully"
-        });
+        setConfirmSystemOpen(false);
+        toast({ title: 'Success', description: 'System settings updated successfully' });
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update system settings",
-        variant: "destructive"
-      });
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to update system settings', variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
