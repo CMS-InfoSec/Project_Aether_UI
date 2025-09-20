@@ -42,7 +42,7 @@ export default function AdminStrategyReview(){
   const [nextOffset, setNextOffset] = useState<number|null>(null);
 
   const [search, setSearch] = useState('');
-  const [submitter, setSubmitter] = useState<string>('');
+  const [submitter, setSubmitter] = useState<string>('__all__');
   const [sort, setSort] = useState<'name'|'sharpe'|'win_rate'|'avg_return'|'submitted_at'>('name');
   const [dir, setDir] = useState<'asc'|'desc'>('asc');
   const [minSharpe, setMinSharpe] = useState<string>('');
