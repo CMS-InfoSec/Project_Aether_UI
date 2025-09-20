@@ -204,7 +204,7 @@ export default function AdminBacktest() {
     }
   };
 
-  // Download report as JSON
+  // Download latest loaded report JSON (mock)
   const downloadReport = () => {
     if (!report) return;
     
