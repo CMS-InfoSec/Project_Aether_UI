@@ -205,69 +205,48 @@ export default function AdminSystemConfig() {
 
   const handleSaveRuntimeChanges = async () => {
     if (runtimeErrors.length > 0) {
-      toast({
-        title: "Validation Error",
-        description: "Please fix all errors before saving",
-        variant: "destructive"
-      });
+      toast({ title: 'Validation Error', description: 'Please fix all errors before saving', variant: 'destructive' });
       return;
     }
+    const diffs = computeRuntimeDiff();
+    if (diffs.length === 0) {
+      toast({ title: 'No changes', description: 'Nothing to save' });
+      return;
+    }
+    setConfirmRuntimeOpen(true);
+  };
 
+  const applyRuntimeChanges = async () => {
     setIsProcessing(true);
     try {
       const response = await fetch('/api/config/runtime', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: runtimeConfig,
-          actor: 'admin@example.com'
-        }),
+        body: JSON.stringify({ config: runtimeConfig, actor: 'admin@example.com' }),
       });
-
       const data = await response.json();
-      
       if (response.status === 422) {
-        // Handle validation errors
         if (data.unknownKeys) {
-          setRuntimeErrors(data.unknownKeys.map((key: string) => ({
-            key,
-            message: 'Unknown configuration key'
-          })));
+          setRuntimeErrors(data.unknownKeys.map((key: string) => ({ key, message: 'Unknown configuration key' })));
         }
-        toast({
-          title: "Validation Error",
-          description: data.message || "Invalid configuration values",
-          variant: "destructive"
-        });
+        toast({ title: 'Validation Error', description: data.message || 'Invalid configuration values', variant: 'destructive' });
         return;
       }
-
       if (response.status === 404) {
-        toast({
-          title: "Error",
-          description: "Unknown setting",
-          variant: "destructive"
-        });
+        toast({ title: 'Error', description: 'Unknown setting', variant: 'destructive' });
         return;
       }
-
       if (data.status === 'success') {
         setRuntimeConfig(data.data);
         setOriginalRuntimeConfig(data.data);
         setRuntimeErrors([]);
-        toast({
-          title: "Success",
-          description: "Runtime configuration updated successfully"
-        });
+        setConfirmRuntimeOpen(false);
+        toast({ title: 'Success', description: 'Runtime configuration updated successfully' });
       } else {
         throw new Error(data.message);
       }
     } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update configuration",
-        variant: "destructive"
-      });
+      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to update configuration', variant: 'destructive' });
     } finally {
       setIsProcessing(false);
     }
