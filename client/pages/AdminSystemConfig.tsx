@@ -782,6 +782,67 @@ export default function AdminSystemConfig() {
         </TabsContent>
       </Tabs>
 
+      {/* Runtime Save Confirmation */}
+      <Dialog open={confirmRuntimeOpen} onOpenChange={setConfirmRuntimeOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm Runtime Changes</DialogTitle>
+            <DialogDescription>Review differences before applying.</DialogDescription>
+          </DialogHeader>
+          <div className="max-h-64 overflow-auto text-sm">
+            {runtimeDiff.length === 0 ? (
+              <div>No changes detected.</div>
+            ) : (
+              <div className="space-y-2">
+                {runtimeDiff.map((d)=> (
+                  <div key={d.key} className="border rounded p-2">
+                    <div className="font-mono text-xs">{d.key}</div>
+                    <div className="text-xs"><span className="text-muted-foreground">from</span>: {JSON.stringify(d.from)}</div>
+                    <div className="text-xs"><span className="text-muted-foreground">to</span>: {JSON.stringify(d.to)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={()=> setConfirmRuntimeOpen(false)}>Cancel</Button>
+            <Button onClick={applyRuntimeChanges} disabled={isProcessing}>Apply</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* System Save Confirmation */}
+      <Dialog open={confirmSystemOpen} onOpenChange={setConfirmSystemOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm System Settings</DialogTitle>
+            <DialogDescription>Submit staged overrides to persistence.</DialogDescription>
+          </DialogHeader>
+          <div className="text-sm text-muted-foreground">Proceed to save settings. Backend validation errors will be shown verbatim.</div>
+          <div className="flex justify-end gap-2 mt-3">
+            <Button variant="outline" onClick={()=> setConfirmSystemOpen(false)}>Cancel</Button>
+            <Button onClick={applySystemSettings} disabled={isProcessing}>Apply</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk JSON Editor */}
+      <Dialog open={isBulkDialogOpen} onOpenChange={setIsBulkDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Bulk JSON Editor (Runtime)</DialogTitle>
+            <DialogDescription>Paste/edit JSON object. Keys must be dot-separated snake_case segments.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <textarea value={bulkJson} onChange={(e)=> setBulkJson(e.target.value)} className="w-full h-72 font-mono text-sm p-2 border rounded" />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={()=> setIsBulkDialogOpen(false)}>Cancel</Button>
+              <Button onClick={applyBulkJson}>Load to Form</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Effective Configuration Dialog */}
       <Dialog open={isEffectiveDialogOpen} onOpenChange={setIsEffectiveDialogOpen}>
         <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
