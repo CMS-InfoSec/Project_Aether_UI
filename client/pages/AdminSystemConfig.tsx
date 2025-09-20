@@ -98,6 +98,12 @@ export default function AdminSystemConfig() {
   // Utility State
   const [effectiveConfig, setEffectiveConfig] = useState<EffectiveConfig | null>(null);
   const [isEffectiveDialogOpen, setIsEffectiveDialogOpen] = useState(false);
+  const [isBulkDialogOpen, setIsBulkDialogOpen] = useState(false);
+  const [bulkJson, setBulkJson] = useState('');
+  const [confirmRuntimeOpen, setConfirmRuntimeOpen] = useState(false);
+  const [confirmSystemOpen, setConfirmSystemOpen] = useState(false);
+  const [runtimeDiff, setRuntimeDiff] = useState<Array<{key:string; from:any; to:any}>>([]);
+  const [systemDiff, setSystemDiff] = useState<Array<{key:string; from:any; to:any}>>([]);
   
   // Loading States
   const [isLoading, setIsLoading] = useState(true);
