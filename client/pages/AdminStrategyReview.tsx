@@ -178,10 +178,10 @@ export default function AdminStrategyReview(){
               <Button onClick={()=>{ setOffset(0); fetchPage(0,'replace'); }} disabled={loading}>Filter</Button>
             </div>
             <div>
-              <Select value={submitter} onValueChange={(v)=>{ setSubmitter(v); setOffset(0); fetchPage(0,'replace'); }}>
+              <Select value={submitter} onValueChange={(v)=>{ setSubmitter(v === '__all__' ? '' : v); setOffset(0); fetchPage(0,'replace'); }}>
                 <SelectTrigger><SelectValue placeholder="Submitter" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Submitters</SelectItem>
+                  <SelectItem value="__all__">All Submitters</SelectItem>
                   {submitterOptions.map(([id,label])=> (<SelectItem key={id} value={id}>{label}</SelectItem>))}
                 </SelectContent>
               </Select>
