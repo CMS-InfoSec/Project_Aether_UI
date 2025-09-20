@@ -426,6 +426,70 @@ export default function AdminBacktest() {
         </div>
       </div>
 
+      {/* Launch Backtest */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Launch Backtest</CardTitle>
+          <CardDescription>Submit price/action series, optional volumes, seed, balance, and fee</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {launchError && (
+            <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{launchError}</AlertDescription></Alert>
+          )}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div>
+              <div className="text-xs font-medium mb-1">Prices (JSON array)</div>
+              <textarea className="w-full h-24 font-mono text-xs p-2 border rounded" value={pricesJson} onChange={(e)=> setPricesJson(e.target.value)} placeholder="[10000,10020,10035,...]" />
+            </div>
+            <div>
+              <div className="text-xs font-medium mb-1">Actions (JSON array, -1/0/1)</div>
+              <textarea className="w-full h-24 font-mono text-xs p-2 border rounded" value={actionsJson} onChange={(e)=> setActionsJson(e.target.value)} placeholder="[0,1,0,-1,...]" />
+            </div>
+            <div>
+              <div className="text-xs font-medium mb-1">Volumes (optional JSON array)</div>
+              <textarea className="w-full h-20 font-mono text-xs p-2 border rounded" value={volumesJson} onChange={(e)=> setVolumesJson(e.target.value)} placeholder="[]" />
+            </div>
+            <div className="grid grid-cols-2 gap-2 items-end">
+              <div>
+                <label className="text-xs font-medium">Seed (optional)</label>
+                <Input value={seed} onChange={(e)=> setSeed(e.target.value)} placeholder="e.g. 42" />
+              </div>
+              <div>
+                <label className="text-xs font-medium">Starting Balance</label>
+                <Input value={startingBalance} onChange={(e)=> setStartingBalance(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium">Fee [0,1]</label>
+                <Input value={feeRate} onChange={(e)=> setFeeRate(e.target.value)} />
+              </div>
+              <div className="flex items-end">
+                <Button onClick={validateAndLaunch} disabled={launching}>{launching? <><RefreshCw className="h-4 w-4 mr-2 animate-spin"/>Launching…</> : 'Run Backtest'}</Button>
+              </div>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3 pt-2 border-t">
+            <div>
+              <div className="text-xs font-medium mb-1">Report Path</div>
+              <Input placeholder="/api/reports/backtest?format=json&path=reports/latest" value={selectedReportPath} onChange={(e)=> setSelectedReportPath(e.target.value)} />
+              <div className="text-xs text-muted-foreground mt-1">Checksum: {lastChecksum? <Badge variant="outline" className="font-mono">{lastChecksum}</Badge> : '—'}</div>
+            </div>
+            <div className="space-x-2 flex items-end">
+              <Button variant="outline" onClick={()=> downloadArtifact('json')}>Download JSON</Button>
+              <Button variant="outline" onClick={()=> downloadArtifact('trades')}>Trades CSV</Button>
+              <Button variant="outline" onClick={()=> downloadArtifact('daily')}>Daily CSV</Button>
+            </div>
+            <div>
+              <div className="text-xs font-medium mb-1">History</div>
+              <div className="flex flex-wrap gap-2">
+                {history.length===0 ? <span className="text-xs text-muted-foreground">No runs yet</span> : history.map((h)=> (
+                  <Button key={h} variant="secondary" size="sm" onClick={()=> setSelectedReportPath(h)} className="font-mono">{h.replace('/api/reports/backtest?format=json&path=','')}</Button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Comparison */}
       <Card>
         <CardHeader>
