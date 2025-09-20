@@ -543,13 +543,19 @@ export default function AdminSystemConfig() {
                     Read and edit non-sensitive runtime values. Changes persist until next reload.
                   </CardDescription>
                 </div>
-                <Button 
-                  onClick={handleSaveRuntimeChanges}
-                  disabled={!hasRuntimeChanges() || isProcessing || runtimeErrors.length > 0}
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Save Changes
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" onClick={openBulkEditor}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Bulk JSON Edit
+                  </Button>
+                  <Button
+                    onClick={handleSaveRuntimeChanges}
+                    disabled={!hasRuntimeChanges() || isProcessing || runtimeErrors.length > 0}
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
