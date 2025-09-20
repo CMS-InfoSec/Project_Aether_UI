@@ -117,12 +117,6 @@ const adminNavigationItems = [
     badge: null
   },
   {
-    title: 'Feedback',
-    href: '/admin/feedback',
-    icon: MessageSquare,
-    badge: null
-  },
-  {
     title: 'Strategy Review',
     href: '/admin/strategy-review',
     icon: Vote,
