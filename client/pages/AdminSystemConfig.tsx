@@ -423,6 +423,25 @@ export default function AdminSystemConfig() {
   };
 
   // Utility Functions
+  const openBulkEditor = () => {
+    setBulkJson(JSON.stringify(runtimeConfig, null, 2));
+    setIsBulkDialogOpen(true);
+  };
+
+  const applyBulkJson = async () => {
+    try {
+      const parsed = JSON.parse(bulkJson);
+      if (typeof parsed !== 'object' || Array.isArray(parsed)) throw new Error('Payload must be an object');
+      const invalid = Object.keys(parsed).find(k => !k.split('.').every(seg => /^[a-z0-9]+(_[a-z0-9]+)*$/.test(seg)));
+      if (invalid) { toast({ title:'Validation', description:`Invalid key: ${invalid} (snake_case segments required)`, variant:'destructive' }); return; }
+      setRuntimeConfig(parsed);
+      setIsBulkDialogOpen(false);
+      toast({ title:'Loaded', description:'Bulk JSON applied locally. Confirm to save.' });
+    } catch (e:any) {
+      toast({ title:'Invalid JSON', description: e.message || 'Parse error', variant:'destructive' });
+    }
+  };
+
   const renderConfigValue = (key: string, value: any, onChange?: (value: string) => void) => {
     const error = runtimeErrors.find(e => e.key === key);
     
