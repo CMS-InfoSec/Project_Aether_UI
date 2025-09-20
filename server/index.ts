@@ -339,8 +339,9 @@ export function createServer() {
   app.post('/api/shap/:modelId', handleSHAPExplore);
 
   // Adaptive Strategy Controller
-  const { handleASCStatus, handleASCReweight, handleASCActivate, handleASCDeactivate } = require('./routes/asc');
+  const { handleASCStatus, handleASCReweight, handleASCActivate, handleASCDeactivate, handleASCHistory } = require('./routes/asc');
   app.get('/api/strategy/controller/status', handleASCStatus);
+  app.get('/api/strategy/controller/history', handleASCHistory);
   app.post('/api/strategy/controller/reweight', handleASCReweight);
   app.post('/api/strategy/controller/policy/:name/activate', handleASCActivate);
   app.post('/api/strategy/controller/policy/:name/deactivate', handleASCDeactivate);
