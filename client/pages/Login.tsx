@@ -19,6 +19,10 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetMsg, setResetMsg] = useState<string | null>(null);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
 
   // Redirect if already logged in
   if (user && !isLoading) {
