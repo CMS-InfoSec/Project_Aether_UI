@@ -226,6 +226,57 @@ export default function AdminBacktest() {
     });
   };
 
+  const validateAndLaunch = async () => {
+    setLaunchError(null);
+    let prices: number[] = [];
+    let actions: number[] = [];
+    let volumes: number[] | undefined = undefined;
+    try { prices = JSON.parse(pricesJson || '[]'); if (!Array.isArray(prices) || prices.some(v=> !isFinite(Number(v)))) throw new Error('prices must be array of finite numbers'); } catch(e:any){ setLaunchError(e.message || 'Invalid prices'); return; }
+    try { actions = JSON.parse(actionsJson || '[]'); if (!Array.isArray(actions) || actions.some(v=> !isFinite(Number(v)))) throw new Error('actions must be array of finite numbers'); } catch(e:any){ setLaunchError(e.message || 'Invalid actions'); return; }
+    if (volumesJson && volumesJson.trim().length>0){ try { volumes = JSON.parse(volumesJson); if (!Array.isArray(volumes) || volumes.some(v=> !isFinite(Number(v)))) throw new Error('volumes must be array of finite numbers'); } catch(e:any){ setLaunchError(e.message || 'Invalid volumes'); return; } }
+    if (prices.length === 0 || actions.length === 0){ setLaunchError('prices and actions are required'); return; }
+    if (prices.length !== actions.length){ setLaunchError('prices and actions must have matching lengths'); return; }
+    if (volumes && volumes.length !== prices.length){ setLaunchError('volumes length must match prices'); return; }
+    const seedNum = seed? Number(seed): undefined; if (seed && !Number.isFinite(seedNum!)){ setLaunchError('seed must be a finite number'); return; }
+    const balNum = Number(startingBalance); if (!Number.isFinite(balNum) || balNum<=0){ setLaunchError('starting balance must be > 0'); return; }
+    const feeNum = Number(feeRate); if (!Number.isFinite(feeNum) || feeNum<0 || feeNum>1){ setLaunchError('fee must be in [0,1]'); return; }
+
+    setLaunching(true);
+    try{
+      const body = { config: { prices, actions, volumes, seed: seedNum, starting_balance: balNum, fee: feeNum } };
+      const r = await fetch('/api/strategies/backtest', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const j = await r.json();
+      if (r.status === 422){ setLaunchError(j.error || 'Validation failed'); return; }
+      if (r.status === 504){ setLaunchError('Backtest timed out'); return; }
+      if (!r.ok){ setLaunchError(j.error || 'Failed to start backtest'); return; }
+      toast({ title:'Backtest launched', description: `Job ${j.jobId}` });
+      if (j.report_path){
+        setHistory(prev=>{ const next=[j.report_path, ...prev.filter(p=>p!==j.report_path)].slice(0,20); localStorage.setItem('backtest_history', JSON.stringify(next)); return next; });
+        setSelectedReportPath(j.report_path);
+      }
+    }catch(e:any){ setLaunchError(e.message || 'Network error'); }
+    finally{ setLaunching(false); }
+  };
+
+  const downloadArtifact = async (format: 'json'|'trades'|'daily'|'pdf') => {
+    const qp = new URLSearchParams(); qp.set('format', format);
+    if (selectedReportPath) qp.set('path', selectedReportPath.replace(/^.*path=/,'').replace(/^\/?api\/reports\/backtest\?/,''));
+    const url = `/api/reports/backtest?${qp.toString()}`;
+    try{
+      const r = await fetch(url);
+      if (!r.ok){ const j = await r.json().catch(()=>({error:`HTTP ${r.status}`})); toast({ title:'Download failed', description: j.error || `HTTP ${r.status}`, variant:'destructive' }); return; }
+      const checksum = r.headers.get('X-Checksum-SHA256') || '';
+      setLastChecksum(checksum);
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const ext = format==='json' ? 'json' : 'csv';
+      a.download = `backtest_${format}.${ext}`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      toast({ title:'Download ready', description: checksum? `Checksum ${checksum.slice(0,12)}…` : 'Downloaded' });
+    }catch{ toast({ title:'Download failed', description:'Network error', variant:'destructive' }); }
+  };
+
   // Copy value to clipboard
   const copyToClipboard = (value: string) => {
     navigator.clipboard.writeText(value);
