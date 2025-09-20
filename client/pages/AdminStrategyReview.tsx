@@ -69,7 +69,7 @@ export default function AdminStrategyReview(){
     params.set('limit', String(limit));
     params.set('offset', String(off));
     if (search.trim()) params.set('search', search.trim());
-    if (submitter) params.set('submitter', submitter);
+    if (submitter && submitter !== '__all__') params.set('submitter', submitter);
     if (minSharpe) params.set('min_sharpe', minSharpe);
     if (minWin) params.set('min_win_rate', minWin);
     if (minAvg) params.set('min_avg_return', minAvg);
