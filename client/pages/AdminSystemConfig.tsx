@@ -160,6 +160,17 @@ export default function AdminSystemConfig() {
     loadData();
   }, []);
 
+  const computeRuntimeDiff = () => {
+    const diffs: Array<{key:string; from:any; to:any}> = [];
+    for (const k of Object.keys({ ...originalRuntimeConfig, ...runtimeConfig })) {
+      const a = (originalRuntimeConfig as any)[k];
+      const b = (runtimeConfig as any)[k];
+      if (JSON.stringify(a) !== JSON.stringify(b)) diffs.push({ key:k, from:a, to:b });
+    }
+    setRuntimeDiff(diffs);
+    return diffs;
+  };
+
   // Runtime Configuration Functions
   const handleRuntimeValueChange = (key: string, value: string) => {
     const originalValue = originalRuntimeConfig[key];
