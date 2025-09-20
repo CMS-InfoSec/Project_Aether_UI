@@ -31,7 +31,7 @@ import {
   Cog
 } from 'lucide-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, useLocation, Navigate, Outlet } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation as rrUseLocation } from 'react-router-dom';
 
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -151,7 +151,12 @@ const adminNavigationItems = [
 export default function AppLayout() {
   const { user, logout, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const location = useLocation();
+  // Safe location hook: falls back to window.location when not rendered inside a Router
+  function useSafeLocation(){
+    try { return rrUseLocation(); }
+    catch (e) { return { pathname: typeof window !== 'undefined' ? window.location.pathname : '/', search: '', hash: '', state: null, key: 'no-router' } as any; }
+  }
+  const location = useSafeLocation();
   const { toast } = useToast();
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
