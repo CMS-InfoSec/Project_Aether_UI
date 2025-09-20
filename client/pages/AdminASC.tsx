@@ -168,7 +168,7 @@ export default function AdminASC() {
               ))}
             </div>
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">Current L1 norm: {l1.toFixed(2)} {l1===0 && <span className="text-red-600">(must be > 0)</span>}</div>
+              <div className="text-xs text-muted-foreground">Current L1 norm: {l1.toFixed(2)} {l1===0 && <span className="text-red-600">(must be &gt; 0)</span>}</div>
               <Button onClick={saveWeights} disabled={saving || l1===0}>{saving? <><RefreshCw className="h-4 w-4 mr-2 animate-spin"/>Saving…</> : 'Normalize & Save'}</Button>
             </div>
             {persistenceSkipped && <div className="text-xs text-yellow-700">Persistence skipped (degraded). Weights active in-memory.</div>}
@@ -243,7 +243,7 @@ export default function AdminASC() {
               {history.map((it:any, idx:number)=> (
                 <div key={idx} className="p-3 border rounded">
                   <div className="flex items-center justify-between">
-                    <div className="font-medium">{it.symbol} • {it.action} • ${'{'}it.size_usdt{'}'} USDT</div>
+                    <div className="font-medium">{it.symbol} • {it.action} • {it.size_usdt} USDT</div>
                     <div className="text-sm text-muted-foreground">{new Date(it.ts || Date.now()).toLocaleString()}</div>
                   </div>
                   <div className="text-sm">Confidence: {(it.confidence*100).toFixed(1)}% • Sentiment: {(it.news_sentiment*100).toFixed(1)}%</div>
