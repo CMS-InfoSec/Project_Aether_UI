@@ -144,25 +144,44 @@ export async function apiFetch(
   };
 
   const doFetch = async (): Promise<Response> => {
-    // First try native fetch; if it throws or rejects, fallback to XHR
+    // If window.fetch is present but appears to be patched by third-party scripts (like FullStory),
+    // prefer the XHR fallback. We detect a native fetch by checking its source string for "[native code]".
+    const hasWindowFetch = typeof window !== "undefined" && (window as any).fetch;
+    let fetchImpl: any = null;
+
+    if (hasWindowFetch) {
+      try {
+        const src = Function.prototype.toString.call((window as any).fetch);
+        if (src && src.indexOf("[native code]") !== -1) {
+          fetchImpl = (window as any).fetch;
+        }
+      } catch (err) {
+        // If any error inspecting fetch, fall back to using XHR below
+        fetchImpl = null;
+      }
+    }
+
+    // If no native fetch implementation found, use XHR directly
+    if (!fetchImpl) {
+      return await xhrFetch(urlStr, init);
+    }
+
+    // Otherwise use fetch, but guard against runtime throws
     try {
-      const f = (typeof window !== "undefined" && (window as any).fetch) || fetch;
-      return await f(urlStr, { ...init, headers });
+      return await fetchImpl(urlStr, { ...init, headers });
     } catch (err) {
-      // Fallback to XHR for environments where fetch is patched or unreliable
       return await xhrFetch(urlStr, init);
     }
   };
 
+  // Execute doFetch with a final fallback to xhrFetch
   let res: Response;
   try {
     res = await doFetch();
   } catch (err) {
-    // Last-ditch attempt using XHR directly if fetch and first fallback failed
     try {
       res = await xhrFetch(urlStr, init);
     } catch (err2) {
-      // Re-throw original error with more context
       throw err2;
     }
   }
