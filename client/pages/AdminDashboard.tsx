@@ -571,15 +571,15 @@ export default function AdminDashboard() {
 
       <Tabs defaultValue="controls" className="space-y-6">
         <TabsList className="grid w-full grid-cols-9 gap-2">
-          <TabsTrigger value="controls">Controls</TabsTrigger>
-          <TabsTrigger value="governance">Governance</TabsTrigger>
-          <TabsTrigger value="plugins">Plugins</TabsTrigger>
-          <TabsTrigger value="review">Strategy Review</TabsTrigger>
-          <TabsTrigger value="config">Config</TabsTrigger>
-          <TabsTrigger value="feedback">Feedback</TabsTrigger>
-          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          <TabsTrigger value="automation">Automation</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
+          <TabsTrigger value="controls"><span className="inline-flex items-center gap-1">Controls <HelpTip content="Pause/resume trading, change modes, and access the kill switch." /></span></TabsTrigger>
+          <TabsTrigger value="governance"><span className="inline-flex items-center gap-1">Governance <HelpTip content="Review proposals and governance decisions affecting the system." /></span></TabsTrigger>
+          <TabsTrigger value="plugins"><span className="inline-flex items-center gap-1">Plugins <HelpTip content="Manage strategy plugins and extensions." /></span></TabsTrigger>
+          <TabsTrigger value="review"><span className="inline-flex items-center gap-1">Strategy Review <HelpTip content="Approve or reject strategy changes and promotions." /></span></TabsTrigger>
+          <TabsTrigger value="config"><span className="inline-flex items-center gap-1">Config <HelpTip content="Inspect and update system configuration safely." /></span></TabsTrigger>
+          <TabsTrigger value="feedback"><span className="inline-flex items-center gap-1">Feedback <HelpTip content="View and triage user/admin feedback for improvements." /></span></TabsTrigger>
+          <TabsTrigger value="portfolio"><span className="inline-flex items-center gap-1">Portfolio <HelpTip content="Portfolio monitoring and management tools." /></span></TabsTrigger>
+          <TabsTrigger value="automation"><span className="inline-flex items-center gap-1">Automation <HelpTip content="Automation and social integrations to streamline workflows." /></span></TabsTrigger>
+          <TabsTrigger value="reports"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Performance dashboards, analytics, and notifications." /></span></TabsTrigger>
         </TabsList>
 
         <TabsContent value="controls" className="space-y-6">
@@ -636,10 +636,13 @@ export default function AdminDashboard() {
           {/* Auto-refresh Settings (reports-only) */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Settings className="h-5 w-5" />
-                <span>Dashboard Settings</span>
-              </CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="flex items-center space-x-2">
+                  <Settings className="h-5 w-5" />
+                  <span>Dashboard Settings</span>
+                </CardTitle>
+                <HelpTip content="Control auto-refresh and manually refresh all widgets." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between space-x-4">
@@ -702,11 +705,11 @@ export default function AdminDashboard() {
           {/* Reports inner tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="grid w-full grid-cols-4">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="reporting">Reports</TabsTrigger>
-              <TabsTrigger value="per-asset">Per-Asset</TabsTrigger>
+              <TabsTrigger value="overview"><span className="inline-flex items-center gap-1">Overview <HelpTip content="Key metrics and charts at a glance." /></span></TabsTrigger>
+              <TabsTrigger value="reporting"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Detailed daily and weekly reports." /></span></TabsTrigger>
+              <TabsTrigger value="per-asset"><span className="inline-flex items-center gap-1">Per-Asset <HelpTip content="Deep dive into each asset's metrics." /></span></TabsTrigger>
               <TabsTrigger value="notifications" className="relative">
-                Notifications
+                <span className="inline-flex items-center gap-1">Notifications <HelpTip content="System alerts and messages; unread count shown." /></span>
                 {notificationData?.summary.unread > 0 && (
                   <Badge className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
                     {notificationData.summary.unread}
