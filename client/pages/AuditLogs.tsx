@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
+import HelpTip from '@/components/ui/help-tip';
 import { RefreshCw, ChevronDown, ChevronUp, Download, Copy, Link as LinkIcon } from 'lucide-react';
 
 interface TradeEvent {
@@ -172,6 +173,7 @@ export default function AuditLogs() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Audit & Logs</h1>
         <div className="flex items-center gap-2">
+          <HelpTip content="Export events with integrity hashes or refresh the current view." />
           <Button variant="outline" onClick={exportJSON}><Download className="h-4 w-4 mr-2"/>Export JSON</Button>
           <Button variant="outline" onClick={exportCSV}><Download className="h-4 w-4 mr-2"/>Export CSV</Button>
           <Button variant="outline" onClick={load}><RefreshCw className="h-4 w-4 mr-2"/>Refresh</Button>
@@ -181,41 +183,42 @@ export default function AuditLogs() {
       {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-start justify-between">
           <CardTitle>Filters</CardTitle>
+          <HelpTip content="Filter by symbol, status/action, user, time window, and page size." />
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 md:grid-cols-5 items-end">
             <div>
-              <label className="text-sm">Symbol</label>
+              <div className="flex items-center gap-2"><label className="text-sm">Symbol</label><HelpTip content="Asset pair, e.g., BTC/USDT. Case-insensitive." /></div>
               <Input placeholder="BTC/USDT" value={symbol} onChange={(e)=>setSymbol(e.target.value.toUpperCase())} />
             </div>
             <div>
-              <label className="text-sm">Action/Status</label>
+              <div className="flex items-center gap-2"><label className="text-sm">Action/Status</label><HelpTip content="Trade side or lifecycle status (e.g., buy, sell, filled, pending)." /></div>
               <Input placeholder="filled/pending/buy/sell" value={action} onChange={(e)=>setAction(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm">User</label>
+              <div className="flex items-center gap-2"><label className="text-sm">User</label><HelpTip content="Actor responsible (e.g., admin, system, user ID)." /></div>
               <Input placeholder="admin/system" value={user} onChange={(e)=>setUser(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm">Since</label>
+              <div className="flex items-center gap-2"><label className="text-sm">Since</label><HelpTip content="Start time for events (local timezone)." /></div>
               <Input type="datetime-local" value={since} onChange={(e)=> setSince(e.target.value)} />
             </div>
             <div>
-              <label className="text-sm">Limit</label>
+              <div className="flex items-center gap-2"><label className="text-sm">Limit</label><HelpTip content="Number of events per request (1-100)." /></div>
               <Input type="number" min={1} max={100} value={limit} onChange={(e)=> setLimit(Math.min(100, Math.max(1, parseInt(e.target.value)||25)))} />
             </div>
           </div>
           <div className="mt-3 flex items-center gap-2">
             <Button onClick={load}>Apply</Button>
-            <label className="text-sm ml-2 inline-flex items-center gap-2 select-none"><input type="checkbox" checked={auto} onChange={e=> setAuto(e.target.checked)} /> Auto-refresh 30s</label>
+            <label className="text-sm ml-2 inline-flex items-center gap-2 select-none"><input type="checkbox" checked={auto} onChange={e=> setAuto(e.target.checked)} /> <span className="inline-flex items-center gap-2">Auto-refresh 30s <HelpTip content="Reload filters and data automatically every 30 seconds." /></span></label>
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Recent Trades</CardTitle></CardHeader>
+        <CardHeader className="flex items-start justify-between"><CardTitle>Recent Trades</CardTitle><HelpTip content="Recent trade events with payloads, HMAC status, and integrity hashes." /></CardHeader>
         <CardContent>
           <div className="overflow-auto">
             <table className="w-full text-sm">
@@ -266,7 +269,7 @@ export default function AuditLogs() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Balance Events</CardTitle></CardHeader>
+        <CardHeader className="flex items-start justify-between"><CardTitle>Balance Events</CardTitle><HelpTip content="Balance change events with request IDs and HMAC verification." /></CardHeader>
         <CardContent>
           <div className="overflow-auto">
             <table className="w-full text-sm">
