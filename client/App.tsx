@@ -437,4 +437,12 @@ const App = () => (
   </ErrorBoundary>
 );
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Reuse root across HMR to avoid createRoot being called multiple times
+const container = document.getElementById("root")!;
+const __rootKey = "__aether_root_v1__";
+let root: import('react-dom').Root | undefined = (window as any)[__rootKey];
+if (!root) {
+  root = createRoot(container as HTMLElement);
+  (window as any)[__rootKey] = root;
+}
+root.render(<App />);
