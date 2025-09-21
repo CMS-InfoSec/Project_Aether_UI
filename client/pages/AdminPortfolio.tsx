@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -95,6 +96,7 @@ const DEFAULT_PAGE_LIMIT = 20;
 const MAX_PAGE_LIMIT = 100;
 
 export default function AdminPortfolio() {
+  const { user } = useAuth();
   // State
   const [portfolioData, setPortfolioData] = useState<PortfolioResponse | null>(null);
   const [stats, setStats] = useState<PortfolioStats | null>(null);
