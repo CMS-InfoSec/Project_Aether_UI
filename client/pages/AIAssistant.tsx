@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -210,7 +211,7 @@ export default function AIAssistant() {
     try {
       const payload = { question: question.trim(), include: includeOptions };
       lastRequestRef.current = payload;
-      const response = await fetch('/api/llm/ask', {
+      const response = await apiFetch('/api/llm/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -237,7 +238,7 @@ export default function AIAssistant() {
       if (response.status === 401) {
         // Try to refresh token
         try {
-          const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+          const refreshResponse = await apiFetch('/api/auth/refresh', { method: 'POST' });
           if (refreshResponse.ok) {
             // Retry the original request
             return handleSubmit();
