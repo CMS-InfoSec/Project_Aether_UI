@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import apiFetch, { setTokenRefresher } from '@/lib/apiClient';
 
 interface User {
   id: string;
@@ -26,13 +27,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setTokenRefresher(refreshToken);
     const token = localStorage.getItem('access_token');
-    if (token) { fetchMe(token); } else { setIsLoading(false); }
+    if (token) { fetchMe(); } else { setIsLoading(false); }
   }, []);
 
-  const fetchMe = async (accessToken: string) => {
+  const fetchMe = async () => {
     try {
-      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${accessToken}` } });
+      const res = await apiFetch('/api/auth/me');
       if (res.ok) {
         const me = await res.json();
         setUser({ id: me.id, email: me.email, role: me.role, access_token: me.access_token });
@@ -45,12 +47,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/auth/login', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }) });
+      const response = await apiFetch('/api/auth/login', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ email, password }), noAuth: true });
       if (!response.ok) return false;
       const data = await response.json();
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('refresh_token', data.refresh_token);
-      await fetchMe(data.access_token);
+      await fetchMe();
       return true;
     } catch (error) {
       console.error('Login error:', error);
@@ -68,13 +70,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const refresh = localStorage.getItem('refresh_token');
       if (!refresh) return false;
-      const response = await fetch('/api/auth/refresh', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ refresh_token: refresh }) });
+      const response = await apiFetch('/api/auth/refresh', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ refresh_token: refresh }), noAuth: true });
       if (response.status === 503) { return true; }
       if (!response.ok) { logout(); return false; }
       const data = await response.json();
       localStorage.setItem('access_token', data.access_token);
       if (data.refresh_token) localStorage.setItem('refresh_token', data.refresh_token);
-      await fetchMe(data.access_token);
+      await fetchMe();
       return true;
     } catch { logout(); return false; }
   };
