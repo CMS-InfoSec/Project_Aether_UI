@@ -28,6 +28,7 @@ import {
   SelectItem,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { HelpTip } from "@/components/ui/help-tip";
 import {
   RefreshCw,
   Activity,
@@ -247,7 +248,7 @@ export default function AdminASC() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Adaptive Strategy Controller</h1>
+          <h1 className="text-3xl font-bold inline-flex items-center gap-2">Adaptive Strategy Controller <HelpTip content="Live controller to tune strategy weights, toggle policies, and review decision history." /></h1>
           <p className="text-muted-foreground">
             Tune strategy weights, toggle policies, and inspect decisions
           </p>
@@ -287,20 +288,20 @@ export default function AdminASC() {
         {/* Controller Status */}
         <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle>Controller Status</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Controller Status <HelpTip content="Snapshot of exploration rate, RL service health, and current normalized weights." /></CardTitle>
             <CardDescription>Live snapshot</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">
-                Exploration ε
+              <span className="text-sm text-muted-foreground inline-flex items-center gap-2">
+                Exploration ε <HelpTip content="Epsilon controls random exploration vs. exploitation in RL-driven strategies." />
               </span>
               <span className="font-medium">
                 {status?.exploration?.toFixed(3) ?? "—"}
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">RL</span>
+              <span className="text-sm text-muted-foreground inline-flex items-center gap-2">RL <HelpTip content="Realtime reinforcement learning service status used by certain policies." /></span>
               {status?.rl?.online ? (
                 <Badge
                   variant="outline"
@@ -321,7 +322,7 @@ export default function AdminASC() {
               </div>
             )}
             <div className="pt-2 border-t">
-              <div className="text-xs text-muted-foreground mb-1">Weights</div>
+              <div className="text-xs text-muted-foreground mb-1 inline-flex items-center gap-2">Weights <HelpTip content="Active policy weights normalized to L1 = 1 (sum of absolute values equals 1)." /></div>
               <div className="flex flex-wrap gap-1">
                 {Object.entries(status?.weights || {}).map(([k, v]) => (
                   <Badge key={k} variant="secondary" className="text-xs">
@@ -336,7 +337,7 @@ export default function AdminASC() {
         {/* Weights Editor */}
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Weights Editor</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Weights Editor <HelpTip content="Set each policy’s weight in [-1, 1]. On save, weights are normalized so their absolute sum equals 1." /></CardTitle>
             <CardDescription>
               Clamp [-1,1], normalized to L1=1 on save
             </CardDescription>
@@ -352,8 +353,8 @@ export default function AdminASC() {
                     </Badge>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label htmlFor={`w_${p.name}`} className="text-xs">
-                      Weight
+                    <Label htmlFor={`w_${p.name}`} className="text-xs inline-flex items-center gap-2">
+                      Weight <HelpTip content="Strength and direction of this policy. Negative values invert its effect. All weights are normalized on save." />
                     </Label>
                     <Input
                       id={`w_${p.name}`}
@@ -384,7 +385,7 @@ export default function AdminASC() {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
-                Current L1 norm: {l1.toFixed(2)}{" "}
+                <span className="inline-flex items-center gap-2">Current L1 norm <HelpTip content="Sum of absolute weights. Must be greater than 0 before saving." /></span>: {l1.toFixed(2)}{" "}
                 {l1 === 0 && (
                   <span className="text-red-600">(must be &gt; 0)</span>
                 )}
@@ -412,7 +413,7 @@ export default function AdminASC() {
       {/* Policies Registry */}
       <Card>
         <CardHeader>
-          <CardTitle>Policies</CardTitle>
+          <CardTitle className="inline-flex items-center gap-2">Policies <HelpTip content="Enable or disable individual policies. Changes take effect immediately with audit logging." /></CardTitle>
           <CardDescription>
             Enable/disable policies with audit logging
           </CardDescription>
@@ -422,12 +423,12 @@ export default function AdminASC() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Weight</TableHead>
-                  <TableHead>Sharpe</TableHead>
-                  <TableHead>Win Rate</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead><div className="inline-flex items-center gap-1">Name <HelpTip content="Policy identifier (e.g., momentum, mean reversion)." /></div></TableHead>
+                  <TableHead><div className="inline-flex items-center gap-1">Status <HelpTip content="Whether the policy is currently enabled." /></div></TableHead>
+                  <TableHead><div className="inline-flex items-center gap-1">Weight <HelpTip content="Normalized contribution of the policy to final decisions." /></div></TableHead>
+                  <TableHead><div className="inline-flex items-center gap-1">Sharpe <HelpTip content="Risk‑adjusted performance metric; higher is better." /></div></TableHead>
+                  <TableHead><div className="inline-flex items-center gap-1">Win Rate <HelpTip content="Percentage of profitable trades for this policy." /></div></TableHead>
+                  <TableHead className="text-right"><div className="inline-flex items-center gap-1">Actions <HelpTip content="Toggle policy on/off." /></div></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -471,7 +472,7 @@ export default function AdminASC() {
       {/* Decision History & Explainability */}
       <Card>
         <CardHeader>
-          <CardTitle>Decision History</CardTitle>
+          <CardTitle className="inline-flex items-center gap-2">Decision History <HelpTip content="Timeline of recent decisions, components, and SHAP explanations." /></CardTitle>
           <CardDescription>
             Action proposals, components, and SHAP summaries
           </CardDescription>
@@ -479,7 +480,7 @@ export default function AdminASC() {
         <CardContent className="space-y-3">
           <div className="grid md:grid-cols-3 gap-3 items-end">
             <div>
-              <Label>Symbol</Label>
+              <Label className="inline-flex items-center gap-2">Symbol <HelpTip content="Filter history to a specific trading pair (e.g., BTC/USDT)." /></Label>
               <Input
                 list="asc-symbols"
                 value={histSymbol}
