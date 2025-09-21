@@ -59,6 +59,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import SpotPriceChecker from "./components/SpotPriceChecker";
+import { HelpTip } from "@/components/ui/help-tip";
 
 // Types matching specification
 interface MarketItem {
@@ -554,8 +555,8 @@ export default function AdminMarkets() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              Market Eligibility
+            <h1 className="text-3xl font-bold tracking-tight inline-flex items-center gap-2">
+              Market Eligibility <HelpTip content="Universe of eligible markets refreshed daily based on criteria and governance overrides." />
             </h1>
             <p className="text-muted-foreground">
               Daily refreshed universe of USDT-quoted markets (≥ $200M cap)
@@ -614,8 +615,8 @@ export default function AdminMarkets() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Markets
+                <CardTitle className="text-sm font-medium inline-flex items-center gap-2">
+                  Total Markets <HelpTip content="Number of markets currently eligible under the rules." />
                 </CardTitle>
                 <Database className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -628,8 +629,8 @@ export default function AdminMarkets() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Avg Profitability
+                <CardTitle className="text-sm font-medium inline-flex items-center gap-2">
+                  Avg Profitability <HelpTip content="Average backtest profitability across eligible markets." />
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -644,8 +645,8 @@ export default function AdminMarkets() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Volume
+                <CardTitle className="text-sm font-medium inline-flex items-center gap-2">
+                  Total Volume <HelpTip content="Aggregate 24h trading volume across eligible markets." />
                 </CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -658,8 +659,8 @@ export default function AdminMarkets() {
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Market Cap
+                <CardTitle className="text-sm font-medium inline-flex items-center gap-2">
+                  Market Cap <HelpTip content="Combined market capitalization of all eligible markets." />
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -676,7 +677,7 @@ export default function AdminMarkets() {
         {/* Spot Price Checker */}
         <Card>
           <CardHeader>
-            <CardTitle>Spot Price Checker</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Spot Price Checker <HelpTip content="Lookup latest spot price for a trading pair (e.g., BTC/USDT)." /></CardTitle>
             <CardDescription>
               Check latest price for a symbol (e.g., BTC/USDT)
             </CardDescription>
@@ -689,7 +690,7 @@ export default function AdminMarkets() {
         {/* Governance Override */}
         <Card>
           <CardHeader>
-            <CardTitle>Governance Override</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Governance Override <HelpTip content="Force allow or block a symbol with an auditable reason." /></CardTitle>
             <CardDescription>
               Allow or block a symbol with audit reason
             </CardDescription>
@@ -697,11 +698,11 @@ export default function AdminMarkets() {
           <CardContent className="space-y-3">
             <div className="grid md:grid-cols-3 gap-3 items-end">
               <div>
-                <Label>Symbol</Label>
+                <Label className="inline-flex items-center gap-2">Symbol <HelpTip content="Trading pair in BASE/QUOTE format, e.g., BTC/USDT." /></Label>
                 <Input id="ov-symbol" placeholder="BTC/USDT" />
               </div>
               <div>
-                <Label>Action</Label>
+                <Label className="inline-flex items-center gap-2">Action <HelpTip content="Choose Allow to include or Block to exclude from eligibility." /></Label>
                 <Select
                   defaultValue="allow"
                   onValueChange={(v) => ((window as any)._ovAction = v)}
@@ -716,7 +717,7 @@ export default function AdminMarkets() {
                 </Select>
               </div>
               <div className="md:col-span-3">
-                <Label>Reason</Label>
+                <Label className="inline-flex items-center gap-2">Reason <HelpTip content="Provide justification for audit (minimum 10 characters)." /></Label>
                 <Textarea
                   id="ov-reason"
                   rows={3}
@@ -823,7 +824,7 @@ export default function AdminMarkets() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Filter className="h-5 w-5" />
-                <span>Filter Panel</span>
+                <span className="inline-flex items-center gap-2">Filter Panel <HelpTip content="Refine the eligible universe by status, profitability, volume, and more." /></span>
               </CardTitle>
               <CardDescription>Filter by eligibility criteria</CardDescription>
             </CardHeader>
@@ -869,7 +870,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label>Status</Label>
+                <Label className="inline-flex items-center gap-2">Status <HelpTip content="Filter markets by current eligibility status." /></Label>
                 <Select
                   value={filterForm.status}
                   onValueChange={(value) =>
@@ -890,7 +891,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label htmlFor="symbol">Symbol search</Label>
+                <Label htmlFor="symbol" className="inline-flex items-center gap-2">Symbol search <HelpTip content="Find a specific trading pair by symbol." /></Label>
                 <Input
                   id="symbol"
                   placeholder="e.g., BTC/USDT"
@@ -911,7 +912,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label htmlFor="minProf">Min Profitability</Label>
+                <Label htmlFor="minProf" className="inline-flex items-center gap-2">Min Profitability <HelpTip content="Minimum profitability threshold (0.00–1.00 equals 0%–100%)." /></Label>
                 <Input
                   id="minProf"
                   type="number"
@@ -930,7 +931,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label htmlFor="minVol">Min Volume</Label>
+                <Label htmlFor="minVol" className="inline-flex items-center gap-2">Min Volume <HelpTip content="Minimum 24h volume in USD for inclusion." /></Label>
                 <Input
                   id="minVol"
                   type="number"
@@ -948,7 +949,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label>Sort By</Label>
+                <Label className="inline-flex items-center gap-2">Sort By <HelpTip content="Order results by symbol, cap, volatility, profitability, or volume." /></Label>
                 <Select
                   value={filterForm.sort}
                   onValueChange={(value) =>
@@ -969,7 +970,7 @@ export default function AdminMarkets() {
               </div>
 
               <div>
-                <Label htmlFor="limit">Limit (1-{MAX_PAGE_LIMIT})</Label>
+                <Label htmlFor="limit" className="inline-flex items-center gap-2">Limit (1-{MAX_PAGE_LIMIT}) <HelpTip content="Number of rows per page (max 100)." /></Label>
                 <Input
                   id="limit"
                   type="number"
@@ -1068,7 +1069,7 @@ export default function AdminMarkets() {
           {/* Markets Table */}
           <Card className="lg:col-span-3">
             <CardHeader>
-              <CardTitle>Eligible Markets</CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">Eligible Markets <HelpTip content="Table of currently eligible markets. Click a symbol to copy it." /></CardTitle>
               <CardDescription>
                 Click symbol to copy. Recent validations highlighted.
               </CardDescription>
@@ -1147,17 +1148,17 @@ export default function AdminMarkets() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Symbol</TableHead>
-                          <TableHead>Market Cap (USD)</TableHead>
-                          <TableHead>Realized Volatility</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Profitability</TableHead>
-                          <TableHead>Volume</TableHead>
-                          <TableHead>Vol. Reliability</TableHead>
-                          <TableHead>Last Validated</TableHead>
-                          <TableHead>Last Refreshed</TableHead>
-                          <TableHead>Source</TableHead>
-                          <TableHead>Override</TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Symbol <HelpTip content="Trading pair (BASE/QUOTE). Click entries to copy." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Market Cap (USD) <HelpTip content="Market capitalization in US dollars." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Realized Volatility <HelpTip content="Observed price variability over the evaluation window." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Status <HelpTip content="Eligibility state: Active, Monitoring, Inactive, or Delisted." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Profitability <HelpTip content="Backtest profitability metric for the market." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Volume <HelpTip content="24-hour traded volume in USD." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Vol. Reliability <HelpTip content="Indicates if reported volume is considered reliable." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Last Validated <HelpTip content="Timestamp of the last eligibility validation." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Last Refreshed <HelpTip content="Timestamp when market data was last refreshed." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Source <HelpTip content="Data provider or ingestion source." /></div></TableHead>
+                          <TableHead><div className="inline-flex items-center gap-1">Override <HelpTip content="Manual governance override applied to the market." /></div></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
