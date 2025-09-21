@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import HelpTip from '@/components/ui/help-tip';
 import {
   Table,
   TableBody,
@@ -529,7 +530,10 @@ export default function AdminPortfolio() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Value</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <HelpTip content="Sum of all portfolio values across users." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats.totalValue)}</div>
@@ -542,7 +546,10 @@ export default function AdminPortfolio() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">USDT Balance</CardTitle>
-              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <HelpTip content="Aggregate USDT available across portfolios." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats.totalUsdtBalance)}</div>
@@ -555,7 +562,10 @@ export default function AdminPortfolio() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Hedged Balance</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <HelpTip content="Value currently hedged or protected by risk controls." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats.totalHedgedBalance)}</div>
@@ -568,7 +578,10 @@ export default function AdminPortfolio() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Active Portfolios</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <div className="flex items-center gap-1">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <HelpTip content="Number of live and demo portfolios being actively managed." />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
@@ -586,11 +599,14 @@ export default function AdminPortfolio() {
         {/* Portfolios Overview Table */}
         <div className="lg:col-span-2 space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle>Portfolios Overview</CardTitle>
-              <CardDescription>
-                Click column headers to sort. Use pagination controls to navigate.
-              </CardDescription>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle>Portfolios Overview</CardTitle>
+                <CardDescription>
+                  Click column headers to sort. Use pagination controls to navigate.
+                </CardDescription>
+              </div>
+              <HelpTip content="Table of all portfolios with sorting, quick actions, and links to audits." />
             </CardHeader>
             <CardContent>
               {isLoading ? (
@@ -753,14 +769,17 @@ export default function AdminPortfolio() {
         {/* Rebalance Controls */}
         <div className="space-y-4">
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Target className="h-5 w-5" />
-                <span>Rebalance Controls</span>
-              </CardTitle>
-              <CardDescription>
-                Trigger system-wide portfolio rebalancing with current market data
-              </CardDescription>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center space-x-2">
+                  <Target className="h-5 w-5" />
+                  <span>Rebalance Controls</span>
+                </CardTitle>
+                <CardDescription>
+                  Trigger system-wide portfolio rebalancing with current market data
+                </CardDescription>
+              </div>
+              <HelpTip content="Start a global rebalance using provided prices and returns JSON. Applies to active portfolios." />
             </CardHeader>
             <CardContent className="space-y-4">
               {isRebalancing && (
@@ -776,7 +795,7 @@ export default function AdminPortfolio() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="pricesJson">Prices JSON Input</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="pricesJson">Prices JSON Input</Label><HelpTip content="JSON object mapping SYMBOL/USDT to current price, e.g. {'BTC/USDT': 43500}. Used to price portfolios." /></div>
                 <Textarea
                   id="pricesJson"
                   placeholder="Enter asset prices as JSON object..."
@@ -798,7 +817,7 @@ export default function AdminPortfolio() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="returnsJson">Returns JSON Input</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="returnsJson">Returns JSON Input</Label><HelpTip content="JSON object mapping SYMBOL/USDT to an array of recent returns (fractions), e.g. {'BTC/USDT': [0.02, -0.01]}. Used for risk and allocation." /></div>
                 <Textarea
                   id="returnsJson"
                   placeholder="Enter historical returns as JSON object..."
@@ -857,6 +876,7 @@ export default function AdminPortfolio() {
                     <div className="flex items-center gap-2 p-2 border rounded-md">
                       <input id="ackGlobal" type="checkbox" checked={ackGlobal} onChange={(e)=> setAckGlobal(e.target.checked)} />
                       <Label htmlFor="ackGlobal" className="text-xs">I understand this will trigger a bulk rebalance across active portfolios.</Label>
+                      <HelpTip content="Safety check. Confirms you intend to run a global rebalance." />
                     </div>
                   </div>
                   <AlertDialogFooter>
@@ -872,14 +892,17 @@ export default function AdminPortfolio() {
 
           {/* Recent Rebalances */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <Clock className="h-5 w-5" />
-                <span>Recent Rebalances</span>
-              </CardTitle>
-              <CardDescription>
-                History of recent rebalancing operations
-              </CardDescription>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center space-x-2">
+                  <Clock className="h-5 w-5" />
+                  <span>Recent Rebalances</span>
+                </CardTitle>
+                <CardDescription>
+                  History of recent rebalancing operations
+                </CardDescription>
+              </div>
+              <HelpTip content="Timeline of rebalance runs with who triggered them, scope, value moved, and status." />
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -947,16 +970,17 @@ export default function AdminPortfolio() {
           )}
           <div className="space-y-3">
             <div className="space-y-1">
-              <Label>Prices JSON</Label>
+              <div className="flex items-center gap-2"><Label>Prices JSON</Label><HelpTip content="Override prices for this user only. Same format as global prices JSON." /></div>
               <Textarea rows={4} value={rowPricesJson} onChange={(e)=> setRowPricesJson(e.target.value)} className="font-mono text-xs" />
             </div>
             <div className="space-y-1">
-              <Label>Returns JSON</Label>
+              <div className="flex items-center gap-2"><Label>Returns JSON</Label><HelpTip content="Override returns array for this user only. Same format as global returns JSON." /></div>
               <Textarea rows={4} value={rowReturnsJson} onChange={(e)=> setRowReturnsJson(e.target.value)} className="font-mono text-xs" />
             </div>
             <div className="flex items-center gap-2 p-2 border rounded-md">
               <input id="ack" type="checkbox" checked={rowAck} onChange={(e)=> setRowAck(e.target.checked)} />
               <Label htmlFor="ack" className="text-xs">I understand this will rebalance active portfolios. Include this user in audit search.</Label>
+              <HelpTip content="Required confirmation before submitting a per-user rebalance." />
             </div>
           </div>
           <DialogFooter>
