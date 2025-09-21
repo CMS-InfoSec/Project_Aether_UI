@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 
 interface PluginItem {
   name: string;
@@ -66,7 +67,7 @@ export default function AdminPlugins(){
   const fetchPlugins = useCallback(async () => {
     setLoading(true); setErrorBanner(null); setDegraded(false);
     try {
-      const r = await fetch('/api/governance/plugins');
+      const r = await apiFetch('/api/governance/plugins');
       const isDegraded = (r.headers.get('X-Supabase-Degraded')||'').toLowerCase() === 'true';
       if (!r.ok) {
         const j = await r.json().catch(()=>({ detail:`HTTP ${r.status}` }));
@@ -94,7 +95,7 @@ export default function AdminPlugins(){
     if (!canSubmit) { toast({ title:'Validation', description:'All fields are required', variant:'destructive' }); return; }
     setProposing(true);
     try {
-      const r = await fetch('/api/governance/plugins/propose', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: pName.trim(), module: pModule.trim(), description: pDesc.trim() }) });
+      const r = await apiFetch('/api/governance/plugins/propose', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ name: pName.trim(), module: pModule.trim(), description: pDesc.trim() }) });
       const j = await r.json().catch(()=>({}));
       if (r.status === 201 || r.ok) {
         const added: PluginItem | null = j?.data || null;
@@ -113,7 +114,7 @@ export default function AdminPlugins(){
     if (!isFounder) return;
     setVoting(`${name}:${choice}`);
     try {
-      const r = await fetch(`/api/governance/plugins/${encodeURIComponent(name)}/vote`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ choice }) });
+      const r = await apiFetch(`/api/governance/plugins/${encodeURIComponent(name)}/vote`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ choice }) });
       const j = await r.json().catch(()=>({}));
       if (!r.ok) { toast({ title:'Vote failed', description: j.detail || 'Invalid vote', variant:'destructive' }); return; }
       toast({ title:'Vote recorded', description:`${choice} for ${name}` });
@@ -127,7 +128,7 @@ export default function AdminPlugins(){
     if (!actTarget) return; if (!ack) { toast({ title:'Acknowledgement required', description:'Confirm Approve & Activate', variant:'destructive' }); return; }
     setActivating(true);
     try {
-      const r = await fetch(`/api/governance/plugins/${encodeURIComponent(actTarget.name)}/approve`, { method:'POST' });
+      const r = await apiFetch(`/api/governance/plugins/${encodeURIComponent(actTarget.name)}/approve`, { method:'POST' });
       const j = await r.json().catch(()=>({}));
       if (r.status === 403) { toast({ title:'Insufficient votes', description:'Supermajority not reached', variant:'destructive' }); return; }
       if (!r.ok) { toast({ title:'Activation failed', description: j.detail || 'Failed to activate', variant:'destructive' }); return; }
