@@ -1042,8 +1042,8 @@ export default function AdminModels() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              AI Model Management
+            <h1 className="text-3xl font-bold tracking-tight inline-flex items-center gap-2">
+              AI Model Management <HelpTip content="End-to-end workflows to train, evaluate, and deploy trading models with governance controls." />
             </h1>
             <p className="text-muted-foreground">
               Train, deploy and manage AI models for algorithmic trading with
@@ -1076,7 +1076,7 @@ export default function AdminModels() {
               </DialogTrigger>
               <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle>Start AI Model Training</DialogTitle>
+                  <DialogTitle className="inline-flex items-center gap-2">Start AI Model Training <HelpTip content="Configure training parameters, datasets, and optional RL curriculum before launching the job." /></DialogTitle>
                   <DialogDescription>
                     Configure and launch a comprehensive training job with data
                     preprocessing, forecasting, RL policy search, and
@@ -1087,7 +1087,7 @@ export default function AdminModels() {
                 <div className="grid gap-6 py-4">
                   {/* Model Type Selection with tooltips */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">Model Type</Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">Model Type <HelpTip content="Choose forecasting, reinforcement learning, sentiment, or an ensemble approach." /></Label>
                     <div className="col-span-3">
                       <Select
                         value={trainingForm.modelType}
@@ -1134,7 +1134,7 @@ export default function AdminModels() {
 
                   {/* Algorithm Selection */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">Algorithm</Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">Algorithm <HelpTip content="Specific learning algorithm used by the model type (e.g., LSTM, PPO, FinBERT)." /></Label>
                     <div className="col-span-3">
                       <Select
                         value={trainingForm.algorithm}
@@ -1171,8 +1171,8 @@ export default function AdminModels() {
 
                   {/* Asset Selection (multi-select with universe rotation) */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-start pt-2">
-                      Trading Pairs
+                    <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
+                      Trading Pairs <HelpTip content="Assets to train on. Multi-asset RL agents can learn cross-market behavior." />
                     </Label>
                     <div className="col-span-3">
                       <div className="grid grid-cols-4 gap-2 mb-2">
@@ -1213,8 +1213,8 @@ export default function AdminModels() {
 
                   {/* Training Parameters */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">
-                      Lookback Days
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Lookback Days <HelpTip content="History window used as input features for training (1–365)." />
                     </Label>
                     <div className="col-span-1">
                       <Input
@@ -1233,7 +1233,7 @@ export default function AdminModels() {
                         1-365 days
                       </p>
                     </div>
-                    <Label className="text-right self-center">Interval</Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">Interval <HelpTip content="Sampling period for candles/features (e.g., 1h)." /></Label>
                     <div className="col-span-1">
                       <Select
                         value={trainingForm.interval}
@@ -1260,8 +1260,8 @@ export default function AdminModels() {
 
                   {/* Dataset and Curriculum */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">
-                      Dataset Version
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Dataset Version <HelpTip content="Choose the DVC-versioned dataset used for training and evaluation." />
                     </Label>
                     <div className="col-span-1">
                       <Select
@@ -1288,8 +1288,8 @@ export default function AdminModels() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Label className="text-right self-center">
-                      Risk Profile
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Risk Profile <HelpTip content="Controls aggressiveness of strategies (conservative, moderate, aggressive)." />
                     </Label>
                     <div className="col-span-1">
                       <Select
@@ -1324,8 +1324,8 @@ export default function AdminModels() {
                       </div>
 
                       <div className="grid grid-cols-4 gap-4">
-                        <Label className="text-right self-center">
-                          Curriculum Level
+                        <Label className="text-right self-center inline-flex items-center gap-2">
+                          Curriculum Level <HelpTip content="Progressively harder environments for RL: simple → volatile → multi-asset." />
                         </Label>
                         <div className="col-span-3">
                           <Select
@@ -1356,8 +1356,8 @@ export default function AdminModels() {
                       </div>
 
                       <div className="grid grid-cols-4 gap-4">
-                        <Label className="text-right self-start pt-2">
-                          Environment Config
+                        <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
+                          Environment Config <HelpTip content="JSON for RL environment and reward weights (profit, drawdown, duration, win rate)." />
                         </Label>
                         <div className="col-span-3">
                           <Textarea
@@ -1383,8 +1383,8 @@ export default function AdminModels() {
 
                   {/* Architecture Configuration */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-start pt-2">
-                      Architecture
+                    <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
+                      Architecture <HelpTip content="Model architecture JSON (layers, dropout, attention, learning rate, etc.)." />
                     </Label>
                     <div className="col-span-3">
                       <Textarea
@@ -1408,8 +1408,8 @@ export default function AdminModels() {
 
                   {/* Advanced Options */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">
-                      Callback URL
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Callback URL <HelpTip content="Optional webhook to be notified when training completes or fails." />
                     </Label>
                     <div className="col-span-2">
                       <Input
@@ -1435,15 +1435,7 @@ export default function AdminModels() {
                             }))
                           }
                         />
-                        <Label htmlFor="tuning">Hyperparameter Tuning</Label>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <Info className="h-3 w-3" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Enable Optuna hyperparameter search</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        <Label htmlFor="tuning" className="inline-flex items-center gap-2">Hyperparameter Tuning <HelpTip content="Run Optuna to search over hyperparameters; increases training time but can improve performance." /></Label>
                       </div>
                     </div>
                   </div>
@@ -1477,19 +1469,19 @@ export default function AdminModels() {
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="training">Training Jobs</TabsTrigger>
-            <TabsTrigger value="models">Model Registry</TabsTrigger>
-            <TabsTrigger value="curriculum">Curriculum</TabsTrigger>
-            <TabsTrigger value="datasets">Datasets</TabsTrigger>
-            <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
-            <TabsTrigger value="experiments">Experiments</TabsTrigger>
+            <TabsTrigger value="training"><span className="inline-flex items-center gap-1">Training Jobs <HelpTip content="Launch and monitor training pipelines." /></span></TabsTrigger>
+            <TabsTrigger value="models"><span className="inline-flex items-center gap-1">Model Registry <HelpTip content="Browse models, metrics, and deployment status." /></span></TabsTrigger>
+            <TabsTrigger value="curriculum"><span className="inline-flex items-center gap-1">Curriculum <HelpTip content="RL stage progression and results." /></span></TabsTrigger>
+            <TabsTrigger value="datasets"><span className="inline-flex items-center gap-1">Datasets <HelpTip content="Manage dataset versions and metadata." /></span></TabsTrigger>
+            <TabsTrigger value="sentiment"><span className="inline-flex items-center gap-1">Sentiment <HelpTip content="Social/news ingestion pipelines and health." /></span></TabsTrigger>
+            <TabsTrigger value="experiments"><span className="inline-flex items-center gap-1">Experiments <HelpTip content="MLflow tracking and reproducibility." /></span></TabsTrigger>
           </TabsList>
 
           {/* Training Jobs Tab - Enhanced with real-time workflow visualization */}
           <TabsContent value="training" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Active Training Jobs</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Active Training Jobs <HelpTip content="Real-time view of training pipelines across data prep, forecasting/RL, backtesting, and validation." /></CardTitle>
                 <CardDescription>
                   Monitor comprehensive AI model training workflows with data
                   preprocessing, forecasting, RL policy search, and validation
@@ -1555,8 +1547,8 @@ export default function AdminModels() {
                         {/* Training Pipeline Stages */}
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">
-                              Training Pipeline Progress
+                            <span className="text-sm font-medium inline-flex items-center gap-2">
+                              Training Pipeline Progress <HelpTip content="Overall completion of the multi-stage training workflow." />
                             </span>
                             <span className="text-sm text-muted-foreground">
                               {job.progress}% complete
@@ -1840,7 +1832,7 @@ export default function AdminModels() {
           <TabsContent value="models" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Model Registry</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Model Registry <HelpTip content="Catalog of trained models with metrics, explainability, and deployment controls." /></CardTitle>
                 <CardDescription>
                   Manage trained models with comprehensive performance metrics,
                   explainability, and deployment controls
@@ -2229,11 +2221,11 @@ export default function AdminModels() {
                   </div>
                   <div className="space-y-4">
                     <div className="border rounded-lg p-4 space-y-3">
-                      <div className="font-medium">
-                        Explainability & Diagnostics
+                      <div className="font-medium inline-flex items-center gap-2">
+                        Explainability & Diagnostics <HelpTip content="Inspect feature importance and compute SHAP values to understand model decisions." />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="diagModel">Model ID</Label>
+                        <Label htmlFor="diagModel" className="inline-flex items-center gap-2">Model ID <HelpTip content="Enter the model identifier to analyze (e.g., model_001)." /></Label>
                         <Input
                           id="diagModel"
                           value={diagModelId}
@@ -2371,7 +2363,7 @@ export default function AdminModels() {
           <TabsContent value="curriculum" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Curriculum Learning</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Curriculum Learning <HelpTip content="Stage-based RL training with advancement criteria like win ratio, drawdown, and Sharpe." /></CardTitle>
                 <CardDescription>
                   Progressive training stages for reinforcement learning agents
                   with adaptive advancement criteria
@@ -2524,7 +2516,7 @@ export default function AdminModels() {
           <TabsContent value="datasets" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Dataset Management</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Dataset Management <HelpTip content="DVC-versioned datasets with metadata, feature lists, and quality scoring." /></CardTitle>
                 <CardDescription>
                   DVC-versioned datasets with comprehensive metadata and feature
                   tracking
@@ -2708,7 +2700,7 @@ export default function AdminModels() {
           <TabsContent value="sentiment" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Sentiment Ingestion Pipelines</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Sentiment Ingestion Pipelines <HelpTip content="Ingest and score social/news data to augment models and generate signals." /></CardTitle>
                 <CardDescription>
                   Monitor Twitter and RSS news feeds for sentiment analysis and
                   market signal generation
@@ -2863,7 +2855,7 @@ export default function AdminModels() {
           <TabsContent value="experiments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Experiment Tracking</CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">Experiment Tracking <HelpTip content="Track MLflow runs, datasets, and reproducibility artifacts for every experiment." /></CardTitle>
                 <CardDescription>
                   MLflow experiments, DVC datasets, and reproducibility tracking
                 </CardDescription>
