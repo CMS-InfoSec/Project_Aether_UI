@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import SpotPriceChecker from './components/SpotPriceChecker';
+import HelpTip from '@/components/ui/help-tip';
 
 // Types
 interface Trade {
@@ -583,7 +584,7 @@ export default function TradesPositions() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <Label>Symbol</Label>
+                    <div className="flex items-center gap-2"><Label>Symbol</Label><HelpTip content="Market pair to evaluate, e.g., BTC/USDT. Must match supported eligibility list." /></div>
                     <div className="flex gap-2">
                       <Input value={symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} placeholder="BTC/USDT" />
                       <Select onValueChange={(v)=> setSymbol(v)}>
@@ -595,7 +596,7 @@ export default function TradesPositions() {
                     </div>
                   </div>
                   <div>
-                    <Label>Size</Label>
+                    <div className="flex items-center gap-2"><Label>Size</Label><HelpTip content="Position notional size used for the decision in base units (e.g., amount of base asset)." /></div>
                     <Input type="number" step="0.01" value={size} onChange={(e)=> setSize(parseFloat(e.target.value))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
@@ -652,7 +653,7 @@ export default function TradesPositions() {
                     <Input value={decision?.decision_id || ''} readOnly placeholder="Request a decision first" />
                   </div>
                   <div>
-                    <Label>Symbol</Label>
+                    <div className="flex items-center gap-2"><Label>Symbol</Label><HelpTip content="Market pair to evaluate, e.g., BTC/USDT. Must match supported eligibility list." /></div>
                     <Input value={decision?.symbol || symbol} onChange={(e)=> setSymbol(e.target.value.toUpperCase())} />
                   </div>
                   <div>
@@ -667,7 +668,7 @@ export default function TradesPositions() {
                     </Select>
                   </div>
                   <div>
-                    <Label>Size</Label>
+                    <div className="flex items-center gap-2"><Label>Size</Label><HelpTip content="Position notional size used for the decision in base units (e.g., amount of base asset)." /></div>
                     <Input type="number" step="0.01" value={execSize} onChange={(e)=> setExecSize(parseFloat(e.target.value))} />
                   </div>
                   <Button disabled={consoleLoading || !decision?.decision_id} onClick={()=> setConfirmOpen(true)}>Execute Trade</Button>

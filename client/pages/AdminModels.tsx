@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import apiFetch from '@/lib/apiClient';
 import copy from '@/lib/clipboard';
+import HelpTip from '@/components/ui/help-tip';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -1615,7 +1616,7 @@ export default function AdminModels() {
                         )}
                       </div>
                       <div className="space-y-2">
-                        <Label>Manual SHAP Input</Label>
+                        <div className="flex items-center gap-2"><Label>Manual SHAP Input</Label><HelpTip content="Enter numeric features to compute SHAP values. Accepts array or object of numbers." /></div>
                         <Textarea rows={4} value={shapInput} onChange={(e)=> setShapInput(e.target.value)} placeholder='[1.2, 0.4, -0.1, 2.3]' />
                         <div className="flex gap-2">
                           <Button onClick={runShap}>Run SHAP</Button>
