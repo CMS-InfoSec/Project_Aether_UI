@@ -6,7 +6,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // Pages
@@ -287,11 +287,7 @@ const AppRouter = () => {
         />
         <Route
           path="admin/governance"
-          element={
-            <ErrorBoundary>
-              <AdminGovernance />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=governance" replace />}
         />
         <Route
           path="admin/users"
@@ -303,11 +299,7 @@ const AppRouter = () => {
         />
         <Route
           path="admin/portfolio"
-          element={
-            <ErrorBoundary>
-              <AdminPortfolio />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=portfolio" replace />}
         />
         <Route
           path="admin/markets"
@@ -335,11 +327,7 @@ const AppRouter = () => {
         />
         <Route
           path="admin/system/config"
-          element={
-            <ErrorBoundary>
-              <AdminSystemConfig />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=config" replace />}
         />
         <Route
           path="admin/system/control"
@@ -351,43 +339,23 @@ const AppRouter = () => {
         />
         <Route
           path="admin/backtest"
-          element={
-            <ErrorBoundary>
-              <AdminBacktest />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=reports" replace />}
         />
         <Route
           path="admin/feedback"
-          element={
-            <ErrorBoundary>
-              <AdminFeedback />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=feedback" replace />}
         />
         <Route
           path="admin/strategy-review"
-          element={
-            <ErrorBoundary>
-              <AdminStrategyReview />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=review" replace />}
         />
         <Route
           path="admin/plugins"
-          element={
-            <ErrorBoundary>
-              <AdminPlugins />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=plugins" replace />}
         />
         <Route
           path="admin/automation-social"
-          element={
-            <ErrorBoundary>
-              <AdminAutomationSocial />
-            </ErrorBoundary>
-          }
+          element={<Navigate to="/admin/dashboard?tab=automation" replace />}
         />
         <Route
           path="admin/push-console"
