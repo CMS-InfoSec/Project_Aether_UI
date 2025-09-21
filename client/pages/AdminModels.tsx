@@ -676,10 +676,13 @@ export default function AdminModels() {
       const parsed = JSON.parse(shapInput || '[]');
       if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
       const r = await apiFetch(`/api/shap/${encodeURIComponent(diagModelId)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: parsed }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.detail || 'Failed');
-      setShapResult(j.data || j);
-      toast({ title:'SHAP ready', description:`Request ${(j.data?.request_id||j.request_id||'')}` });
+      const text = await r.text();
+      let j: any = {};
+      if (text && text.trim().length) { try { j = JSON.parse(text); } catch { /* ignore parse error */ } }
+      if (!r.ok) throw new Error(j.detail || `HTTP ${r.status}`);
+      const data = j.data || j;
+      setShapResult(data);
+      toast({ title:'SHAP ready', description:`Request ${(data?.request_id||'')}` });
     } catch(e:any) { toast({ title:'SHAP failed', description: e.message || 'Failed', variant:'destructive' }); }
   };
 
