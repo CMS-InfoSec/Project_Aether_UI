@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import {
   CandlestickChart,
   TrendingUp,
@@ -153,7 +154,7 @@ export default function TradesPositions() {
 
     try {
       const offset = (page - 1) * itemsPerPage;
-      const response = await fetch(`/api/trades/recent?limit=${itemsPerPage}&offset=${offset}`, {
+      const response = await apiFetch(`/api/trades/recent?limit=${itemsPerPage}&offset=${offset}`, {
         cache: 'no-cache',
         headers: { 'Cache-Control': 'no-cache' }
       });
@@ -184,7 +185,7 @@ export default function TradesPositions() {
 
     try {
       const offset = (page - 1) * itemsPerPage;
-      const response = await fetch(`/api/positions/open?limit=${itemsPerPage}&offset=${offset}`, {
+      const response = await apiFetch(`/api/positions/open?limit=${itemsPerPage}&offset=${offset}`, {
         cache: 'no-cache',
         headers: { 'Cache-Control': 'no-cache' }
       });
@@ -212,7 +213,7 @@ export default function TradesPositions() {
     setVetoingTrades(prev => new Set(prev).add(tradeId));
 
     try {
-      const response = await fetch('/api/admin/trades/veto', {
+      const response = await apiFetch('/api/admin/trades/veto', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -336,7 +337,7 @@ export default function TradesPositions() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await fetch('/api/markets/eligible?limit=100');
+        const r = await apiFetch('/api/markets/eligible?limit=100');
         const j = await r.json();
         const syms = (j.items || []).map((m: any) => m.symbol);
         setEligibleSymbols(syms);
@@ -612,7 +613,7 @@ export default function TradesPositions() {
                   <Button disabled={consoleLoading} onClick={async ()=>{
                     setConsoleLoading(true);
                     try {
-                      const res = await fetch('/api/trades/decision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, size, include: includeContext }) });
+                      const res = await apiFetch('/api/trades/decision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, size, include: includeContext }) });
                       if (!res.ok) throw new Error(`HTTP ${res.status}`);
                       const j = await res.json();
                       setDecision(j.data);
@@ -687,7 +688,7 @@ export default function TradesPositions() {
                         <Button onClick={async ()=>{
                           setConsoleLoading(true);
                           try {
-                            const res = await fetch('/api/trades/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision_id: decision?.decision_id, symbol: decision?.symbol || symbol, side: execSide, size: execSize }) });
+                            const res = await apiFetch('/api/trades/execute', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ decision_id: decision?.decision_id, symbol: decision?.symbol || symbol, side: execSide, size: execSize }) });
                             if (!res.ok) {
                               const j = await res.json().catch(()=>({detail:'Failed'}));
                               throw new Error(j.detail || `HTTP ${res.status}`);

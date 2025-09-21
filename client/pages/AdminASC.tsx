@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { RefreshCw, Activity, CircleAlert, Rocket, CheckCircle, XCircle, Download } from 'lucide-react';
+import apiFetch from '@/lib/apiClient';
 
 interface Policy { name: string; enabled: boolean; weight: number; kpis?: { sharpe?: number; win_rate?: number } }
 interface StatusResp { weights: Record<string, number>; policies: Policy[]; exploration?: number; kpis?: Record<string, Record<string, any>>; rl?: { online: boolean; promoted_checkpoint?: string }; degraded?: boolean }
@@ -28,7 +29,7 @@ export default function AdminASC() {
   const load = async () => {
     setError(null); setLoading(true);
     try {
-      const r = await fetch('/api/strategy/controller/status');
+      const r = await apiFetch('/api/strategy/controller/status');
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       const data = (j.status === 'success' ? j.data : j) as StatusResp;
@@ -53,7 +54,7 @@ export default function AdminASC() {
     if (!res.ok) { toast({ title:'Validation', description:'Weights L1 norm must be > 0', variant:'destructive' }); return; }
     setSaving(true);
     try {
-      const r = await fetch('/api/strategy/controller/reweight', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ weights: res.weights }) });
+      const r = await apiFetch('/api/strategy/controller/reweight', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ weights: res.weights }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || 'Failed to save');
       setPersistenceSkipped(!!j.persistence_skipped);
@@ -68,7 +69,7 @@ export default function AdminASC() {
     // optimistic
     setStatus(s=> s? ({ ...s, policies: s.policies.map(p=> p.name===name? { ...p, enabled: enable }: p) }) : s);
     try {
-      const r = await fetch(`/api/strategy/controller/policy/${encodeURIComponent(name)}/${enable? 'activate':'deactivate'}`, { method:'POST' });
+      const r = await apiFetch(`/api/strategy/controller/policy/${encodeURIComponent(name)}/${enable? 'activate':'deactivate'}`, { method:'POST' });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       toast({ title: enable? 'Policy activated':'Policy deactivated' });
     } catch(e:any) {
@@ -81,7 +82,7 @@ export default function AdminASC() {
 
   const fetchHistory = async () => {
     setHistLoading(true);
-    try { const r = await fetch(`/api/strategy/controller/history?symbol=${encodeURIComponent(histSymbol)}`); const j = await r.json(); if (j.status==='success') setHistory(j.data.items||[]); else setHistory(j.items||[]); }
+    try { const r = await apiFetch(`/api/strategy/controller/history?symbol=${encodeURIComponent(histSymbol)}`); const j = await r.json(); if (j.status==='success') setHistory(j.data.items||[]); else setHistory(j.items||[]); }
     catch { /* noop */ }
     finally { setHistLoading(false); }
   };

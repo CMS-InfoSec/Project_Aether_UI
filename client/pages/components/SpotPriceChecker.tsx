@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Input } from '@/components/ui/input';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,7 +27,7 @@ export default function SpotPriceChecker(){
     if (v){ setError(v); setAuto(false); return; }
     setError(null); setLoading(true);
     try{
-      const r=await fetch(`/api/markets/price?symbol=${encodeURIComponent(symbol.trim().toUpperCase())}`);
+      const r=await apiFetch(`/api/markets/price?symbol=${encodeURIComponent(symbol.trim().toUpperCase())}`);
       if (r.status===400){ const j=await r.json(); setError(j.detail?.message||'invalid'); setAuto(false); return; }
       if (r.status===503){ const j=await r.json().catch(()=>({message:'trading disabled'})); setKillWarn(j.message||'trading disabled'); setAuto(false); return; }
       if (!r.ok) throw new Error('fetch failed');

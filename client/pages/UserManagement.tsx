@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -118,10 +119,10 @@ export default function UserManagement() {
     (async () => {
       try {
         const [meRes, profRes, foundersRes, bootRes] = await Promise.all([
-          fetch('/api/auth/me'),
-          fetch('/api/user/profile'),
-          fetch('/api/founders'),
-          fetch('/api/founders/bootstrap-status'),
+          apiFetch('/api/auth/me'),
+          apiFetch('/api/user/profile'),
+          apiFetch('/api/founders'),
+          apiFetch('/api/founders/bootstrap-status'),
         ]);
         const me = await meRes.json().catch(() => null);
         const prof = await profRes.json().catch(() => null);
@@ -145,7 +146,7 @@ export default function UserManagement() {
         offset: String(Math.max(0, offset)),
         search: searchTerm,
       });
-      const response = await fetch(`/api/users/pending?${params}`, { cache: 'no-store' });
+      const response = await apiFetch(`/api/users/pending?${params}`, { cache: 'no-store' });
       const data = await response.json().catch(() => ({}));
 
       if ([422, 502, 503, 504].includes(response.status)) {
@@ -181,7 +182,7 @@ export default function UserManagement() {
 
     setIsInviting(true);
     try {
-      const response = await fetch('/api/users/invite', {
+      const response = await apiFetch('/api/users/invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(inviteForm),
@@ -227,7 +228,7 @@ export default function UserManagement() {
     }
     setIsApproving(true);
     try {
-      const response = await fetch('/api/users/approve', {
+      const response = await apiFetch('/api/users/approve', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: selectedUser.id, assignedRole }),
@@ -253,7 +254,7 @@ export default function UserManagement() {
 
   const handleRejectUser = async (userId: string) => {
     try {
-      const response = await fetch(`/api/users/pending/${userId}`, { method: 'DELETE' });
+      const response = await apiFetch(`/api/users/pending/${userId}`, { method: 'DELETE' });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.error || 'Failed to reject user');
       toast({ title: 'User Rejected', description: 'User invitation has been rejected.' });
@@ -267,7 +268,7 @@ export default function UserManagement() {
   useEffect(() => {
     const fetchUserSettings = async () => {
       try {
-        const response = await fetch('/api/users/settings');
+        const response = await apiFetch('/api/users/settings');
         const data = await response.json();
         if (response.ok && data.status === 'success') setUserSettings(data.data);
       } catch {}
@@ -292,7 +293,7 @@ export default function UserManagement() {
 
     setIsUpdatingSettings(true);
     try {
-      const response = await fetch('/api/users/settings', {
+      const response = await apiFetch('/api/users/settings', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userSettings),
@@ -311,7 +312,7 @@ export default function UserManagement() {
   const refreshFounders = async () => {
     setFoundersError(null);
     try {
-      const r = await fetch('/api/founders');
+      const r = await apiFetch('/api/founders');
       if (r.ok) {
         const j = await r.json();
         setFounders(Array.isArray(j) && j.length ? j : FALLBACK_FOUNDERS);
@@ -326,7 +327,7 @@ export default function UserManagement() {
   const tryBootstrap = async () => {
     setIsBootstrapping(true);
     try {
-      const r = await fetch('/api/founders/bootstrap', {
+      const r = await apiFetch('/api/founders/bootstrap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: newFounder.email, password: 'ChangeMe123!', name: newFounder.name }),
@@ -357,7 +358,7 @@ export default function UserManagement() {
   const removeFounder = async (id: string) => {
     if (!confirm('Remove founder? This may force logout.')) return;
     try {
-      const r = await fetch(`/api/founders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const r = await apiFetch(`/api/founders/${encodeURIComponent(id)}`, { method: 'DELETE' });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j.error || 'Failed to remove founder');
@@ -372,7 +373,7 @@ export default function UserManagement() {
   const updateRiskTier = async (tier: 'aggressive' | 'balanced' | 'conservative') => {
     setIsUpdatingProfile(true);
     try {
-      const r = await fetch('/api/user/profile', {
+      const r = await apiFetch('/api/user/profile', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ risk_tier: tier }),

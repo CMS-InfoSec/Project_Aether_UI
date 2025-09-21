@@ -1,4 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -111,7 +112,7 @@ export default function Governance() {
   // Fetch proposals
   const fetchProposals = async () => {
     try {
-      const response = await fetch('/api/admin/proposals');
+      const response = await apiFetch('/api/admin/proposals');
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -127,7 +128,7 @@ export default function Governance() {
   // Fetch feedback summary
   const fetchFeedbackSummary = async () => {
     try {
-      const response = await fetch('/api/admin/feedback');
+      const response = await apiFetch('/api/admin/feedback');
       const data = await response.json();
 
       if (data.status === 'success') {
@@ -163,7 +164,7 @@ export default function Governance() {
 
     setIsCreatingProposal(true);
     try {
-      const response = await fetch(`/api/admin/proposals/${newProposal.id}`, {
+      const response = await apiFetch(`/api/admin/proposals/${newProposal.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -212,7 +213,7 @@ export default function Governance() {
 
     setIsCastingVote(true);
     try {
-      const response = await fetch(`/api/admin/proposals/${selectedProposal}/vote`, {
+      const response = await apiFetch(`/api/admin/proposals/${selectedProposal}/vote`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +253,7 @@ export default function Governance() {
 
     setIsDeploying(true);
     try {
-      const response = await fetch(`/api/admin/deploy/${deployingProposal.id}`, {
+      const response = await apiFetch(`/api/admin/deploy/${deployingProposal.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +308,7 @@ export default function Governance() {
 
     setIsSubmittingFeedback(true);
     try {
-      const response = await fetch('/api/feedback', {
+      const response = await apiFetch('/api/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

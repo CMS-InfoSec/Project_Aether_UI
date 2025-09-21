@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -204,7 +205,7 @@ export default function AdminMarkets() {
       params.append('limit', currentFilters.limit.toString());
       params.append('offset', currentFilters.offset.toString());
 
-      const response = await fetch(`/api/markets/eligible?${params}`);
+      const response = await apiFetch(`/api/markets/eligible?${params}`);
 
       if (response.status === 401) throw new Error('Unauthorized - please login');
       if (response.status === 403) throw new Error('Forbidden - admin access required');
@@ -233,7 +234,7 @@ export default function AdminMarkets() {
   // Fetch market statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/markets/stats');
+      const response = await apiFetch('/api/markets/stats');
       if (response.ok) {
         const data = await response.json();
         if (data.status === 'success') setStats(data.data);
@@ -285,7 +286,7 @@ export default function AdminMarkets() {
       params.append('sort', filters.sort);
 
       // Optionally ask server for export metadata headers
-      const metaResp = await fetch(`/api/markets/export?${params}`);
+      const metaResp = await apiFetch(`/api/markets/export?${params}`);
       let headerLast = metaResp.headers.get('X-Last-Refreshed') || hdrLastRefreshed || '';
       let headerSrc = metaResp.headers.get('X-Source') || hdrSource || '';
       let headerVer = metaResp.headers.get('X-Eligibility-Version') || hdrVersion || '';
@@ -298,7 +299,7 @@ export default function AdminMarkets() {
         const p = new URLSearchParams(params);
         p.set('limit', String(limit));
         p.set('offset', String(offset));
-        const r = await fetch(`/api/markets/eligible?${p.toString()}`);
+        const r = await apiFetch(`/api/markets/eligible?${p.toString()}`);
         if (!r.ok) break;
         const j: MarketResponse = await r.json();
         all = all.concat(j.items);
@@ -458,7 +459,7 @@ export default function AdminMarkets() {
                 if (!symbol || !/^[A-Z0-9]+\/[A-Z0-9]+$/.test(symbol)) { toast({ title:'Invalid symbol', description:'Use format BASE/QUOTE', variant:'destructive' }); return; }
                 if (reason.trim().length < 10){ toast({ title:'Reason too short', description:'Minimum 10 characters', variant:'destructive' }); return; }
                 try{
-                  const r = await fetch('/api/admin/strategy-override', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, action, reason }) });
+                  const r = await apiFetch('/api/admin/strategy-override', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, action, reason }) });
                   if (r.status === 201){ const j = await r.json(); toast({ title:'Override applied', description:`${j.data.symbol} → ${j.data.override}` }); fetchMarkets(filters); }
                   else if (r.status === 403){ const j = await r.json().catch(()=>({detail:'Founder approvals required'})); toast({ title:'Approval required', description: j.detail || 'Founder approvals required', variant:'destructive' }); }
                   else { const j = await r.json().catch(()=>({detail:'Failed'})); toast({ title:'Error', description: j.detail || 'Failed', variant:'destructive' }); }

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -241,7 +242,7 @@ export default function AdminDashboard() {
   const loadDailyReport = async () => {
     setIsRefreshing(prev => ({ ...prev, daily: true }));
     try {
-      const response = await fetch('/api/reports/daily');
+      const response = await apiFetch('/api/reports/daily');
       const data = await response.json();
       if (data.status === 'success') setDailyReport(data.data);
       else throw new Error(data.error || 'Failed to load daily report');
@@ -256,7 +257,7 @@ export default function AdminDashboard() {
   const loadWeeklyReport = async () => {
     setIsRefreshing(prev => ({ ...prev, weekly: true }));
     try {
-      const response = await fetch('/api/reports/weekly');
+      const response = await apiFetch('/api/reports/weekly');
       const data = await response.json();
       if (data.status === 'success') setWeeklyReport(data.data);
       else throw new Error(data.error || 'Failed to load weekly report');
@@ -271,7 +272,7 @@ export default function AdminDashboard() {
   const loadPerAssetReport = async () => {
     setIsRefreshing(prev => ({ ...prev, perAsset: true }));
     try {
-      const response = await fetch('/api/reports/per-asset');
+      const response = await apiFetch('/api/reports/per-asset');
       const data = await response.json();
       if (data.status === 'success') setPerAssetReport(data.data);
       else throw new Error(data.error || 'Failed to load per-asset report');
@@ -286,7 +287,7 @@ export default function AdminDashboard() {
   const exportCSV = async (reportType: 'daily' | 'weekly' | 'per-asset') => {
     setIsRefreshing(prev => ({ ...prev, csv: true }));
     try {
-      const response = await fetch(`/api/reports/export?type=${reportType}`);
+      const response = await apiFetch(`/api/reports/export?type=${reportType}`);
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -320,7 +321,7 @@ export default function AdminDashboard() {
           return prev + 10;
         });
       }, 200);
-      const response = await fetch('/api/reports/backtest');
+      const response = await apiFetch('/api/reports/backtest');
       clearInterval(progressInterval);
       setBacktestProgress(100);
       if (response.ok) {
@@ -359,7 +360,7 @@ export default function AdminDashboard() {
         unreadOnly: showUnreadOnly.toString(),
         ...(notificationFilter !== 'all' && { severity: notificationFilter }),
       });
-      const response = await fetch(`/api/notifications?${params}`);
+      const response = await apiFetch(`/api/notifications?${params}`);
       const data = await response.json();
       if (data.status === 'success') setNotificationData(data.data);
       else throw new Error(data.error || 'Failed to load notifications');
@@ -373,7 +374,7 @@ export default function AdminDashboard() {
 
   const markNotificationAsRead = async (id: string, read: boolean = true) => {
     try {
-      const response = await fetch(`/api/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ read }) });
+      const response = await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ read }) });
       if (response.ok) {
         setNotificationData(prev => {
           if (!prev) return prev;
@@ -387,7 +388,7 @@ export default function AdminDashboard() {
 
   const markAllAsRead = async () => {
     try {
-      const response = await fetch('/api/notifications/mark-all-read', { method: 'POST' });
+      const response = await apiFetch('/api/notifications/mark-all-read', { method: 'POST' });
       if (response.ok) {
         await loadNotifications();
         toast({ title: 'All Read', description: 'All notifications marked as read' });

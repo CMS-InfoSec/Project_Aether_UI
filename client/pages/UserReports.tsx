@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -120,7 +121,7 @@ export default function UserReports() {
   const loadDailyReport = useCallback(async () => {
     setIsLoading(prev => ({ ...prev, daily: true }));
     try {
-      const response = await fetch('/api/reports/daily');
+      const response = await apiFetch('/api/reports/daily');
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -147,7 +148,7 @@ export default function UserReports() {
   const loadWeeklyReport = useCallback(async () => {
     setIsLoading(prev => ({ ...prev, weekly: true }));
     try {
-      const response = await fetch('/api/reports/weekly');
+      const response = await apiFetch('/api/reports/weekly');
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -174,7 +175,7 @@ export default function UserReports() {
   const loadPerAssetReport = useCallback(async () => {
     setIsLoading(prev => ({ ...prev, perAsset: true }));
     try {
-      const response = await fetch('/api/reports/per-asset');
+      const response = await apiFetch('/api/reports/per-asset');
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -210,7 +211,7 @@ export default function UserReports() {
   const exportCSV = async (reportType: 'daily' | 'weekly' | 'per-asset') => {
     setIsLoading(prev => ({ ...prev, csv: true }));
     try {
-      const response = await fetch(`/api/reports/export?type=${reportType}`);
+      const response = await apiFetch(`/api/reports/export?type=${reportType}`);
       
       if (response.ok) {
         const blob = await response.blob();
@@ -259,7 +260,7 @@ export default function UserReports() {
         });
       }, 200);
 
-      const response = await fetch('/api/reports/backtest?format=daily');
+      const response = await apiFetch('/api/reports/backtest?format=daily');
       
       clearInterval(progressInterval);
       setBacktestProgress(100);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -360,7 +361,7 @@ export default function AdminModels() {
   // API integration functions
   const fetchTrainingJobs = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/jobs');
+      const response = await apiFetch('/api/models/jobs');
       const data = await response.json();
       if (data.status === 'success') {
         setTrainingJobs(data.data);
@@ -379,11 +380,11 @@ export default function AdminModels() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/history');
+      const response = await apiFetch('/api/models/history');
       const data = await response.json();
       if (data.status === 'success') {
         // history items contain reduced fields; we will refetch full models for rich cards if needed
-        const fullResp = await fetch('/api/models');
+        const fullResp = await apiFetch('/api/models');
         const full = await fullResp.json().catch(()=>({status:'',data:[]}));
         const map: Record<string, any> = {};
         if (full.status === 'success') {
@@ -418,7 +419,7 @@ export default function AdminModels() {
 
   const fetchCurriculum = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/curriculum');
+      const response = await apiFetch('/api/models/curriculum');
       const data = await response.json();
       if (data.status === 'success') {
         setCurriculumStages(data.data);
@@ -432,7 +433,7 @@ export default function AdminModels() {
 
   const fetchDatasets = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/datasets');
+      const response = await apiFetch('/api/models/datasets');
       const data = await response.json();
       if (data.status === 'success') {
         setDatasets(data.data);
@@ -446,7 +447,7 @@ export default function AdminModels() {
 
   const fetchSentimentPipelines = useCallback(async () => {
     try {
-      const response = await fetch('/api/models/sentiment-pipelines');
+      const response = await apiFetch('/api/models/sentiment-pipelines');
       const data = await response.json();
       if (data.status === 'success') {
         setSentimentPipelines(data.data);
@@ -534,7 +535,7 @@ export default function AdminModels() {
     setIsProcessing(true);
 
     try {
-      const response = await fetch('/api/models/train', {
+      const response = await apiFetch('/api/models/train', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -591,7 +592,7 @@ export default function AdminModels() {
   // Cancel training job
   const cancelTraining = async (jobId: string) => {
     try {
-      const response = await fetch(`/api/models/train/${jobId}`, {
+      const response = await apiFetch(`/api/models/train/${jobId}`, {
         method: 'DELETE'
       });
 
@@ -622,7 +623,7 @@ export default function AdminModels() {
       return;
     }
     try {
-      const response = await fetch(`/api/models/deploy/${modelId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ founderApproval }) });
+      const response = await apiFetch(`/api/models/deploy/${modelId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ founderApproval }) });
       const data = await response.json();
       if (data.status === 'success') { toast({ title: "Model Deployed", description: "Model deployed" }); fetchModels(); setFounderApproval(false); } else { throw new Error(data.message); }
     } catch (error) { toast({ title: "Deployment Failed", description: error instanceof Error ? error.message : "Failed to deploy model", variant: "destructive" }); }
@@ -631,7 +632,7 @@ export default function AdminModels() {
   const promoteModel = async (modelId: string) => {
     if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for promotion', variant:'destructive' }); return; }
     try {
-      const r = await fetch('/api/models/promote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId, founderApproval: true }) });
+      const r = await apiFetch('/api/models/promote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId, founderApproval: true }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || 'Failed');
       toast({ title:'Promoted', description:`Model ${modelId} promoted` });
@@ -641,16 +642,16 @@ export default function AdminModels() {
   };
 
   const startShadow = async (modelId: string) => {
-    try { const r = await fetch('/api/models/shadow/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Started', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Failed', description:e.message||'Failed', variant:'destructive' }); }
+    try { const r = await apiFetch('/api/models/shadow/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Started', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Failed', description:e.message||'Failed', variant:'destructive' }); }
   };
 
   const stopShadow = async (modelId: string) => {
-    try { const r = await fetch('/api/models/shadow/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Stopped', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Stop Failed', description:e.message||'Failed', variant:'destructive' }); }
+    try { const r = await apiFetch('/api/models/shadow/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Stopped', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Stop Failed', description:e.message||'Failed', variant:'destructive' }); }
   };
 
   const rollbackModel = async (fromModelId: string, toModelId: string) => {
     if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for rollback', variant:'destructive' }); return; }
-    try { const r = await fetch('/api/models/rollback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Rollback Complete', description:`${fromModelId} → ${toModelId}` }); setFounderApproval(false); fetchModels(); } catch(e:any){ toast({ title:'Rollback Failed', description:e.message||'Failed', variant:'destructive' }); }
+    try { const r = await apiFetch('/api/models/rollback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Rollback Complete', description:`${fromModelId} → ${toModelId}` }); setFounderApproval(false); fetchModels(); } catch(e:any){ toast({ title:'Rollback Failed', description:e.message||'Failed', variant:'destructive' }); }
   };
 
   // Explainability panels state
@@ -665,7 +666,7 @@ export default function AdminModels() {
   const runExplain = async () => {
     if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
     setExplainLoading(true);
-    try { const r = await fetch(`/api/models/explain/${encodeURIComponent(diagModelId)}`); const j = await r.json(); setExplain(j); } catch { toast({ title:'Explain failed', description:'Request failed', variant:'destructive' }); } finally { setExplainLoading(false); }
+    try { const r = await apiFetch(`/api/models/explain/${encodeURIComponent(diagModelId)}`); const j = await r.json(); setExplain(j); } catch { toast({ title:'Explain failed', description:'Request failed', variant:'destructive' }); } finally { setExplainLoading(false); }
   };
 
   const runShap = async () => {
@@ -673,7 +674,7 @@ export default function AdminModels() {
     try {
       const parsed = JSON.parse(shapInput || '[]');
       if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
-      const r = await fetch(`/api/shap/${encodeURIComponent(diagModelId)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: parsed }) });
+      const r = await apiFetch(`/api/shap/${encodeURIComponent(diagModelId)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: parsed }) });
       const j = await r.json();
       if (!r.ok) throw new Error(j.detail || 'Failed');
       setShapResult(j.data || j);
@@ -1605,7 +1606,7 @@ export default function AdminModels() {
                         <Input id="diagModel" value={diagModelId} onChange={(e)=> setDiagModelId(e.target.value)} placeholder="model_001" />
                         <div className="flex gap-2">
                           <Button onClick={runExplain} disabled={explainLoading}>Fetch Feature Importance</Button>
-                          <Button variant="outline" onClick={()=>{ (async()=>{ try{ setRationalesLoading(true); const r=await fetch('/api/strategies/explain'); const j=await r.json(); setRationales(j.items||j||[]);} catch{} finally{ setRationalesLoading(false);} })(); }}>Load Strategy Rationales</Button>
+                          <Button variant="outline" onClick={()=>{ (async()=>{ try{ setRationalesLoading(true); const r=await apiFetch('/api/strategies/explain'); const j=await r.json(); setRationales(j.items||j||[]);} catch{} finally{ setRationalesLoading(false);} })(); }}>Load Strategy Rationales</Button>
                         </div>
                         {explain && explain.features && (
                           <div className="text-xs p-2 bg-muted rounded">

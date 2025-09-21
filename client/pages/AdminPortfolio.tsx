@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -169,7 +170,7 @@ export default function AdminPortfolio() {
       params.set('limit', limit.toString());
       params.set('offset', offset.toString());
 
-      const response = await fetch(`/api/admin/portfolio?${params}`);
+      const response = await apiFetch(`/api/admin/portfolio?${params}`);
       
       if (response.status === 403) {
         setError('Access denied - admin role required');
@@ -200,7 +201,7 @@ export default function AdminPortfolio() {
   // Fetch portfolio statistics
   const fetchStats = async () => {
     try {
-      const response = await fetch('/api/admin/portfolio/stats');
+      const response = await apiFetch('/api/admin/portfolio/stats');
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success') {
@@ -215,7 +216,7 @@ export default function AdminPortfolio() {
   // Fetch rebalance history
   const fetchRebalanceHistory = async () => {
     try {
-      const response = await fetch('/api/admin/portfolio/rebalance-history');
+      const response = await apiFetch('/api/admin/portfolio/rebalance-history');
       if (response.ok) {
         const result = await response.json();
         if (result.status === 'success') {
@@ -336,7 +337,7 @@ export default function AdminPortfolio() {
     setIsRebalancing(true);
     
     try {
-      const response = await fetch('/api/admin/portfolio/rebalance', {
+      const response = await apiFetch('/api/admin/portfolio/rebalance', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -970,7 +971,7 @@ export default function AdminPortfolio() {
               }catch(e:any){ setRowError(e.message||'Invalid JSON'); return; }
               setRowIsSubmitting(true);
               try{
-                const r = await fetch('/api/admin/portfolio/rebalance',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prices: JSON.parse(rowPricesJson), returns: JSON.parse(rowReturnsJson), actor:'admin@example.com', target_user_ids: selected ? [selected.user_id] : undefined }) });
+                const r = await apiFetch('/api/admin/portfolio/rebalance',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ prices: JSON.parse(rowPricesJson), returns: JSON.parse(rowReturnsJson), actor:'admin@example.com', target_user_ids: selected ? [selected.user_id] : undefined }) });
                 const j = await r.json().catch(()=>({}));
                 if (!r.ok){ throw new Error(j.message || j.error || 'Rebalance failed'); }
                 toast({ title:'Rebalance Started', description:`Queued across ${j.rebalanced} portfolios` });

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -275,7 +276,7 @@ export default function WalletHedge() {
     
     try {
       const offset = (page - 1) * itemsPerPage;
-      const response = await fetch(`/api/wallet/hedges?limit=${itemsPerPage}&offset=${offset}`);
+      const response = await apiFetch(`/api/wallet/hedges?limit=${itemsPerPage}&offset=${offset}`);
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -302,7 +303,7 @@ export default function WalletHedge() {
     setErrors(prev => ({ ...prev, balances: '' }));
     
     try {
-      const response = await fetch('/api/wallet/balances');
+      const response = await apiFetch('/api/wallet/balances');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -329,7 +330,7 @@ export default function WalletHedge() {
     setErrors(prev => ({ ...prev, withdrawable: '' }));
     
     try {
-      const response = await fetch('/api/wallet/withdrawable');
+      const response = await apiFetch('/api/wallet/withdrawable');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -356,7 +357,7 @@ export default function WalletHedge() {
     setErrors(prev => ({ ...prev, snapshot: '' }));
     
     try {
-      const response = await fetch('/api/wallet/snapshot');
+      const response = await apiFetch('/api/wallet/snapshot');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -383,7 +384,7 @@ export default function WalletHedge() {
     setErrors(prev => ({ ...prev, settings: '' }));
     
     try {
-      const response = await fetch('/api/hedge/percent');
+      const response = await apiFetch('/api/hedge/percent');
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -411,7 +412,7 @@ export default function WalletHedge() {
     setLoading(prev => ({ ...prev, executeHedge: true }));
     
     try {
-      const response = await fetch('/api/hedge', {
+      const response = await apiFetch('/api/hedge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -468,7 +469,7 @@ export default function WalletHedge() {
     setLoading(prev => ({ ...prev, saveSettings: true }));
     
     try {
-      const response = await fetch('/api/hedge/percent', {
+      const response = await apiFetch('/api/hedge/percent', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -512,10 +513,10 @@ export default function WalletHedge() {
     fetchWithdrawableFunds();
     fetchHedgeSettings();
     fetchLiveSnapshot();
-    (async()=>{ try{ const r=await fetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
-    (async()=>{ try{ const r=await fetch('/api/config/runtime'); const j=await r.json(); setRuntimeConfig(j.data);}catch{} finally { setLoading(prev=>({...prev,runtime:false})); }})();
-    (async()=>{ try{ const r=await fetch('/api/user/profile'); const j=await r.json(); setUserProfile(j.data);}catch{} finally { setLoading(prev=>({...prev,profile:false})); }})();
-    (async()=>{ try{ const r=await fetch('/api/user/trading-settings'); const j=await r.json(); setCurrentOverrides(j.data.settings); setOverrideForm(j.data.settings);}catch{}})();
+    (async()=>{ try{ const r=await apiFetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
+    (async()=>{ try{ const r=await apiFetch('/api/config/runtime'); const j=await r.json(); setRuntimeConfig(j.data);}catch{} finally { setLoading(prev=>({...prev,runtime:false})); }})();
+    (async()=>{ try{ const r=await apiFetch('/api/user/profile'); const j=await r.json(); setUserProfile(j.data);}catch{} finally { setLoading(prev=>({...prev,profile:false})); }})();
+    (async()=>{ try{ const r=await apiFetch('/api/user/trading-settings'); const j=await r.json(); setCurrentOverrides(j.data.settings); setOverrideForm(j.data.settings);}catch{}})();
   }, [fetchHedgeHistory, fetchWalletBalances, fetchWithdrawableFunds, fetchHedgeSettings, fetchLiveSnapshot]);
 
   // Refresh data when page changes
@@ -529,7 +530,7 @@ export default function WalletHedge() {
     fetchWalletBalances();
     fetchWithdrawableFunds();
     fetchHedgeSettings();
-    (async()=>{ try{ const r=await fetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
+    (async()=>{ try{ const r=await apiFetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
   };
 
   // Pagination
@@ -1248,7 +1249,7 @@ export default function WalletHedge() {
                   setLoading(prev=>({...prev, overrides:true}));
                   try{
                     const body = { userId:'user_1', settings: overrideForm, actor:'self' };
-                    const r=await fetch('/api/config/user',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+                    const r=await apiFetch('/api/config/user',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
                     if (!r.ok){ const j=await r.json().catch(()=>({error:'Failed'})); throw new Error(j.message||j.error||'Failed'); }
                     const j=await r.json(); toast({ title:'Saved', description:'Overrides updated' }); setCurrentOverrides(overrideForm); setConfirmOverridesOpen(false);
                   }catch(e:any){ toast({ title:'Save failed', description: e.message||'Failed', variant:'destructive' }); }
@@ -1269,7 +1270,7 @@ export default function WalletHedge() {
               </div>
               <Button onClick={async()=>{
                 setLoading(prev=>({...prev, tradeDiag:true}));
-                try{ const r=await fetch(`/api/trades/${encodeURIComponent(tradeDiagId)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const j=await r.json(); setTradeDiag(j.data); }
+                try{ const r=await apiFetch(`/api/trades/${encodeURIComponent(tradeDiagId)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const j=await r.json(); setTradeDiag(j.data); }
                 catch{ setTradeDiag(null); toast({ title:'Not found', description:'Trade not found or unavailable', variant:'destructive' }); }
                 finally{ setLoading(prev=>({...prev, tradeDiag:false})); }
               }}>Lookup</Button>
