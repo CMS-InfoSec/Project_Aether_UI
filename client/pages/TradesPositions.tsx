@@ -604,17 +604,23 @@ export default function TradesPositions() {
                     <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.sentiment} onChange={e=> setIncludeContext(s=>({...s,sentiment:e.target.checked}))} /><span>Sentiment</span></label>
                     <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.exposure} onChange={e=> setIncludeContext(s=>({...s,exposure:e.target.checked}))} /><span>Exposure</span></label>
                   </div>
-                  <Button disabled={consoleLoading} onClick={async ()=>{
+                  <Button disabled={consoleLoading || !symbol || size <= 0} onClick={async ()=>{
+                    const sym = (symbol || '').trim().toUpperCase();
+                    if (!sym) { toast({ title:'Validation', description:'Symbol is required', variant:'destructive' }); return; }
+                    if (!size || size <= 0) { toast({ title:'Validation', description:'Size must be greater than 0', variant:'destructive' }); return; }
                     setConsoleLoading(true);
                     try {
-                      const res = await apiFetch('/api/trades/decision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol, size, include: includeContext }) });
-                      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                      const res = await apiFetch('/api/trades/decision', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: sym, size, include: includeContext }) });
+                      if (!res.ok) {
+                        const j = await res.json().catch(()=>({detail:`HTTP ${res.status}`}));
+                        throw new Error(j.detail || `HTTP ${res.status}`);
+                      }
                       const j = await res.json();
                       setDecision(j.data);
                       setExecSide((j.data?.recommended || 'buy'));
                       setExecSize(j.data?.size || size);
-                    } catch (e) {
-                      toast({ title:'Error', description:'Decision request failed', variant:'destructive' });
+                    } catch (e:any) {
+                      toast({ title:'Error', description: e.message || 'Decision request failed', variant:'destructive' });
                     } finally { setConsoleLoading(false); }
                   }}>Request Decision</Button>
                   {decision && (
