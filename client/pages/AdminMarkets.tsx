@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -270,8 +271,9 @@ export default function AdminMarkets() {
   };
 
   const copySymbolToClipboard = async (symbol: string) => {
-    try { await navigator.clipboard.writeText(symbol); toast({ title: 'Copied', description: `${symbol} copied to clipboard` }); } 
-    catch { toast({ title: 'Copy Failed', description: 'Failed to copy to clipboard', variant: 'destructive' }); }
+    const ok = await copy(symbol);
+    if (ok) toast({ title: 'Copied', description: `${symbol} copied to clipboard` });
+    else toast({ title: 'Copy Failed', description: 'Failed to copy to clipboard', variant: 'destructive' });
   };
 
   // Export (iterate through all pages)
