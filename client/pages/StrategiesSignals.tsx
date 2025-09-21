@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import HelpTip from '@/components/ui/help-tip';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -171,6 +172,7 @@ export default function StrategiesSignals() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Strategies & Signals</h1>
         <div className="flex items-center gap-2">
+          <HelpTip content="Refresh strategy registry and telemetry data." />
           <Button variant="outline" onClick={loadRegistry}><RefreshCw className="h-4 w-4 mr-2"/>Refresh Registry</Button>
           <Button variant="outline" onClick={loadTelemetry}><RefreshCw className="h-4 w-4 mr-2"/>Refresh Telemetry</Button>
         </div>
@@ -194,6 +196,7 @@ export default function StrategiesSignals() {
             <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
               <CardTitle>Strategy Registry</CardTitle>
               <div className="flex items-center gap-2">
+                <HelpTip content="View and adjust per-strategy weights. Click Enable/Disable to toggle trading." />
                 <Button variant="outline" onClick={submitReweight}>Submit Allocations</Button>
               </div>
             </CardHeader>
@@ -238,22 +241,22 @@ export default function StrategiesSignals() {
         {/* Telemetry */}
         <TabsContent value="telemetry">
           <Card>
-            <CardHeader><CardTitle>Market Indicator Telemetry</CardTitle></CardHeader>
+            <CardHeader className="flex items-start justify-between"><CardTitle>Market Indicator Telemetry</CardTitle><HelpTip content="Live technical indicators for the selected asset with trend arrows." /></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end gap-2">
                 <div className="max-w-[200px] w-full">
-                  <Label>Asset</Label>
+                  <div className="flex items-center gap-2"><Label>Asset</Label><HelpTip content="Asset symbol to analyze (e.g., BTC)." /></div>
                   <Input value={asset} onChange={(e)=> setAsset(e.target.value.toUpperCase())} placeholder="BTC" />
                 </div>
                 <Button onClick={loadTelemetry} disabled={telemetryLoading}>{telemetryLoading ? 'Loading…' : 'Fetch'}</Button>
               </div>
               {breakdown && (
                 <div className="grid md:grid-cols-5 gap-3">
-                  <Card><CardHeader><CardTitle className="text-sm">RSI</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.rsi} {trend('rsi')}</CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm">MACD</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.macd} {trend('macd')}</CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm">EMA</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.ema} {trend('ema')}</CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm">SMA</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.sma} {trend('sma')}</CardContent></Card>
-                  <Card><CardHeader><CardTitle className="text-sm">ATR</CardTitle></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.atr} {trend('atr')}</CardContent></Card>
+                  <Card><CardHeader className="flex items-center justify-between"><CardTitle className="text-sm">RSI</CardTitle><HelpTip content="Relative Strength Index; momentum oscillator." /></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.rsi} {trend('rsi')}</CardContent></Card>
+                  <Card><CardHeader className="flex items-center justify-between"><CardTitle className="text-sm">MACD</CardTitle><HelpTip content="Moving Average Convergence Divergence; trend strength." /></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.macd} {trend('macd')}</CardContent></Card>
+                  <Card><CardHeader className="flex items-center justify-between"><CardTitle className="text-sm">EMA</CardTitle><HelpTip content="Exponential Moving Average." /></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.ema} {trend('ema')}</CardContent></Card>
+                  <Card><CardHeader className="flex items-center justify-between"><CardTitle className="text-sm">SMA</CardTitle><HelpTip content="Simple Moving Average." /></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.sma} {trend('sma')}</CardContent></Card>
+                  <Card><CardHeader className="flex items-center justify-between"><CardTitle className="text-sm">ATR</CardTitle><HelpTip content="Average True Range; volatility measure." /></CardHeader><CardContent className="text-2xl font-semibold">{breakdown.atr} {trend('atr')}</CardContent></Card>
                 </div>
               )}
               {!breakdown && <div className="text-sm text-muted-foreground">No telemetry yet.</div>}
@@ -264,7 +267,7 @@ export default function StrategiesSignals() {
         {/* Sentiment */}
         <TabsContent value="sentiment">
           <Card>
-            <CardHeader><CardTitle>Sentiment & Feeds</CardTitle></CardHeader>
+            <CardHeader className="flex items-start justify-between"><CardTitle>Sentiment & Feeds</CardTitle><HelpTip content="Aggregate news/social sentiment and feed activity for an asset." /></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end space-x-2">
                 <div className="flex-1"><Label>Asset</Label><Input value={asset} onChange={(e)=>setAsset(e.target.value.toUpperCase())} placeholder="BTC" /></div>
@@ -325,7 +328,7 @@ export default function StrategiesSignals() {
             <CardContent className="space-y-3">
               <div className="grid md:grid-cols-2 gap-3">
                 <div>
-                  <Label>Strategy</Label>
+                  <div className="flex items-center gap-2"><Label>Strategy</Label><HelpTip content="Choose a registered strategy to test." /></div>
                   <Select value={strategyId} onValueChange={setStrategyId}>
                     <SelectTrigger><SelectValue placeholder="Select strategy" /></SelectTrigger>
                     <SelectContent>
@@ -334,15 +337,15 @@ export default function StrategiesSignals() {
                   </Select>
                 </div>
                 <div>
-                  <Label>Initial Equity (USD)</Label>
+                  <div className="flex items-center gap-2"><Label>Initial Equity (USD)</Label><HelpTip content="Starting capital for the stress test simulation." /></div>
                   <Input type="number" step="0.01" value={initialEquity} onChange={e=> setInitialEquity(e.target.value)} />
                 </div>
                 <div>
-                  <Label>Horizon (days)</Label>
+                  <div className="flex items-center gap-2"><Label>Horizon (days)</Label><HelpTip content="Simulation length in days." /></div>
                   <Input type="number" min={1} max={365} value={horizonDays} onChange={e=> setHorizonDays(e.target.value)} />
                 </div>
                 <div>
-                  <Label>Confidence</Label>
+                  <div className="flex items-center gap-2"><Label>Confidence</Label><HelpTip content="Risk confidence level used for VaR/CVaR calculations." /></div>
                   <Select value={confidence} onValueChange={setConfidence}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -354,12 +357,12 @@ export default function StrategiesSignals() {
                 </div>
               </div>
               <div className="grid md:grid-cols-3 gap-3">
-                <div><Label>Flash magnitude (%)</Label><Input type="number" step="0.01" value={flashMagnitude} onChange={e=> setFlashMagnitude(e.target.value)} placeholder="-20" /></div>
-                <div><Label>Flash duration (min)</Label><Input type="number" value={flashDuration} onChange={e=> setFlashDuration(e.target.value)} placeholder="15" /></div>
-                <div className="flex items-center space-x-2 mt-6"><input type="checkbox" checked={useOpenPositions} onChange={e=> setUseOpenPositions(e.target.checked)} /><span>Use open positions</span></div>
-                <div><Label>Illiquidity magnitude (%)</Label><Input type="number" step="0.01" value={illiquidityMagnitude} onChange={e=> setIlliquidityMagnitude(e.target.value)} placeholder="50" /></div>
-                <div><Label>Illiquidity duration (min)</Label><Input type="number" value={illiquidityDuration} onChange={e=> setIlliquidityDuration(e.target.value)} placeholder="30" /></div>
-                <div><Label>Downtime duration (min)</Label><Input type="number" value={downtimeDuration} onChange={e=> setDowntimeDuration(e.target.value)} placeholder="10" /></div>
+                <div><div className="flex items-center gap-2"><Label>Flash magnitude (%)</Label><HelpTip content="Shock size as a percent move (negative for drop)." /></div><Input type="number" step="0.01" value={flashMagnitude} onChange={e=> setFlashMagnitude(e.target.value)} placeholder="-20" /></div>
+                <div><div className="flex items-center gap-2"><Label>Flash duration (min)</Label><HelpTip content="Duration of the flash crash scenario in minutes." /></div><Input type="number" value={flashDuration} onChange={e=> setFlashDuration(e.target.value)} placeholder="15" /></div>
+                <div className="flex items-center space-x-2 mt-6"><input type="checkbox" checked={useOpenPositions} onChange={e=> setUseOpenPositions(e.target.checked)} /><span className="inline-flex items-center gap-2">Use open positions <HelpTip content="Include your current positions as starting state for scenarios." /></span></div>
+                <div><div className="flex items-center gap-2"><Label>Illiquidity magnitude (%)</Label><HelpTip content="Spread widening or slippage as percent." /></div><Input type="number" step="0.01" value={illiquidityMagnitude} onChange={e=> setIlliquidityMagnitude(e.target.value)} placeholder="50" /></div>
+                <div><div className="flex items-center gap-2"><Label>Illiquidity duration (min)</Label><HelpTip content="How long illiquidity persists in minutes." /></div><Input type="number" value={illiquidityDuration} onChange={e=> setIlliquidityDuration(e.target.value)} placeholder="30" /></div>
+                <div><div className="flex items-center gap-2"><Label>Downtime duration (min)</Label><HelpTip content="Exchange or system downtime in minutes." /></div><Input type="number" value={downtimeDuration} onChange={e=> setDowntimeDuration(e.target.value)} placeholder="10" /></div>
               </div>
               <div className="flex items-center gap-2">
                 <Button disabled={stressLoading || !strategyId || Number(initialEquity)<=0 || Number(horizonDays)<=0} onClick={async ()=>{
@@ -429,11 +432,11 @@ export default function StrategiesSignals() {
         {/* Explainability */}
         <TabsContent value="explain">
           <Card>
-            <CardHeader><CardTitle>Explainability</CardTitle></CardHeader>
+            <CardHeader className="flex items-start justify-between"><CardTitle>Explainability</CardTitle><HelpTip content="Model rationales, SHAP features, and feature importances." /></CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-end gap-3">
                 <div>
-                  <Label>Limit</Label>
+                  <div className="flex items-center gap-2"><Label>Limit</Label><HelpTip content="Number of recent explainability items to show." /></div>
                   <Input type="number" min={1} value={explainLimit} onChange={(e)=>{
                     const n = Math.max(1, Math.min(parseInt(e.target.value)||10, explainCaps?.max_limit||50));
                     setExplainLimit(n);
@@ -491,7 +494,7 @@ export default function StrategiesSignals() {
                 <div className="font-medium mb-2">Forecast Model Explainability</div>
                 <div className="grid md:grid-cols-3 gap-3 items-end">
                   <div>
-                    <Label>Model</Label>
+                    <div className="flex items-center gap-2"><Label>Model</Label><HelpTip content="Select a forecasting model to explain." /></div>
                     <Select value={modelId} onValueChange={setModelId}>
                       <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
                       <SelectContent>
@@ -500,7 +503,7 @@ export default function StrategiesSignals() {
                     </Select>
                   </div>
                   <div className="md:col-span-2">
-                    <Label>Sample series (optional CSV/JSON of numbers)</Label>
+                    <div className="flex items-center gap-2"><Label>Sample series (optional CSV/JSON of numbers)</Label><HelpTip content="Optional overrides: provide numbers to run feature importance on." /></div>
                     <Input value={series} onChange={(e)=> setSeries(e.target.value)} placeholder="1.2, 0.8, -0.3" />
                   </div>
                 </div>
@@ -551,7 +554,7 @@ export default function StrategiesSignals() {
                   <div className="font-medium">Manual SHAP Explorer (Admin)</div>
                   <div className="grid md:grid-cols-3 gap-3 items-end">
                     <div>
-                      <Label>Model</Label>
+                      <div className="flex items-center gap-2"><Label>Model</Label><HelpTip content="Select a forecasting model to explain." /></div>
                       <Select value={modelId} onValueChange={setModelId}>
                         <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
                         <SelectContent>
@@ -560,7 +563,7 @@ export default function StrategiesSignals() {
                       </Select>
                     </div>
                     <div className="md:col-span-2">
-                      <Label>Input (JSON array or map of numbers)</Label>
+                      <div className="flex items-center gap-2"><Label>Input (JSON array or map of numbers)</Label><HelpTip content="Provide numeric features as array or object; JSON only." /></div>
                       <Textarea rows={4} value={shapInput} onChange={(e)=> setShapInput(e.target.value)} placeholder='[1.2, 0.4, -0.1, 2.3]' />
                     </div>
                   </div>
@@ -607,7 +610,7 @@ export default function StrategiesSignals() {
         {/* Manual ingest */}
         <TabsContent value="ingest">
           <Card>
-            <CardHeader><CardTitle>Manual Signal Ingest</CardTitle></CardHeader>
+            <CardHeader className="flex items-start justify-between"><CardTitle>Manual Signal Ingest</CardTitle><HelpTip content="Send a signal payload directly to the API for testing or integrations." /></CardHeader>
             <CardContent className="space-y-3">
               <div className="flex flex-wrap gap-3">
                 <Button variant="outline" size="sm" onClick={async ()=>{
@@ -617,27 +620,27 @@ export default function StrategiesSignals() {
               </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="source">Source</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="source">Source</Label><HelpTip content="Name of the provider/source (e.g., tradingview)." /></div>
                   <Input id="source" placeholder="tradingview" value={ingSource} onChange={(e)=> setIngSource(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="user">Target User (optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="user">Target User (optional)</Label><HelpTip content="Route signal to a specific user (admin only)." /></div>
                   <Input id="user" placeholder="user_123" value={ingUser} onChange={(e)=> setIngUser(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="idk">X-Idempotency-Key</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="idk">X-Idempotency-Key</Label><HelpTip content="Unique key to deduplicate requests." /></div>
                   <Input id="idk" placeholder="unique-key" value={ingKey} onChange={(e)=> setIngKey(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="auth">Authorization (Bearer …) (optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="auth">Authorization (Bearer …) (optional)</Label><HelpTip content="Optional Bearer token sent to the ingest endpoint." /></div>
                   <Input id="auth" placeholder="Bearer xxx" value={ingAuth} onChange={(e)=> setIngAuth(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="sig">X-Provider-Signature (optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="sig">X-Provider-Signature (optional)</Label><HelpTip content="Optional HMAC/signature proving payload origin." /></div>
                   <Input id="sig" placeholder="hex-signature" value={ingSig} onChange={(e)=> setIngSig(e.target.value)} />
                 </div>
                 <div className="md:col-span-2">
-                  <Label htmlFor="payload">Payload (JSON)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="payload">Payload (JSON)</Label><HelpTip content="JSON only. Keep under 16KB. Validate before sending." /></div>
                   <Textarea id="payload" rows={6} value={ingPayload} onChange={(e)=> setIngPayload(e.target.value)} />
                 </div>
               </div>
