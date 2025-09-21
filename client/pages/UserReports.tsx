@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { toast } from '@/hooks/use-toast';
+import HelpTip from '@/components/ui/help-tip';
 
 // Types
 interface DailyReport {
@@ -398,7 +399,10 @@ export default function UserReports() {
         {/* Daily Report Tab */}
         <TabsContent value="daily" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Daily Performance Report</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Daily Performance Report</h2>
+              <HelpTip content="Daily performance overview with key metrics and charts." side="right" />
+            </div>
             <div className="flex space-x-2">
               <Button variant="outline" onClick={() => exportCSV('daily')} disabled={isLoading.csv}>
                 {isLoading.csv ? (
@@ -424,7 +428,10 @@ export default function UserReports() {
               <div className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Key Metrics</CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg">Key Metrics</CardTitle>
+                      <HelpTip content="Total return, performance, active portfolios, and average performance." side="left" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-2 gap-4">
@@ -456,7 +463,10 @@ export default function UserReports() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Risk Metrics</CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg">Risk Metrics</CardTitle>
+                      <HelpTip content="Volatility, Sharpe ratio, and maximum drawdown." side="left" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -480,7 +490,10 @@ export default function UserReports() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Top Performers</CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg">Top Performers</CardTitle>
+                      <HelpTip content="Best and worst assets for the selected period." side="left" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -510,7 +523,10 @@ export default function UserReports() {
               {/* Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Daily Returns vs Benchmark</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Daily Returns vs Benchmark</CardTitle>
+                    <HelpTip content="Compare strategy returns against benchmark over time." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -537,7 +553,10 @@ export default function UserReports() {
         {/* Weekly Report Tab */}
         <TabsContent value="weekly" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Weekly Performance Report</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Weekly Performance Report</h2>
+              <HelpTip content="Weekly summary, asset performance, and detailed table." side="right" />
+            </div>
             <div className="flex space-x-2">
               <Button variant="outline" onClick={() => exportCSV('weekly')} disabled={isLoading.csv}>
                 {isLoading.csv ? (
@@ -562,7 +581,10 @@ export default function UserReports() {
               {/* Summary Card */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Weekly Summary</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Weekly Summary</CardTitle>
+                    <HelpTip content="Key weekly KPIs like return, win rate, and trades." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 gap-4">
@@ -595,7 +617,10 @@ export default function UserReports() {
               {/* Asset Performance Chart */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Asset Performance</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Asset Performance</CardTitle>
+                    <HelpTip content="Bar chart of per-asset weekly returns." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <ResponsiveContainer width="100%" height={300}>
@@ -614,7 +639,10 @@ export default function UserReports() {
               {/* Asset Data Table */}
               <Card className="lg:col-span-2">
                 <CardHeader>
-                  <CardTitle className="text-lg">Asset Breakdown</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Asset Breakdown</CardTitle>
+                    <HelpTip content="Tabular per-asset metrics for deeper analysis." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -654,7 +682,10 @@ export default function UserReports() {
         {/* Per-Asset Report Tab */}
         <TabsContent value="per-asset" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Per-Asset Analysis</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Per-Asset Analysis</h2>
+              <HelpTip content="Analyze each asset's allocations, returns, and risk." side="right" />
+            </div>
             <div className="flex space-x-2">
               <Button variant="outline" onClick={() => exportCSV('per-asset')} disabled={isLoading.csv}>
                 {isLoading.csv ? (
@@ -728,7 +759,10 @@ export default function UserReports() {
               {/* Filters and Search */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Asset Filters</CardTitle>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Asset Filters</CardTitle>
+                    <HelpTip content="Search and sort the assets table to focus your analysis." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-4">
@@ -740,9 +774,11 @@ export default function UserReports() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-48"
                       />
+                      <HelpTip content="Filter assets by symbol or name." side="right" />
                     </div>
                     <div className="flex items-center space-x-2">
                       <Label>Sort by:</Label>
+                      <HelpTip content="Choose the attribute to sort assets." side="right" />
                       <select 
                         value={sortBy} 
                         onChange={(e) => setSortBy(e.target.value as any)}
@@ -754,13 +790,16 @@ export default function UserReports() {
                         <option value="allocation">Allocation</option>
                       </select>
                     </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-                    >
-                      {sortOrder === 'asc' ? 'ASC' : 'DESC'}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      >
+                        {sortOrder === 'asc' ? 'ASC' : 'DESC'}
+                      </Button>
+                      <HelpTip content="Toggle ascending/descending sort order." side="right" />
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -769,7 +808,10 @@ export default function UserReports() {
               <div className="grid gap-6 lg:grid-cols-2">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Portfolio Allocation</CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg">Portfolio Allocation</CardTitle>
+                      <HelpTip content="Distribution of capital across assets." side="left" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -798,7 +840,10 @@ export default function UserReports() {
 
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Performance vs Volatility</CardTitle>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="text-lg">Performance vs Volatility</CardTitle>
+                      <HelpTip content="Scatter of returns against volatility to assess risk-adjusted performance." side="left" />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <ResponsiveContainer width="100%" height={300}>
@@ -823,10 +868,15 @@ export default function UserReports() {
               {/* Detailed Asset Table */}
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Detailed Asset Analysis</CardTitle>
-                  <CardDescription>
-                    {filteredAndSortedAssets.length} of {perAssetReport.assets.length} assets shown
-                  </CardDescription>
+                  <div className="flex items-start justify-between w-full">
+                    <div>
+                      <CardTitle className="text-lg">Detailed Asset Analysis</CardTitle>
+                      <CardDescription>
+                        {filteredAndSortedAssets.length} of {perAssetReport.assets.length} assets shown
+                      </CardDescription>
+                    </div>
+                    <HelpTip content="Full per-asset table with prices, returns, and risk metrics." side="left" />
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <Table>
@@ -889,18 +939,26 @@ export default function UserReports() {
         {/* Backtest Report Tab */}
         <TabsContent value="backtest" className="space-y-6">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-semibold">Backtest Reports</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Backtest Reports</h2>
+              <HelpTip content="Download the latest backtest CSV and review recent activity." side="right" />
+            </div>
           </div>
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
-                <FileText className="h-5 w-5" />
-                <span>Download Latest Backtest Report</span>
-              </CardTitle>
-              <CardDescription>
-                Download the most recent backtest analysis results as a CSV file
-              </CardDescription>
+              <div className="flex items-start justify-between w-full">
+                <div>
+                  <CardTitle className="flex items-center space-x-2">
+                    <FileText className="h-5 w-5" />
+                    <span>Download Latest Backtest Report</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Download the most recent backtest analysis results as a CSV file
+                  </CardDescription>
+                </div>
+                <HelpTip content="Generates and downloads the latest backtest as CSV." side="left" />
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {isLoading.backtest && (
@@ -954,8 +1012,13 @@ export default function UserReports() {
           {/* Recent Activity */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-              <CardDescription>Latest report downloads and generation history</CardDescription>
+              <div className="flex items-start justify-between w-full">
+                <div>
+                  <CardTitle>Recent Activity</CardTitle>
+                  <CardDescription>Latest report downloads and generation history</CardDescription>
+                </div>
+                <HelpTip content="Log of recent exports and generation events." side="left" />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
