@@ -218,15 +218,41 @@ export default function UserNotifications() {
     });
   };
 
-  // Helper: safe fetch with timeout using native fetch
+  // Helper: safe fetch with timeout using native fetch, with fallbacks and clearer error messages
   const safeFetch = async (input: RequestInfo, init?: RequestInit, timeout = 10000) => {
+    if (!navigator.onLine) {
+      throw new Error('Offline: network unavailable');
+    }
+
     const controller = new AbortController();
     const id = window.setTimeout(() => controller.abort(), timeout);
+
+    const finalInit: RequestInit = { signal: controller.signal, credentials: 'same-origin', cache: 'no-store', ...(init || {}) } as RequestInit;
+
     try {
+      // Primary: try to use the unpatched/native fetch obtained from iframe (if needed)
       const nativeFetch = await getNativeFetch();
-      const response = await nativeFetch(input as any, { signal: controller.signal, credentials: 'same-origin', cache: 'no-store', ...(init || {}) } as RequestInit);
-      clearTimeout(id);
-      return response;
+      try {
+        const response = await nativeFetch(input as any, finalInit as any);
+        clearTimeout(id);
+        return response;
+      } catch (nativeErr) {
+        // If native fetch fails, fall back to window.fetch and log details
+        console.warn('nativeFetch failed, falling back to window.fetch', nativeErr);
+      }
+
+      // Fallback: try the global window.fetch
+      try {
+        const response = await window.fetch(input as any, finalInit);
+        clearTimeout(id);
+        return response;
+      } catch (winErr) {
+        console.warn('window.fetch failed as fallback', winErr);
+        clearTimeout(id);
+        // Differentiate abort vs network errors
+        if ((winErr as any)?.name === 'AbortError') throw winErr;
+        throw new Error((winErr && (winErr as any).message) || 'Network request failed');
+      }
     } catch (err) {
       clearTimeout(id);
       throw err;
