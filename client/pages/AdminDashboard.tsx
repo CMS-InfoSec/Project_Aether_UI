@@ -58,6 +58,7 @@ import {
 } from "recharts";
 import { toast } from "@/hooks/use-toast";
 import HelpTip from "@/components/ui/help-tip";
+import { useSearchParams, useNavigate, useLocation } from "react-router-dom";
 
 // Integrations of existing admin feature pages
 import AdminSystemControl from "./AdminSystemControl";
@@ -537,6 +538,27 @@ export default function AdminDashboard() {
     );
   }
 
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const allowedTabs = new Set(["controls","governance","plugins","review","config","feedback","portfolio","automation","reports"]);
+  const [tab, setTab] = useState<string>(() => {
+    const t = searchParams.get('tab') || 'controls';
+    return allowedTabs.has(t) ? t : 'controls';
+  });
+
+  useEffect(() => {
+    const t = searchParams.get('tab') || 'controls';
+    if (allowedTabs.has(t) && t !== tab) setTab(t);
+  }, [location.search]);
+
+  const onChangeTab = (value: string) => {
+    setTab(value);
+    const params = new URLSearchParams(location.search);
+    params.set('tab', value);
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -569,7 +591,7 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      <Tabs defaultValue="controls" className="space-y-6">
+      <Tabs value={tab} onValueChange={onChangeTab} className="space-y-6">
         <TabsList className="grid w-full grid-cols-9 gap-2">
           <TabsTrigger value="controls"><span className="inline-flex items-center gap-1">Controls <HelpTip content="Pause/resume trading, change modes, and access the kill switch." /></span></TabsTrigger>
           <TabsTrigger value="governance"><span className="inline-flex items-center gap-1">Governance <HelpTip content="Review proposals and governance decisions affecting the system." /></span></TabsTrigger>
