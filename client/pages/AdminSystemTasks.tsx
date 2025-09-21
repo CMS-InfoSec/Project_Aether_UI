@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { HelpTip } from '@/components/ui/help-tip';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
@@ -152,9 +153,9 @@ export default function AdminSystemTasks(){
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">System Tasks</h1>
+        <h1 className="text-3xl font-bold inline-flex items-center gap-2">System Tasks <HelpTip content="Trigger and monitor background jobs like data refreshes and price series fetches." /></h1>
         <div className="flex items-center gap-3">
-          <Badge variant={pollingEnabled? 'secondary':'destructive'}>{pollingEnabled? 'Polling: ON':'Polling: OFF'}</Badge>
+          <Badge variant={pollingEnabled? 'secondary':'destructive'}>{pollingEnabled? 'Polling: ON':'Polling: OFF'}</Badge><HelpTip content="Background polling updates task statuses automatically. Toggle to pause." />
           <Button variant="outline" onClick={()=> setPollingEnabled(p=>!p)}>{pollingEnabled? 'Stop polling':'Start polling'}</Button>
         </div>
       </div>
@@ -169,7 +170,7 @@ export default function AdminSystemTasks(){
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>Data Refresh</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Data Refresh <HelpTip content="Refreshes cached data for your account. Rate-limited per user (5/min)." /></CardTitle>
             <CardDescription>Per-user scoped cache refresh (limit 5/min). Adds entries to recent runs and activity feed.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -178,7 +179,7 @@ export default function AdminSystemTasks(){
               {userCooldown>0 && (<Badge variant="destructive">Cooldown {userCooldown}s</Badge>)}
             </div>
             <div className="space-y-2">
-              <div className="text-sm font-medium">Recent Runs</div>
+              <div className="text-sm font-medium inline-flex items-center gap-2">Recent Runs <HelpTip content="Latest refresh attempts and outcomes for this session." /></div>
               <div className="space-y-1 text-sm">
                 {recentRuns.length===0 && (<div className="text-muted-foreground">No recent runs</div>)}
                 {recentRuns.map((r,i)=> (
@@ -196,7 +197,7 @@ export default function AdminSystemTasks(){
 
         <Card>
           <CardHeader>
-            <CardTitle>Global Data Refresh</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Global Data Refresh <HelpTip content="Admin-only fleet refresh with shared cooldown across all users." /></CardTitle>
             <CardDescription>Founder/Admin only. Shared 60s fleet cooldown. Avoid stacking triggers during cooldowns.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -209,20 +210,39 @@ export default function AdminSystemTasks(){
 
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Historical Price Series</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">Historical Price Series <HelpTip content="Queue OHLCV pulls for analysis; tasks appear below and auto-update until complete." /></CardTitle>
             <CardDescription>Queue OHLCV pulls; tasks will appear below and auto-track until completion.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid gap-3 md:grid-cols-6">
-              <Input className="md:col-span-1" placeholder="Symbol (e.g. BTC)" value={coin} onChange={e=> setCoin(e.target.value)} />
-              <Input className="md:col-span-1" placeholder="Lookback days" type="number" min={1} max={MAX_LOOKBACK_DAYS} value={lookback} onChange={e=> setLookback(Math.max(1, Math.min(MAX_LOOKBACK_DAYS, parseInt(e.target.value||'1',10))))} />
-              <Input className="md:col-span-1" placeholder="Interval (1m..1d)" value={interval} onChange={e=> setIntervalStr(e.target.value)} />
-              <Input className="md:col-span-1" placeholder="Source (optional)" value={source} onChange={e=> setSource(e.target.value)} />
-              <Input className="md:col-span-1" placeholder="Start ISO (optional)" value={start} onChange={e=> setStart(e.target.value)} />
-              <Input className="md:col-span-1" placeholder="End ISO (optional)" value={end} onChange={e=> setEnd(e.target.value)} />
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">Symbol <HelpTip content="Asset symbol, e.g., BTC or BTC/USDT depending on the provider." /></label>
+                <Input placeholder="Symbol (e.g. BTC)" value={coin} onChange={e=> setCoin(e.target.value)} />
+              </div>
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">Lookback days <HelpTip content={`History window length (1–${MAX_LOOKBACK_DAYS}).`} /></label>
+                <Input placeholder="Lookback days" type="number" min={1} max={MAX_LOOKBACK_DAYS} value={lookback} onChange={e=> setLookback(Math.max(1, Math.min(MAX_LOOKBACK_DAYS, parseInt(e.target.value||'1',10))))} />
+              </div>
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">Interval <HelpTip content="Candle period, e.g., 1m, 5m, 15m, 1h, 4h, 1d." /></label>
+                <Input placeholder="Interval (1m..1d)" value={interval} onChange={e=> setIntervalStr(e.target.value)} />
+              </div>
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">Source <HelpTip content="Optional data provider hint (leave blank for default)." /></label>
+                <Input placeholder="Source (optional)" value={source} onChange={e=> setSource(e.target.value)} />
+              </div>
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">Start ISO <HelpTip content="Optional ISO8601 start timestamp to bound the range." /></label>
+                <Input placeholder="Start ISO (optional)" value={start} onChange={e=> setStart(e.target.value)} />
+              </div>
+              <div className="md:col-span-1 space-y-1">
+                <label className="text-xs inline-flex items-center gap-2">End ISO <HelpTip content="Optional ISO8601 end timestamp to bound the range." /></label>
+                <Input placeholder="End ISO (optional)" value={end} onChange={e=> setEnd(e.target.value)} />
+              </div>
             </div>
             <div className="flex items-center gap-2">
               <Button onClick={requestSeries}>Request Series</Button>
+              <HelpTip content="Queues a background job to fetch OHLCV; progress appears in Task Tracking." />
             </div>
           </CardContent>
         </Card>
@@ -230,7 +250,7 @@ export default function AdminSystemTasks(){
 
       <Card>
         <CardHeader>
-          <CardTitle>Task Tracking</CardTitle>
+          <CardTitle className="inline-flex items-center gap-2">Task Tracking <HelpTip content="Monitor queued jobs, status, and download results when completed." /></CardTitle>
           <CardDescription>Pending tasks poll every 3s with backoff to 30s. Downloads available on success.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -238,10 +258,10 @@ export default function AdminSystemTasks(){
             <table className="w-full text-sm">
               <thead>
                 <tr>
-                  <th className="p-2 text-left">Task</th>
-                  <th className="p-2 text-left">Status</th>
-                  <th className="p-2 text-left">Preview</th>
-                  <th className="p-2 text-right">Actions</th>
+                  <th className="p-2 text-left"><div className="inline-flex items-center gap-1">Task <HelpTip content="Background job identifier." /></div></th>
+                  <th className="p-2 text-left"><div className="inline-flex items-center gap-1">Status <HelpTip content="Current job state: PENDING, STARTED, SUCCESS, FAILURE, REVOKED." /></div></th>
+                  <th className="p-2 text-left"><div className="inline-flex items-center gap-1">Preview <HelpTip content="Quick chart of fetched series when available." /></div></th>
+                  <th className="p-2 text-right"><div className="inline-flex items-center gap-1">Actions <HelpTip content="Download job output as JSON or CSV when completed." /></div></th>
                 </tr>
               </thead>
               <tbody>
@@ -289,7 +309,7 @@ export default function AdminSystemTasks(){
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Data Refresh</DialogTitle>
+            <DialogTitle className="inline-flex items-center gap-2">Confirm Data Refresh <HelpTip content="Confirms a per-user cache refresh request; subject to rate limits." /></DialogTitle>
             <DialogDescription>Per-user limit is 5 requests per minute. Continue?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
