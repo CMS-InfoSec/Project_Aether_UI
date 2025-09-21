@@ -32,6 +32,7 @@ import {
   Shield
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import HelpTip from '@/components/ui/help-tip';
 
 // Types
 interface Notification {
@@ -500,7 +501,8 @@ export default function UserNotifications() {
       {notifications && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 relative">
+              <div className="absolute right-2 top-2"><HelpTip content="Total notifications received." side="left" /></div>
               <div className="text-center">
                 <div className="text-2xl font-bold">{notifications.summary.total}</div>
                 <div className="text-xs text-muted-foreground">Total</div>
@@ -508,7 +510,8 @@ export default function UserNotifications() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 relative">
+              <div className="absolute right-2 top-2"><HelpTip content="Unread notifications that you haven't viewed yet." side="left" /></div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{notifications.summary.unread}</div>
                 <div className="text-xs text-muted-foreground">Unread</div>
@@ -516,7 +519,8 @@ export default function UserNotifications() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 relative">
+              <div className="absolute right-2 top-2"><HelpTip content="Notifications that require your attention or action." side="left" /></div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-red-600">{notifications.summary.actionRequired}</div>
                 <div className="text-xs text-muted-foreground">Action Required</div>
@@ -524,7 +528,8 @@ export default function UserNotifications() {
             </CardContent>
           </Card>
           <Card>
-            <CardContent className="pt-6">
+            <CardContent className="pt-6 relative">
+              <div className="absolute right-2 top-2"><HelpTip content="Number of warnings detected." side="left" /></div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-yellow-600">{notifications.summary.severityCounts.warning || 0}</div>
                 <div className="text-xs text-muted-foreground">Warnings</div>
@@ -537,15 +542,21 @@ export default function UserNotifications() {
       {/* Filters */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Filter className="h-5 w-5" />
-            <span>Filters</span>
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Filter className="h-5 w-5" />
+              <span>Filters</span>
+            </CardTitle>
+            <HelpTip content="Refine your notifications by severity, category, page size, and unread status." side="left" />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label>Severity</Label>
+              <div className="flex items-center gap-2">
+                <Label>Severity</Label>
+                <HelpTip content="Filter by severity level." side="right" />
+              </div>
               <Select
                 value={severityFilter}
                 onValueChange={(value) => updateFilters({ severity: value })}
@@ -564,7 +575,10 @@ export default function UserNotifications() {
             </div>
 
             <div className="space-y-2">
-              <Label>Category</Label>
+              <div className="flex items-center gap-2">
+                <Label>Category</Label>
+                <HelpTip content="Filter by notification category." side="right" />
+              </div>
               <Select
                 value={categoryFilter}
                 onValueChange={(value) => updateFilters({ category: value })}
@@ -583,7 +597,10 @@ export default function UserNotifications() {
             </div>
 
             <div className="space-y-2">
-              <Label>Page Size</Label>
+              <div className="flex items-center gap-2">
+                <Label>Page Size</Label>
+                <HelpTip content="How many notifications to show per page." side="right" />
+              </div>
               <Select
                 value={pageSize.toString()}
                 onValueChange={(value) => updateFilters({ limit: value })}
@@ -606,7 +623,10 @@ export default function UserNotifications() {
                 checked={unreadOnly}
                 onCheckedChange={(checked) => updateFilters({ unreadOnly: checked ? 'true' : null })}
               />
-              <Label htmlFor="unread-only">Show unread only</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="unread-only">Show unread only</Label>
+                <HelpTip content="Show only unread notifications." side="right" />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -614,7 +634,12 @@ export default function UserNotifications() {
 
       {/* Channel Health & Escalation */}
       <Card>
-        <CardHeader><CardTitle>Channel Health & Escalation</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <CardTitle>Channel Health & Escalation</CardTitle>
+            <HelpTip content="Check notification channel status and send test alerts (Slack, Telegram, Email)." side="left" />
+          </div>
+        </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={async()=>{ try{ const r = await safeFetch('/api/notifications/channels/status'); const j = await r.json(); setChannelStatus(j.data); }catch{} }}>Refresh Channels</Button>
@@ -643,8 +668,13 @@ export default function UserNotifications() {
       {prefs && (
         <Card>
           <CardHeader>
-            <CardTitle>Notification Preferences</CardTitle>
-            <CardDescription>Select channels for alerts</CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>Notification Preferences</CardTitle>
+                <CardDescription>Select channels for alerts</CardDescription>
+              </div>
+              <HelpTip content="Choose which channels deliver your notifications." side="left" />
+            </div>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="grid md:grid-cols-3 gap-3">
@@ -675,7 +705,12 @@ export default function UserNotifications() {
 
       {/* Push / Mobile Delivery */}
       <Card>
-        <CardHeader><CardTitle>Mobile / Push Delivery</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <CardTitle>Mobile / Push Delivery</CardTitle>
+            <HelpTip content="Send a test push notification to your device tokens." side="left" />
+          </div>
+        </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={async()=>{ try{ const r = await safeFetch('/api/mobile/status'); const j = await r.json(); setPushStatus(j.data); }catch{} }}>Check Status</Button>
@@ -685,23 +720,38 @@ export default function UserNotifications() {
           )}
           <div className="grid md:grid-cols-2 gap-3">
             <div>
-              <Label>Token(s) (comma-separated)</Label>
+              <div className="flex items-center gap-2">
+                <Label>Token(s) (comma-separated)</Label>
+                <HelpTip content="Device tokens; separate multiple tokens with commas." side="right" />
+              </div>
               <Input value={pushForm.token} onChange={e=> setPushForm(p=> ({...p, token: e.target.value}))} placeholder="token1,token2" />
             </div>
             <div>
-              <Label>Nonce (must increase)</Label>
+              <div className="flex items-center gap-2">
+                <Label>Nonce (must increase)</Label>
+                <HelpTip content="Monotonically increasing number to prevent replay; must be greater than the last sent." side="right" />
+              </div>
               <Input value={pushForm.nonce} onChange={e=> setPushForm(p=> ({...p, nonce: e.target.value}))} placeholder="1001" />
             </div>
             <div className="md:col-span-2">
-              <Label>Title</Label>
+              <div className="flex items-center gap-2">
+                <Label>Title</Label>
+                <HelpTip content="Push notification title." side="right" />
+              </div>
               <Input value={pushForm.title} onChange={e=> setPushForm(p=> ({...p, title: e.target.value}))} />
             </div>
             <div className="md:col-span-2">
-              <Label>Body</Label>
+              <div className="flex items-center gap-2">
+                <Label>Body</Label>
+                <HelpTip content="Main message shown in the notification." side="right" />
+              </div>
               <Input value={pushForm.body} onChange={e=> setPushForm(p=> ({...p, body: e.target.value}))} />
             </div>
             <div className="md:col-span-2">
-              <Label>URL (optional)</Label>
+              <div className="flex items-center gap-2">
+                <Label>URL (optional)</Label>
+                <HelpTip content="Optional URL to open when the notification is tapped." side="right" />
+              </div>
               <Input value={pushForm.url} onChange={e=> setPushForm(p=> ({...p, url: e.target.value}))} />
             </div>
           </div>
@@ -719,13 +769,16 @@ export default function UserNotifications() {
       {/* Notifications List */}
       <Card>
         <CardHeader>
-          <CardTitle>
-            {notifications ? (
+          <div className="flex items-start justify-between">
+            <CardTitle>
+              {notifications ? (
               `${notifications.pagination.total} Notification${notifications.pagination.total !== 1 ? 's' : ''}`
             ) : (
               'Loading...'
             )}
-          </CardTitle>
+            </CardTitle>
+            <HelpTip content="View and manage your notifications. Click to expand for details or mark as read." side="left" />
+          </div>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -846,7 +899,8 @@ export default function UserNotifications() {
       {/* Pagination */}
       {notifications && totalPages > 1 && (
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 relative">
+            <div className="absolute right-2 top-2"><HelpTip content="Pagination controls to navigate through notifications." side="left" /></div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <p className="text-sm text-muted-foreground">
@@ -874,7 +928,10 @@ export default function UserNotifications() {
                 </Button>
                 
                 <div className="flex items-center space-x-1">
-                  <span className="text-sm text-muted-foreground">Page</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-muted-foreground">Page</span>
+                    <HelpTip content="Go to a specific page number." side="top" />
+                  </div>
                   <Input
                     type="number"
                     min="1"
