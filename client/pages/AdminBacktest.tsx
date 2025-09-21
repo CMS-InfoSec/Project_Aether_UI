@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -244,7 +245,7 @@ export default function AdminBacktest() {
     setLaunching(true);
     try{
       const body = { config: { prices, actions, volumes, seed: seedNum, starting_balance: balNum, fee: feeNum } };
-      const r = await fetch('/api/strategies/backtest', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+      const r = await apiFetch('/api/strategies/backtest', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
       const j = await r.json();
       if (r.status === 422){ setLaunchError(j.error || 'Validation failed'); return; }
       if (r.status === 504){ setLaunchError('Backtest timed out'); return; }
