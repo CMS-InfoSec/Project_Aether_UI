@@ -7,6 +7,7 @@ import copy from '@/lib/clipboard';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import HelpTip from '@/components/ui/help-tip';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface DependencyRow {
@@ -182,6 +183,7 @@ export default function Observability() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold">Observability & Health</h1>
         <div className="flex items-center gap-3">
+          <HelpTip content="Refresh readiness, dependencies, liveness, and metrics." />
           <Button variant="outline" onClick={()=>{ pollReadiness(); pollDependencies(); pollLiveness(); fetchMetrics(); }}>
             <RefreshCw className="h-4 w-4 mr-2" /> Refresh All
           </Button>
@@ -196,8 +198,9 @@ export default function Observability() {
 
       {/* Readiness dashboard */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-start justify-between">
           <CardTitle className="flex items-center gap-2"><Activity className="h-5 w-5"/> Readiness</CardTitle>
+          <HelpTip content="Overall system readiness and dependency states." />
         </CardHeader>
         <CardContent>
           {ready === null ? (
@@ -218,8 +221,9 @@ export default function Observability() {
       {/* Dependency Diagnostics (admin only) */}
       {isPrivileged && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-start justify-between">
             <CardTitle className="flex items-center gap-2"><Server className="h-5 w-5"/> Dependency Diagnostics</CardTitle>
+            <HelpTip content="Detailed status per external service with codes, timeouts, and request IDs." />
           </CardHeader>
           <CardContent>
             {depsErr && <Alert variant="destructive"><AlertDescription>{depsErr}</AlertDescription></Alert>}
@@ -295,8 +299,9 @@ export default function Observability() {
       {/* Liveness Diagnostics (admin only) */}
       {isPrivileged && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-start justify-between">
             <CardTitle className="flex items-center gap-2"><HeartPulse className="h-5 w-5"/> Liveness Diagnostics</CardTitle>
+            <HelpTip content="Current health of dependencies and services reporting in real-time." />
           </CardHeader>
           <CardContent>
             {liveErr && <Alert variant="destructive"><AlertDescription>{liveErr}</AlertDescription></Alert>}
@@ -320,8 +325,9 @@ export default function Observability() {
       {/* Prometheus Metrics (privileged) */}
       {isPrivileged && metricsVisible && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-start justify-between">
             <CardTitle>Prometheus Metrics</CardTitle>
+            <HelpTip content="Raw Prometheus metrics. Use auto-refresh, download, copy, or open in a new tab." />
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between mb-2">
@@ -330,7 +336,7 @@ export default function Observability() {
                   <span className={`w-2 h-2 rounded-full ${metricsErr? 'bg-red-500' : (metrics ? 'bg-green-500' : 'bg-gray-400')}`}></span>
                   <span>{metricsErr? 'Error' : metrics ? 'Live' : 'Idle'}</span>
                 </span>
-                <div className="flex items-center gap-2"><Switch id="auto-metrics" checked={metricsAuto} onCheckedChange={setMetricsAuto} /><Label htmlFor="auto-metrics">Auto-refresh 30s</Label></div>
+                <div className="flex items-center gap-2"><Switch id="auto-metrics" checked={metricsAuto} onCheckedChange={setMetricsAuto} /><Label htmlFor="auto-metrics" className="inline-flex items-center gap-2">Auto-refresh 30s <HelpTip content="Toggle to fetch metrics automatically every 30 seconds." /></Label></div>
               </div>
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={fetchMetrics}><RefreshCw className="h-4 w-4 mr-2"/>Refresh</Button>
@@ -348,8 +354,9 @@ export default function Observability() {
       {/* System Tasks (privileged) */}
       {isPrivileged && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex items-start justify-between">
             <CardTitle>System Tasks</CardTitle>
+            <HelpTip content="Admin-only utilities to refresh data or queue background jobs." />
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap gap-2 items-center">
@@ -358,7 +365,7 @@ export default function Observability() {
             </div>
             <div className="grid md:grid-cols-3 gap-3 items-end">
               <div className="md:col-span-2">
-                <Label htmlFor="sym">Historical price-series symbol</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="sym">Historical price-series symbol</Label><HelpTip content="Symbol for backfill job, e.g., BTC/USDT." /></div>
                 <input id="sym" className="w-full border rounded px-3 py-2 text-sm bg-background" value={priceSymbol} onChange={(e)=> setPriceSymbol(e.target.value)} />
               </div>
               <div className="flex items-center gap-2">
