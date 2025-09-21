@@ -611,8 +611,8 @@ export default function AdminDashboard() {
         <TabsContent value="governance" className="space-y-6">
           <Tabs defaultValue="proposals">
             <TabsList className="mb-4">
-              <TabsTrigger value="proposals">Proposals</TabsTrigger>
-              <TabsTrigger value="plugins">Strategy Plugins</TabsTrigger>
+              <TabsTrigger value="proposals"><span className="inline-flex items-center gap-1">Proposals <HelpTip content="Review, vote, and track governance proposals and outcomes." /></span></TabsTrigger>
+              <TabsTrigger value="plugins"><span className="inline-flex items-center gap-1">Strategy Plugins <HelpTip content="Manage external strategy modules: enable, configure, and validate." /></span></TabsTrigger>
             </TabsList>
             <TabsContent value="proposals">
               <Governance />
@@ -624,26 +624,62 @@ export default function AdminDashboard() {
         </TabsContent>
 
         <TabsContent value="plugins" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Plugins</h2>
+              <HelpTip content="Install, enable, and monitor strategy plugins. Useful for extending core capabilities." />
+            </div>
+          </div>
           <AdminPlugins />
         </TabsContent>
 
         <TabsContent value="review" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Strategy Review</h2>
+              <HelpTip content="Approve/reject strategy changes and promotions; ensure quality and safety before rollout." />
+            </div>
+          </div>
           <AdminStrategyReview />
         </TabsContent>
 
         <TabsContent value="config" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">System Config</h2>
+              <HelpTip content="View effective configuration, compare overrides, and safely update settings." />
+            </div>
+          </div>
           <AdminSystemConfig />
         </TabsContent>
 
         <TabsContent value="feedback" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Feedback</h2>
+              <HelpTip content="Collect and triage feedback from users and admins for continuous improvement." />
+            </div>
+          </div>
           <AdminFeedback />
         </TabsContent>
 
         <TabsContent value="portfolio" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Portfolio Management</h2>
+              <HelpTip content="Monitor portfolios, run rebalances, and inspect history with audit trails." />
+            </div>
+          </div>
           <AdminPortfolio />
         </TabsContent>
 
         <TabsContent value="automation" className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-semibold">Automation & Messaging</h2>
+              <HelpTip content="Automate workflows, broadcast alerts, and test push/mobile delivery." />
+            </div>
+          </div>
           <div className="grid gap-6 lg:grid-cols-2">
             <div className="space-y-6">
               <AdminAutomationSocial />
