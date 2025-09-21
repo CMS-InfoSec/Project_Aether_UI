@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import apiFetch from '@/lib/apiClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,7 +25,7 @@ export default function AdminPushConsole(){
     let t: any; if (cooldown>0){ t=setTimeout(()=> setCooldown(cooldown-1), 1000); } return ()=> t && clearTimeout(t);
   },[cooldown]);
 
-  const load=async()=>{const r=await fetch('/api/mobile/status');const j=await r.json();setStatus(j.data);setNonce((j.data?.last_nonce||1000)+1);};
+  const load=async()=>{const r=await apiFetch('/api/mobile/status');const j=await r.json();setStatus(j.data);setNonce((j.data?.last_nonce||1000)+1);};
   useEffect(()=>{load();},[]);
 
   const generateSignature = async (secret: string, payload: any) => {
@@ -49,7 +50,7 @@ export default function AdminPushConsole(){
       const payload = { token: tokens, title, body, url, timestamp, nonce };
       let headers: Record<string,string> = { 'Content-Type':'application/json' };
       if (signature){ headers['X-Signature'] = signature; headers['X-Timestamp'] = timestamp; headers['X-Nonce'] = String(nonce); }
-      const r=await fetch('/api/mobile/push',{method:'POST',headers,body:JSON.stringify(payload)});
+      const r=await apiFetch('/api/mobile/push',{method:'POST',headers,body:JSON.stringify(payload)});
       if (r.status === 429){ const ra = Number(r.headers.get('Retry-After')||'60'); setCooldown(isNaN(ra)?60:ra); throw new Error('Throttled. Please wait.'); }
       const j=await r.json();
       if(!r.ok) throw new Error(j.errors? JSON.stringify(j.errors): (j.detail||'Failed'));
