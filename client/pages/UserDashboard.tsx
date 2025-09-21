@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import HelpTip from '@/components/ui/help-tip';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -250,7 +251,10 @@ export default function UserDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Portfolio Value</CardTitle>
-                <Wallet className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  <Wallet className="h-4 w-4 text-muted-foreground" />
+                  <HelpTip content="Total current value of your portfolio including all assets." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">$61,150</div>
@@ -264,7 +268,10 @@ export default function UserDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Daily P&L</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                  <HelpTip content="Profit or loss realized today across your portfolio." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-accent">+$1,245</div>
@@ -277,7 +284,10 @@ export default function UserDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Return</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <HelpTip content="Cumulative gains since you started trading on this platform." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-accent">+$8,150</div>
@@ -290,7 +300,10 @@ export default function UserDashboard() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Active Trades</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <div className="flex items-center gap-1">
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <HelpTip content="Number of open positions currently held." />
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">3</div>
@@ -306,9 +319,12 @@ export default function UserDashboard() {
             {/* Performance Chart */}
             <div className="lg:col-span-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Performance Trend</CardTitle>
-                  <CardDescription>7-day portfolio performance vs benchmark</CardDescription>
+                <CardHeader className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Performance Trend</CardTitle>
+                    <CardDescription>7-day portfolio performance vs benchmark</CardDescription>
+                  </div>
+                  <HelpTip content="Line chart comparing your daily returns against a benchmark." />
                 </CardHeader>
                 <CardContent>
                 {dailyReturnsData && dailyReturnsData.length > 0 ? (
@@ -347,9 +363,12 @@ export default function UserDashboard() {
 
             {/* Portfolio Allocation */}
             <Card>
-              <CardHeader>
-                <CardTitle>Portfolio Allocation</CardTitle>
-                <CardDescription>Current asset distribution</CardDescription>
+              <CardHeader className="flex items-start justify-between">
+                <div>
+                  <CardTitle>Portfolio Allocation</CardTitle>
+                  <CardDescription>Current asset distribution</CardDescription>
+                </div>
+                <HelpTip content="Breakdown of assets by percentage of your portfolio." />
               </CardHeader>
               <CardContent>
                 {portfolioAllocation && portfolioAllocation.length > 0 ? (
@@ -382,9 +401,12 @@ export default function UserDashboard() {
 
           {/* Recent Activity */}
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Trades</CardTitle>
-              <CardDescription>Your latest trading activity</CardDescription>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle>Recent Trades</CardTitle>
+                <CardDescription>Your latest trading activity</CardDescription>
+              </div>
+              <HelpTip content="Most recent executed trades with P&L and timestamps." />
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -424,18 +446,21 @@ export default function UserDashboard() {
                     <CardTitle>Daily Report</CardTitle>
                     <CardDescription>Today's performance summary</CardDescription>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={loadDailyReport}
-                    disabled={isRefreshing.daily}
-                  >
-                    {isRefreshing.daily ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <HelpTip content="Snapshot of today's key metrics. Use refresh to fetch the latest." />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadDailyReport}
+                      disabled={isRefreshing.daily}
+                    >
+                      {isRefreshing.daily ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -479,18 +504,21 @@ export default function UserDashboard() {
                     <CardTitle>Weekly Report</CardTitle>
                     <CardDescription>This week's performance analysis</CardDescription>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={loadWeeklyReport}
-                    disabled={isRefreshing.weekly}
-                  >
-                    {isRefreshing.weekly ? (
-                      <RefreshCw className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <HelpTip content="Weekly performance summary with win rate and risk stats." />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={loadWeeklyReport}
+                      disabled={isRefreshing.weekly}
+                    >
+                      {isRefreshing.weekly ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RefreshCw className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -536,18 +564,21 @@ export default function UserDashboard() {
                   <CardTitle>Recent Notifications</CardTitle>
                   <CardDescription>Important updates and alerts</CardDescription>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadNotifications}
-                  disabled={isRefreshing.notifications}
-                >
-                  {isRefreshing.notifications ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <RefreshCw className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex items-center gap-2">
+                  <HelpTip content="Your latest alerts and messages. Click a notification to mark it read." />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadNotifications}
+                    disabled={isRefreshing.notifications}
+                  >
+                    {isRefreshing.notifications ? (
+                      <RefreshCw className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
