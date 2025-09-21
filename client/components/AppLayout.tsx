@@ -1,4 +1,5 @@
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -162,7 +163,7 @@ export default function AppLayout() {
   const [statusText, setStatusText] = useState<string>('Active');
   const apiRequest = useCallback(async (path: string) => {
     const url = path.startsWith('http') ? path : `${backendUrl.replace(/\/+$/, '')}${path}`;
-    return fetch(url, { headers: { 'X-API-Key': API_KEY } });
+    return apiFetch(url, { headers: { 'X-API-Key': API_KEY }, admin: true });
   }, [backendUrl]);
   useEffect(() => {
     let cancelled = false;
@@ -447,7 +448,7 @@ export default function AppLayout() {
                         const msg = (window as any)._fb || '';
                         if (!msg || String(msg).trim().length === 0) { toast({ title:'Validation', description:'Feedback is required', variant:'destructive' }); return; }
                         try {
-                          const r = await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }) });
+                          const r = await apiFetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }) });
                           if (r.ok) { toast({ title:'Thanks!', description:'Feedback submitted.' }); (document.querySelector('[data-radix-dialog-close]') as HTMLElement)?.click(); }
                           else { const j = await r.json().catch(()=>({detail:'Failed'})); toast({ title:'Error', description:j.detail || 'Failed', variant:'destructive' }); }
                         } catch { toast({ title:'Error', description:'Network error', variant:'destructive' }); }
