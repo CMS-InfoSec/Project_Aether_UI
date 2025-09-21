@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -90,7 +91,7 @@ export default function AuditLogs() {
     const headers: Record<string,string> = {};
     if (tradesETag.current) headers['If-None-Match'] = tradesETag.current;
     if (tradesLM.current) headers['If-Modified-Since'] = tradesLM.current;
-    const r = await fetch(`/api/events/trades?${qs}`, { headers });
+    const r = await apiFetch(`/api/events/trades?${qs}`, { headers });
     if (r.status === 304) return; // keep cache
     const et = r.headers.get('ETag'); if (et) tradesETag.current = et;
     const lm = r.headers.get('Last-Modified'); if (lm) tradesLM.current = lm;
@@ -104,7 +105,7 @@ export default function AuditLogs() {
     const headers: Record<string,string> = {};
     if (balancesETag.current) headers['If-None-Match'] = balancesETag.current;
     if (balancesLM.current) headers['If-Modified-Since'] = balancesLM.current;
-    const r = await fetch(`/api/events/balances?${qs}`, { headers });
+    const r = await apiFetch(`/api/events/balances?${qs}`, { headers });
     if (r.status === 304) return;
     const et = r.headers.get('ETag'); if (et) balancesETag.current = et;
     const lm = r.headers.get('Last-Modified'); if (lm) balancesLM.current = lm;
