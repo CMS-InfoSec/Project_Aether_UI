@@ -1094,6 +1094,74 @@ export default function AdminModels() {
             <Button className="rounded-full" variant="outline" onClick={() => setAetherOpen(true)}>
               <Sparkles className="h-4 w-4 mr-2" /> Ask Aether
             </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline">
+                  <BookOpen className="h-4 w-4 mr-2" /> How to Train
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>How to Train the AI</DialogTitle>
+                  <DialogDescription>
+                    Step-by-step guide to configure, launch, and monitor training jobs.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <h3 className="font-medium">Prerequisites</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                      <li>Ensure at least one dataset version is available under the Datasets tab.</li>
+                      <li>Decide the model type: Forecast, Reinforcement Learning, Sentiment, or Ensemble.</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Quick Start</h3>
+                    <ol className="list-decimal pl-5 space-y-1 text-muted-foreground">
+                      <li>Click Start Training.</li>
+                      <li>Choose Model Type and Algorithm.</li>
+                      <li>Select Trading Pairs to learn on.</li>
+                      <li>Set Lookback Days and Interval.</li>
+                      <li>Pick Dataset Version and Risk Profile.</li>
+                      <li>Paste/adjust Architecture JSON.</li>
+                      <li>(RL only) Pick Curriculum Level and fill Environment Config JSON.</li>
+                      <li>(Optional) Enable Hyperparameter Tuning and set a Callback URL.</li>
+                      <li>Click Start Training and monitor progress in Training Jobs.</li>
+                    </ol>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Example Architecture JSON</h3>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto"><code>{`{
+  "layers": [128, 64, 32],
+  "dropout": 0.3,
+  "attention": true,
+  "learning_rate": 0.0005
+}`}</code></pre>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Example RL Environment Config</h3>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto"><code>{`{
+  "reward_weights": { "profit": 0.7, "drawdown": 0.2, "duration": 0.1 },
+  "max_position": 1.0,
+  "transaction_cost": 0.0005
+}`}</code></pre>
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Monitoring & Next Steps</h3>
+                    <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                      <li>Watch stage progress (Data Prep → Forecasting/RL → Backtesting → Validation).</li>
+                      <li>Review metrics like Sharpe, Win Rate, Drawdown, and Total Reward.</li>
+                      <li>Use Model Registry to inspect artifacts and experiment tracking details.</li>
+                      <li>Before production, try Shadow mode to validate live behavior without impact.</li>
+                      <li>Deploy/Promote requires founder approval; changes affect live trading.</li>
+                    </ul>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" data-radix-dialog-close>Close</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
             <Dialog
               open={isTrainingDialogOpen}
               onOpenChange={setIsTrainingDialogOpen}
