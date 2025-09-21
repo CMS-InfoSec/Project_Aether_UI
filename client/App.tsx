@@ -1,7 +1,7 @@
 import "./global.css";
 
 import { Toaster } from "@/components/ui/toaster";
-import apiFetch from '@/lib/apiClient';
+import apiFetch from "@/lib/apiClient";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -64,24 +64,28 @@ const AppRouter = () => {
 
   const checkBootstrapStatus = async () => {
     try {
-      const response = await apiFetch('/api/founders/bootstrap-status', {
+      const response = await apiFetch("/api/founders/bootstrap-status", {
         // Prevent caching issues
-        cache: 'no-cache',
+        cache: "no-cache",
         headers: {
-          'Cache-Control': 'no-cache',
+          "Cache-Control": "no-cache",
         },
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Bootstrap status:', data); // Debug log
+        console.log("Bootstrap status:", data); // Debug log
         setFoundersExist(data.foundersExist);
       } else {
-        console.error('Bootstrap status check failed:', response.status, response.statusText);
+        console.error(
+          "Bootstrap status check failed:",
+          response.status,
+          response.statusText,
+        );
         // If we can't check status, assume founders exist to avoid blocking
         setFoundersExist(true);
       }
     } catch (error) {
-      console.error('Failed to check bootstrap status:', error);
+      console.error("Failed to check bootstrap status:", error);
       // If we can't check status, assume founders exist to avoid blocking
       setFoundersExist(true);
     } finally {
@@ -89,19 +93,23 @@ const AppRouter = () => {
     }
   };
 
-  const handleBootstrap = async (formData: { email: string; password: string; name: string }): Promise<boolean> => {
+  const handleBootstrap = async (formData: {
+    email: string;
+    password: string;
+    name: string;
+  }): Promise<boolean> => {
     try {
-      const response = await apiFetch('/api/founders/bootstrap', {
-        method: 'POST',
+      const response = await apiFetch("/api/founders/bootstrap", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
 
       if (response.ok) {
         // Successfully created founder, navigate to login
-        navigate('/login');
+        navigate("/login");
         return true;
       } else {
         // Handle error response safely
@@ -114,18 +122,18 @@ const AppRouter = () => {
           errorMessage = response.statusText || errorMessage;
         }
 
-        console.error('Bootstrap failed:', errorMessage);
+        console.error("Bootstrap failed:", errorMessage);
 
         // If we get a 409, it means founders already exist - refresh status
         if (response.status === 409) {
-          console.log('Founders already exist, refreshing bootstrap status...');
+          console.log("Founders already exist, refreshing bootstrap status...");
           await checkBootstrapStatus();
         }
 
         return false;
       }
     } catch (error) {
-      console.error('Bootstrap request failed:', error);
+      console.error("Bootstrap request failed:", error);
       return false;
     }
   };
@@ -177,40 +185,236 @@ const AppRouter = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/" element={<AppLayout />}>
         {/* Default redirect to dashboard */}
-        <Route index element={<ErrorBoundary><UserDashboard /></ErrorBoundary>} />
+        <Route
+          index
+          element={
+            <ErrorBoundary>
+              <UserDashboard />
+            </ErrorBoundary>
+          }
+        />
 
         {/* User Pages (accessible to both USER and ADMIN) */}
-        <Route path="dashboard" element={<ErrorBoundary><UserDashboard /></ErrorBoundary>} />
-        <Route path="trades" element={<ErrorBoundary><TradesPositions /></ErrorBoundary>} />
-        <Route path="wallet" element={<ErrorBoundary><WalletHedge /></ErrorBoundary>} />
-        <Route path="assistant" element={<ErrorBoundary><AIAssistant /></ErrorBoundary>} />
-        <Route path="profile" element={<ErrorBoundary><ProfileSettings /></ErrorBoundary>} />
-        <Route path="notifications" element={<ErrorBoundary><UserNotifications /></ErrorBoundary>} />
-        <Route path="reports" element={<ErrorBoundary><UserReports /></ErrorBoundary>} />
-        <Route path="observability" element={<ErrorBoundary><Observability /></ErrorBoundary>} />
-        <Route path="audit" element={<ErrorBoundary><AuditLogs /></ErrorBoundary>} />
-        <Route path="strategies" element={<ErrorBoundary><StrategiesSignals /></ErrorBoundary>} />
+        <Route
+          path="dashboard"
+          element={
+            <ErrorBoundary>
+              <UserDashboard />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="trades"
+          element={
+            <ErrorBoundary>
+              <TradesPositions />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="wallet"
+          element={
+            <ErrorBoundary>
+              <WalletHedge />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="assistant"
+          element={
+            <ErrorBoundary>
+              <AIAssistant />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="profile"
+          element={
+            <ErrorBoundary>
+              <ProfileSettings />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="notifications"
+          element={
+            <ErrorBoundary>
+              <UserNotifications />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="reports"
+          element={
+            <ErrorBoundary>
+              <UserReports />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="observability"
+          element={
+            <ErrorBoundary>
+              <Observability />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="audit"
+          element={
+            <ErrorBoundary>
+              <AuditLogs />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="strategies"
+          element={
+            <ErrorBoundary>
+              <StrategiesSignals />
+            </ErrorBoundary>
+          }
+        />
 
         {/* Admin Pages (ADMIN only) */}
-        <Route path="admin/dashboard" element={<ErrorBoundary><AdminDashboard /></ErrorBoundary>} />
-        <Route path="admin/governance" element={<ErrorBoundary><AdminGovernance /></ErrorBoundary>} />
-        <Route path="admin/users" element={<ErrorBoundary><AdminUserManagement /></ErrorBoundary>} />
-        <Route path="admin/portfolio" element={<ErrorBoundary><AdminPortfolio /></ErrorBoundary>} />
-        <Route path="admin/markets" element={<ErrorBoundary><AdminMarkets /></ErrorBoundary>} />
-        <Route path="admin/models" element={<ErrorBoundary><AdminModels /></ErrorBoundary>} />
-        <Route path="admin/asc" element={<ErrorBoundary><AdminASC /></ErrorBoundary>} />
-        <Route path="admin/system/config" element={<ErrorBoundary><AdminSystemConfig /></ErrorBoundary>} />
-        <Route path="admin/system/control" element={<ErrorBoundary><AdminSystemControl /></ErrorBoundary>} />
-        <Route path="admin/backtest" element={<ErrorBoundary><AdminBacktest /></ErrorBoundary>} />
-        <Route path="admin/feedback" element={<ErrorBoundary><AdminFeedback /></ErrorBoundary>} />
-        <Route path="admin/strategy-review" element={<ErrorBoundary><AdminStrategyReview /></ErrorBoundary>} />
-        <Route path="admin/plugins" element={<ErrorBoundary><AdminPlugins /></ErrorBoundary>} />
-        <Route path="admin/automation-social" element={<ErrorBoundary><AdminAutomationSocial /></ErrorBoundary>} />
-        <Route path="admin/push-console" element={<ErrorBoundary><AdminPushConsole /></ErrorBoundary>} />
-        <Route path="admin/system/tasks" element={<ErrorBoundary><AdminSystemTasks /></ErrorBoundary>} />
+        <Route
+          path="admin/dashboard"
+          element={
+            <ErrorBoundary>
+              <AdminDashboard />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/governance"
+          element={
+            <ErrorBoundary>
+              <AdminGovernance />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/users"
+          element={
+            <ErrorBoundary>
+              <AdminUserManagement />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/portfolio"
+          element={
+            <ErrorBoundary>
+              <AdminPortfolio />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/markets"
+          element={
+            <ErrorBoundary>
+              <AdminMarkets />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/models"
+          element={
+            <ErrorBoundary>
+              <AdminModels />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/asc"
+          element={
+            <ErrorBoundary>
+              <AdminASC />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/system/config"
+          element={
+            <ErrorBoundary>
+              <AdminSystemConfig />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/system/control"
+          element={
+            <ErrorBoundary>
+              <AdminSystemControl />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/backtest"
+          element={
+            <ErrorBoundary>
+              <AdminBacktest />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/feedback"
+          element={
+            <ErrorBoundary>
+              <AdminFeedback />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/strategy-review"
+          element={
+            <ErrorBoundary>
+              <AdminStrategyReview />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/plugins"
+          element={
+            <ErrorBoundary>
+              <AdminPlugins />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/automation-social"
+          element={
+            <ErrorBoundary>
+              <AdminAutomationSocial />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/push-console"
+          element={
+            <ErrorBoundary>
+              <AdminPushConsole />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="admin/system/tasks"
+          element={
+            <ErrorBoundary>
+              <AdminSystemTasks />
+            </ErrorBoundary>
+          }
+        />
 
         {/* Placeholder for unimplemented sections */}
-        <Route path="placeholder/:section" element={<ErrorBoundary><PlaceholderPage /></ErrorBoundary>} />
+        <Route
+          path="placeholder/:section"
+          element={
+            <ErrorBoundary>
+              <PlaceholderPage />
+            </ErrorBoundary>
+          }
+        />
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

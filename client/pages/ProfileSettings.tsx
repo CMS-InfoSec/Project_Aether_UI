@@ -1,19 +1,36 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import apiFetch from '@/lib/apiClient';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
-import HelpTip from '@/components/ui/help-tip';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { 
-  User, 
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import apiFetch from "@/lib/apiClient";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import HelpTip from "@/components/ui/help-tip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
+  User,
   Settings,
   Save,
   RefreshCw,
@@ -29,13 +46,13 @@ import {
   Calendar,
   Info,
   RotateCcw,
-  WifiOff
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+  WifiOff,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Types
 interface UserProfile {
-  risk_tier: 'aggressive' | 'balanced' | 'conservative';
+  risk_tier: "aggressive" | "balanced" | "conservative";
 }
 
 interface TradingSettings {
@@ -43,7 +60,7 @@ interface TradingSettings {
   tp_multiplier: number;
   use_news_analysis: boolean;
   trailing_stop: number;
-  risk_tier?: 'aggressive' | 'balanced' | 'conservative';
+  risk_tier?: "aggressive" | "balanced" | "conservative";
 }
 
 interface ApiKeyRecord {
@@ -70,32 +87,38 @@ interface ValidationErrors {
 
 export default function ProfileSettings() {
   const { user, refreshToken } = useAuth();
-  
+
   // State
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [selectedRiskTier, setSelectedRiskTier] = useState<'aggressive' | 'balanced' | 'conservative'>('balanced');
+  const [selectedRiskTier, setSelectedRiskTier] = useState<
+    "aggressive" | "balanced" | "conservative"
+  >("balanced");
   const [tradingSettings, setTradingSettings] = useState<TradingSettings>({
     sl_multiplier: 0.5,
     tp_multiplier: 2.0,
     use_news_analysis: true,
-    trailing_stop: 0.1
+    trailing_stop: 0.1,
   });
-  const [originalTradingSettings, setOriginalTradingSettings] = useState<TradingSettings>({
-    sl_multiplier: 0.5,
-    tp_multiplier: 2.0,
-    use_news_analysis: true,
-    trailing_stop: 0.1
-  });
-  
+  const [originalTradingSettings, setOriginalTradingSettings] =
+    useState<TradingSettings>({
+      sl_multiplier: 0.5,
+      tp_multiplier: 2.0,
+      use_news_analysis: true,
+      trailing_stop: 0.1,
+    });
+
   // Binance API credentials state
-  const [binanceCredentials, setBinanceCredentials] = useState<BinanceCredentials>({
-    api_key: '',
-    api_secret: '',
-    expiration: ''
-  });
-  const [existingApiKeys, setExistingApiKeys] = useState<ApiKeyRecord | null>(null);
+  const [binanceCredentials, setBinanceCredentials] =
+    useState<BinanceCredentials>({
+      api_key: "",
+      api_secret: "",
+      expiration: "",
+    });
+  const [existingApiKeys, setExistingApiKeys] = useState<ApiKeyRecord | null>(
+    null,
+  );
   const [showApiSecret, setShowApiSecret] = useState(false);
-  
+
   // Loading and error states
   const [isLoading, setIsLoading] = useState({
     profile: true,
@@ -104,29 +127,29 @@ export default function ProfileSettings() {
     saveProfile: false,
     saveSettings: false,
     saveApiKeys: false,
-    deleteApiKeys: false
+    deleteApiKeys: false,
   });
   const [errors, setErrors] = useState<ValidationErrors>({});
-  const [apiError, setApiError] = useState<string>('');
+  const [apiError, setApiError] = useState<string>("");
   const [retryAction, setRetryAction] = useState<string | null>(null);
 
   // Risk tier descriptions
   const riskTierDescriptions = {
     aggressive: {
-      description: 'High risk, high reward trading with maximum position sizes',
+      description: "High risk, high reward trading with maximum position sizes",
       icon: TrendingUp,
-      color: 'text-red-600'
+      color: "text-red-600",
     },
     balanced: {
-      description: 'Moderate risk approach balancing growth and safety',
+      description: "Moderate risk approach balancing growth and safety",
       icon: Settings,
-      color: 'text-blue-600'
+      color: "text-blue-600",
     },
     conservative: {
-      description: 'Low risk strategy focusing on capital preservation',
+      description: "Low risk strategy focusing on capital preservation",
       icon: Shield,
-      color: 'text-green-600'
-    }
+      color: "text-green-600",
+    },
   };
 
   // Load user profile on component mount
@@ -141,76 +164,81 @@ export default function ProfileSettings() {
     if (!binanceCredentials.expiration) {
       const defaultExpiration = new Date();
       defaultExpiration.setDate(defaultExpiration.getDate() + 90);
-      setBinanceCredentials(prev => ({
+      setBinanceCredentials((prev) => ({
         ...prev,
-        expiration: defaultExpiration.toISOString().split('T')[0]
+        expiration: defaultExpiration.toISOString().split("T")[0],
       }));
     }
   }, [binanceCredentials.expiration]);
 
-  const handleApiRequest = useCallback(async (requestFn: () => Promise<Response>, actionName: string) => {
-    try {
-      const response = await requestFn();
-      
-      // Handle 401 (token expired) with automatic refresh
-      if (response.status === 401) {
-        const refreshSuccess = await refreshToken();
-        if (refreshSuccess) {
-          // Retry the original request once
-          return await requestFn();
+  const handleApiRequest = useCallback(
+    async (requestFn: () => Promise<Response>, actionName: string) => {
+      try {
+        const response = await requestFn();
+
+        // Handle 401 (token expired) with automatic refresh
+        if (response.status === 401) {
+          const refreshSuccess = await refreshToken();
+          if (refreshSuccess) {
+            // Retry the original request once
+            return await requestFn();
+          }
+          throw new Error("Authentication failed. Please log in again.");
         }
-        throw new Error('Authentication failed. Please log in again.');
+
+        return response;
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes("fetch")) {
+          setRetryAction(actionName);
+          throw new Error("Network error. Please check your connection.");
+        }
+        throw error;
       }
-      
-      return response;
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        setRetryAction(actionName);
-        throw new Error('Network error. Please check your connection.');
-      }
-      throw error;
-    }
-  }, [refreshToken]);
+    },
+    [refreshToken],
+  );
 
   const loadUserProfile = async () => {
     try {
       const response = await handleApiRequest(
-        () => apiFetch('/api/user/profile'),
-        'loadProfile'
+        () => apiFetch("/api/user/profile"),
+        "loadProfile",
       );
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setUserProfile(data.data);
         setSelectedRiskTier(data.data.risk_tier);
       } else {
-        throw new Error(data.error || 'Failed to load profile');
+        throw new Error(data.error || "Failed to load profile");
       }
     } catch (error) {
-      console.error('Load profile error:', error);
-      setApiError(error instanceof Error ? error.message : 'Failed to load user profile');
+      console.error("Load profile error:", error);
+      setApiError(
+        error instanceof Error ? error.message : "Failed to load user profile",
+      );
     } finally {
-      setIsLoading(prev => ({ ...prev, profile: false }));
+      setIsLoading((prev) => ({ ...prev, profile: false }));
     }
   };
 
   const loadTradingSettings = async () => {
     try {
       const response = await handleApiRequest(
-        () => apiFetch('/api/user/trading-settings'),
-        'loadSettings'
+        () => apiFetch("/api/user/trading-settings"),
+        "loadSettings",
       );
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setTradingSettings(data.data.settings);
         setOriginalTradingSettings(data.data.settings);
       } else {
         // If no settings exist, use defaults
-        console.log('No existing settings found, using defaults');
+        console.log("No existing settings found, using defaults");
       }
     } catch (error) {
-      console.error('Load trading settings error:', error);
+      console.error("Load trading settings error:", error);
       // Don't show error for missing settings, use defaults
     }
   };
@@ -218,100 +246,109 @@ export default function ProfileSettings() {
   const loadApiKeys = async () => {
     try {
       const response = await handleApiRequest(
-        () => apiFetch('/api/user/api-keys'),
-        'loadApiKeys'
+        () => apiFetch("/api/user/api-keys"),
+        "loadApiKeys",
       );
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setExistingApiKeys(data.data.api_keys);
       }
     } catch (error) {
-      console.error('Load API keys error:', error);
+      console.error("Load API keys error:", error);
       // Don't show error for missing API keys
     }
   };
 
   const validateTradingSettings = (): boolean => {
     const newErrors: ValidationErrors = {};
-    
+
     // Validate sl_multiplier (0.1 - 1.0)
-    if (tradingSettings.sl_multiplier < 0.1 || tradingSettings.sl_multiplier > 1.0) {
-      newErrors.sl_multiplier = 'Stop-Loss Multiplier must be between 0.1 and 1.0';
+    if (
+      tradingSettings.sl_multiplier < 0.1 ||
+      tradingSettings.sl_multiplier > 1.0
+    ) {
+      newErrors.sl_multiplier =
+        "Stop-Loss Multiplier must be between 0.1 and 1.0";
     }
-    
+
     // Validate tp_multiplier (> 0)
     if (tradingSettings.tp_multiplier <= 0) {
-      newErrors.tp_multiplier = 'Take-Profit Multiplier must be greater than 0';
+      newErrors.tp_multiplier = "Take-Profit Multiplier must be greater than 0";
     }
-    
+
     // Validate trailing_stop (> 0)
     if (tradingSettings.trailing_stop <= 0) {
-      newErrors.trailing_stop = 'Trailing Stop must be greater than 0';
+      newErrors.trailing_stop = "Trailing Stop must be greater than 0";
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const validateBinanceCredentials = (): boolean => {
     const newErrors: ValidationErrors = {};
-    
+
     // Validate API key (64-char alphanumeric)
     if (!binanceCredentials.api_key) {
-      newErrors.api_key = 'API key is required';
+      newErrors.api_key = "API key is required";
     } else if (!/^[A-Za-z0-9]{64}$/.test(binanceCredentials.api_key)) {
-      newErrors.api_key = 'API key must be exactly 64 alphanumeric characters';
+      newErrors.api_key = "API key must be exactly 64 alphanumeric characters";
     }
-    
+
     // Validate API secret
     if (!binanceCredentials.api_secret) {
-      newErrors.api_secret = 'API secret is required';
+      newErrors.api_secret = "API secret is required";
     } else if (binanceCredentials.api_secret.length < 10) {
-      newErrors.api_secret = 'API secret must be at least 10 characters';
+      newErrors.api_secret = "API secret must be at least 10 characters";
     }
-    
-    setErrors(prev => ({ ...prev, ...newErrors }));
+
+    setErrors((prev) => ({ ...prev, ...newErrors }));
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSaveRiskTier = async () => {
     // Validation
-    if (!['aggressive', 'balanced', 'conservative'].includes(selectedRiskTier)) {
-      setErrors({ risk_tier: 'Invalid risk tier selection' });
+    if (
+      !["aggressive", "balanced", "conservative"].includes(selectedRiskTier)
+    ) {
+      setErrors({ risk_tier: "Invalid risk tier selection" });
       return;
     }
 
-    setIsLoading(prev => ({ ...prev, saveProfile: true }));
-    setApiError('');
+    setIsLoading((prev) => ({ ...prev, saveProfile: true }));
+    setApiError("");
     setRetryAction(null);
-    
+
     try {
       const response = await handleApiRequest(
-        () => apiFetch('/api/user/profile', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ risk_tier: selectedRiskTier })
-        }),
-        'saveProfile'
+        () =>
+          apiFetch("/api/user/profile", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ risk_tier: selectedRiskTier }),
+          }),
+        "saveProfile",
       );
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setUserProfile(data.data);
         toast({
           title: "Risk Tier Updated",
           description: "Your risk profile has been updated successfully.",
         });
       } else {
-        throw new Error(data.error || 'Failed to update risk tier');
+        throw new Error(data.error || "Failed to update risk tier");
       }
     } catch (error) {
-      console.error('Save risk tier error:', error);
-      setApiError(error instanceof Error ? error.message : 'Failed to update risk tier');
+      console.error("Save risk tier error:", error);
+      setApiError(
+        error instanceof Error ? error.message : "Failed to update risk tier",
+      );
     } finally {
-      setIsLoading(prev => ({ ...prev, saveProfile: false }));
+      setIsLoading((prev) => ({ ...prev, saveProfile: false }));
     }
   };
 
@@ -320,56 +357,66 @@ export default function ProfileSettings() {
       return;
     }
 
-    setIsLoading(prev => ({ ...prev, saveSettings: true }));
-    setApiError('');
+    setIsLoading((prev) => ({ ...prev, saveSettings: true }));
+    setApiError("");
     setRetryAction(null);
 
     try {
       const response = await handleApiRequest(
-        () => apiFetch('/api/users/settings', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ settings: tradingSettings })
-        }),
-        'saveSettings'
+        () =>
+          apiFetch("/api/users/settings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ settings: tradingSettings }),
+          }),
+        "saveSettings",
       );
 
       // Check status first before reading JSON
       if (response.status === 400) {
         const errorData = await response.json();
-        const errorMessage = errorData.details ? errorData.details.join(', ') : errorData.error;
+        const errorMessage = errorData.details
+          ? errorData.details.join(", ")
+          : errorData.error;
         setApiError(errorMessage);
         return;
       }
 
       if (response.status === 502) {
-        setRetryAction('saveSettings');
-        setApiError('Network error. Please try again.');
+        setRetryAction("saveSettings");
+        setApiError("Network error. Please try again.");
         return;
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setTradingSettings(data.data.settings);
         setOriginalTradingSettings(data.data.settings);
         toast({
           title: "Trading Settings Updated",
-          description: "Your trading preferences have been updated successfully.",
+          description:
+            "Your trading preferences have been updated successfully.",
         });
       } else {
-        throw new Error(data.error || 'Failed to update trading settings');
+        throw new Error(data.error || "Failed to update trading settings");
       }
     } catch (error) {
-      console.error('Save trading settings error:', error);
-      setApiError(error instanceof Error ? error.message : 'Failed to update trading settings');
+      console.error("Save trading settings error:", error);
+      setApiError(
+        error instanceof Error
+          ? error.message
+          : "Failed to update trading settings",
+      );
     } finally {
-      setIsLoading(prev => ({ ...prev, saveSettings: false }));
+      setIsLoading((prev) => ({ ...prev, saveSettings: false }));
     }
   };
 
@@ -378,118 +425,130 @@ export default function ProfileSettings() {
       return;
     }
 
-    setIsLoading(prev => ({ ...prev, saveApiKeys: true }));
-    setApiError('');
+    setIsLoading((prev) => ({ ...prev, saveApiKeys: true }));
+    setApiError("");
     setRetryAction(null);
 
     try {
-      const expirationISO = new Date(binanceCredentials.expiration + 'T00:00:00Z').toISOString();
+      const expirationISO = new Date(
+        binanceCredentials.expiration + "T00:00:00Z",
+      ).toISOString();
 
       const response = await handleApiRequest(
-        () => apiFetch('/api/users/settings', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            binance_key: binanceCredentials.api_key,
-            binance_secret: binanceCredentials.api_secret,
-            expires_at: expirationISO
-          })
-        }),
-        'saveApiKeys'
+        () =>
+          apiFetch("/api/users/settings", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              binance_key: binanceCredentials.api_key,
+              binance_secret: binanceCredentials.api_secret,
+              expires_at: expirationISO,
+            }),
+          }),
+        "saveApiKeys",
       );
 
       // Check status first, then read JSON once
       if (response.status === 400) {
         const errorData = await response.json();
-        setApiError(errorData.error || 'Invalid API credentials');
+        setApiError(errorData.error || "Invalid API credentials");
         return;
       }
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: "Unknown error" }));
         throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setExistingApiKeys(data.data.api_keys);
-        setBinanceCredentials({ api_key: '', api_secret: '', expiration: '' });
+        setBinanceCredentials({ api_key: "", api_secret: "", expiration: "" });
         toast({
           title: "API Keys Saved",
           description: "Your Binance API credentials have been saved securely.",
         });
       } else {
-        throw new Error(data.error || 'Failed to save API keys');
+        throw new Error(data.error || "Failed to save API keys");
       }
     } catch (error) {
-      console.error('Save API keys error:', error);
-      setApiError(error instanceof Error ? error.message : 'Failed to save API keys');
+      console.error("Save API keys error:", error);
+      setApiError(
+        error instanceof Error ? error.message : "Failed to save API keys",
+      );
     } finally {
-      setIsLoading(prev => ({ ...prev, saveApiKeys: false }));
+      setIsLoading((prev) => ({ ...prev, saveApiKeys: false }));
     }
   };
 
   const handleDeleteApiKeys = async () => {
-    setIsLoading(prev => ({ ...prev, deleteApiKeys: true }));
-    setApiError('');
+    setIsLoading((prev) => ({ ...prev, deleteApiKeys: true }));
+    setApiError("");
 
     try {
-      console.log('Sending delete API keys request to dedicated endpoint...');
+      console.log("Sending delete API keys request to dedicated endpoint...");
 
       const response = await handleApiRequest(
-        () => apiFetch('/api/user/api-keys', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' }
-        }),
-        'deleteApiKeys'
+        () =>
+          apiFetch("/api/user/api-keys", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+          }),
+        "deleteApiKeys",
       );
 
-      console.log('Delete API keys response status:', response.status);
+      console.log("Delete API keys response status:", response.status);
 
       // Check response status first
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
         try {
           const errorData = await response.json();
-          console.log('Error response data:', errorData);
+          console.log("Error response data:", errorData);
           errorMessage = errorData.error || errorData.message || errorMessage;
           if (errorData.details) {
-            errorMessage += ': ' + errorData.details.join(', ');
+            errorMessage += ": " + errorData.details.join(", ");
           }
         } catch (jsonError) {
-          console.log('Could not parse error response as JSON:', jsonError);
+          console.log("Could not parse error response as JSON:", jsonError);
           try {
             const textError = await response.text();
-            console.log('Error response text:', textError);
+            console.log("Error response text:", textError);
             if (textError) {
               errorMessage = textError;
             }
           } catch (textError) {
-            console.log('Could not read error response as text:', textError);
+            console.log("Could not read error response as text:", textError);
           }
         }
         throw new Error(errorMessage);
       }
 
       const data = await response.json();
-      console.log('Delete API keys success response:', data);
+      console.log("Delete API keys success response:", data);
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setExistingApiKeys(null);
         toast({
           title: "API Keys Deleted",
           description: "Your Binance API credentials have been removed.",
-          variant: "destructive"
+          variant: "destructive",
         });
       } else {
-        throw new Error(data.error || data.message || 'Failed to delete API keys');
+        throw new Error(
+          data.error || data.message || "Failed to delete API keys",
+        );
       }
     } catch (error) {
-      console.error('Delete API keys error:', error);
-      setApiError(error instanceof Error ? error.message : 'Failed to delete API keys');
+      console.error("Delete API keys error:", error);
+      setApiError(
+        error instanceof Error ? error.message : "Failed to delete API keys",
+      );
     } finally {
-      setIsLoading(prev => ({ ...prev, deleteApiKeys: false }));
+      setIsLoading((prev) => ({ ...prev, deleteApiKeys: false }));
     }
   };
 
@@ -499,11 +558,11 @@ export default function ProfileSettings() {
       setSelectedRiskTier(userProfile.risk_tier);
     }
     setTradingSettings(originalTradingSettings);
-    setBinanceCredentials({ api_key: '', api_secret: '', expiration: '' });
+    setBinanceCredentials({ api_key: "", api_secret: "", expiration: "" });
     setErrors({});
-    setApiError('');
+    setApiError("");
     setRetryAction(null);
-    
+
     toast({
       title: "Form Reset",
       description: "All changes have been reverted to last saved values.",
@@ -512,49 +571,52 @@ export default function ProfileSettings() {
 
   const handleRetry = () => {
     setRetryAction(null);
-    setApiError('');
-    
+    setApiError("");
+
     switch (retryAction) {
-      case 'loadProfile':
+      case "loadProfile":
         loadUserProfile();
         break;
-      case 'loadSettings':
+      case "loadSettings":
         loadTradingSettings();
         break;
-      case 'loadApiKeys':
+      case "loadApiKeys":
         loadApiKeys();
         break;
-      case 'saveProfile':
+      case "saveProfile":
         handleSaveRiskTier();
         break;
-      case 'saveSettings':
+      case "saveSettings":
         handleSaveTradingSettings();
         break;
-      case 'saveApiKeys':
+      case "saveApiKeys":
         handleSaveApiKeys();
         break;
-      case 'deleteApiKeys':
+      case "deleteApiKeys":
         handleDeleteApiKeys();
         break;
     }
   };
 
   // Check if risk tier has changed
-  const riskTierChanged = userProfile && selectedRiskTier !== userProfile.risk_tier;
-  
+  const riskTierChanged =
+    userProfile && selectedRiskTier !== userProfile.risk_tier;
+
   // Check if all trading settings are valid
-  const tradingSettingsValid = Object.keys(errors).filter(key => 
-    ['sl_multiplier', 'tp_multiplier', 'trailing_stop'].includes(key)
-  ).length === 0 && 
-    tradingSettings.sl_multiplier >= 0.1 && tradingSettings.sl_multiplier <= 1.0 &&
+  const tradingSettingsValid =
+    Object.keys(errors).filter((key) =>
+      ["sl_multiplier", "tp_multiplier", "trailing_stop"].includes(key),
+    ).length === 0 &&
+    tradingSettings.sl_multiplier >= 0.1 &&
+    tradingSettings.sl_multiplier <= 1.0 &&
     tradingSettings.tp_multiplier > 0 &&
     tradingSettings.trailing_stop > 0;
 
   // Check if API credentials are valid
-  const apiCredentialsValid = Object.keys(errors).filter(key => 
-    ['api_key', 'api_secret'].includes(key)
-  ).length === 0 && 
-    binanceCredentials.api_key.length > 0 && 
+  const apiCredentialsValid =
+    Object.keys(errors).filter((key) => ["api_key", "api_secret"].includes(key))
+      .length === 0 &&
+    binanceCredentials.api_key.length > 0 &&
     binanceCredentials.api_secret.length > 0;
 
   if (isLoading.profile) {
@@ -572,14 +634,25 @@ export default function ProfileSettings() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Profile & Settings</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Profile & Settings
+            </h1>
             <p className="text-muted-foreground">
-              Manage your personal risk profile, trading preferences, and API credentials
+              Manage your personal risk profile, trading preferences, and API
+              credentials
             </p>
             <div className="mt-2 text-sm flex items-center gap-2">
               <Badge variant="outline">{user?.email}</Badge>
-              <Badge variant={user?.role==='admin' ? 'destructive' : 'outline'}>{user?.role ?? 'user'}</Badge>
-              {userProfile && <Badge variant="secondary" className="capitalize">{userProfile.risk_tier}</Badge>}
+              <Badge
+                variant={user?.role === "admin" ? "destructive" : "outline"}
+              >
+                {user?.role ?? "user"}
+              </Badge>
+              {userProfile && (
+                <Badge variant="secondary" className="capitalize">
+                  {userProfile.risk_tier}
+                </Badge>
+              )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -612,7 +685,8 @@ export default function ProfileSettings() {
           <Alert>
             <WifiOff className="h-4 w-4" />
             <AlertDescription>
-              You're currently offline. Changes will be saved when connection is restored.
+              You're currently offline. Changes will be saved when connection is
+              restored.
             </AlertDescription>
           </Alert>
         )}
@@ -626,7 +700,8 @@ export default function ProfileSettings() {
                 <span>Risk Profile</span>
               </CardTitle>
               <CardDescription>
-                Set your trading risk tolerance level. This affects position sizing and risk management.
+                Set your trading risk tolerance level. This affects position
+                sizing and risk management.
               </CardDescription>
             </div>
             <HelpTip content="Choose a preset risk tier; it influences defaults for sizing and stops." />
@@ -634,12 +709,19 @@ export default function ProfileSettings() {
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <div className="flex items-center gap-2"><Label htmlFor="riskTier">Risk Tier</Label><HelpTip content="Preset profile controlling default risk limits for your account." /></div>
-                <Select 
-                  value={selectedRiskTier} 
-                  onValueChange={(value: 'aggressive' | 'balanced' | 'conservative') => setSelectedRiskTier(value)}
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="riskTier">Risk Tier</Label>
+                  <HelpTip content="Preset profile controlling default risk limits for your account." />
+                </div>
+                <Select
+                  value={selectedRiskTier}
+                  onValueChange={(
+                    value: "aggressive" | "balanced" | "conservative",
+                  ) => setSelectedRiskTier(value)}
                 >
-                  <SelectTrigger className={errors.risk_tier ? 'border-red-500' : ''}>
+                  <SelectTrigger
+                    className={errors.risk_tier ? "border-red-500" : ""}
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -656,11 +738,16 @@ export default function ProfileSettings() {
               {/* Risk Tier Description */}
               <div className="p-4 border rounded-lg bg-muted/20">
                 <div className="flex items-center space-x-3">
-                  {React.createElement(riskTierDescriptions[selectedRiskTier].icon, {
-                    className: `h-5 w-5 ${riskTierDescriptions[selectedRiskTier].color}`
-                  })}
+                  {React.createElement(
+                    riskTierDescriptions[selectedRiskTier].icon,
+                    {
+                      className: `h-5 w-5 ${riskTierDescriptions[selectedRiskTier].color}`,
+                    },
+                  )}
                   <div>
-                    <div className="font-medium capitalize">{selectedRiskTier}</div>
+                    <div className="font-medium capitalize">
+                      {selectedRiskTier}
+                    </div>
                     <div className="text-sm text-muted-foreground">
                       {riskTierDescriptions[selectedRiskTier].description}
                     </div>
@@ -669,7 +756,7 @@ export default function ProfileSettings() {
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={handleSaveRiskTier}
               disabled={!riskTierChanged || isLoading.saveProfile}
               className="w-full md:w-auto"
@@ -707,8 +794,12 @@ export default function ProfileSettings() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Stop-Loss Multiplier */}
               <div className="space-y-2">
-                <Label htmlFor="slMultiplier" className="flex items-center gap-2">
-                  <span>Stop-Loss Multiplier</span><HelpTip content="Multiplier applied to baseline stop-loss distance. Higher widens stops." />
+                <Label
+                  htmlFor="slMultiplier"
+                  className="flex items-center gap-2"
+                >
+                  <span>Stop-Loss Multiplier</span>
+                  <HelpTip content="Multiplier applied to baseline stop-loss distance. Higher widens stops." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
@@ -727,9 +818,12 @@ export default function ProfileSettings() {
                   value={tradingSettings.sl_multiplier}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
-                    setTradingSettings(prev => ({ ...prev, sl_multiplier: isNaN(value) ? 0 : value }));
+                    setTradingSettings((prev) => ({
+                      ...prev,
+                      sl_multiplier: isNaN(value) ? 0 : value,
+                    }));
                   }}
-                  className={errors.sl_multiplier ? 'border-red-500' : ''}
+                  className={errors.sl_multiplier ? "border-red-500" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
                   Valid Range: 0.1 - 1.0
@@ -741,8 +835,12 @@ export default function ProfileSettings() {
 
               {/* Take-Profit Multiplier */}
               <div className="space-y-2">
-                <Label htmlFor="tpMultiplier" className="flex items-center gap-2">
-                  <span>Take-Profit Multiplier</span><HelpTip content="Multiplier applied to baseline take-profit. Higher enlarges target." />
+                <Label
+                  htmlFor="tpMultiplier"
+                  className="flex items-center gap-2"
+                >
+                  <span>Take-Profit Multiplier</span>
+                  <HelpTip content="Multiplier applied to baseline take-profit. Higher enlarges target." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
@@ -760,9 +858,12 @@ export default function ProfileSettings() {
                   value={tradingSettings.tp_multiplier}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
-                    setTradingSettings(prev => ({ ...prev, tp_multiplier: isNaN(value) ? 0 : value }));
+                    setTradingSettings((prev) => ({
+                      ...prev,
+                      tp_multiplier: isNaN(value) ? 0 : value,
+                    }));
                   }}
-                  className={errors.tp_multiplier ? 'border-red-500' : ''}
+                  className={errors.tp_multiplier ? "border-red-500" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
                   Must be greater than 0
@@ -774,14 +875,20 @@ export default function ProfileSettings() {
 
               {/* Trailing Stop */}
               <div className="space-y-2">
-                <Label htmlFor="trailingStop" className="flex items-center gap-2">
-                  <span>Trailing Stop</span><HelpTip content="Percentage trail that follows price to protect gains." />
+                <Label
+                  htmlFor="trailingStop"
+                  className="flex items-center gap-2"
+                >
+                  <span>Trailing Stop</span>
+                  <HelpTip content="Percentage trail that follows price to protect gains." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Percentage trigger for trailing stop (e.g. 0.1 for 10%)</p>
+                      <p>
+                        Percentage trigger for trailing stop (e.g. 0.1 for 10%)
+                      </p>
                     </TooltipContent>
                   </Tooltip>
                 </Label>
@@ -793,9 +900,12 @@ export default function ProfileSettings() {
                   value={tradingSettings.trailing_stop}
                   onChange={(e) => {
                     const value = parseFloat(e.target.value);
-                    setTradingSettings(prev => ({ ...prev, trailing_stop: isNaN(value) ? 0 : value }));
+                    setTradingSettings((prev) => ({
+                      ...prev,
+                      trailing_stop: isNaN(value) ? 0 : value,
+                    }));
                   }}
-                  className={errors.trailing_stop ? 'border-red-500' : ''}
+                  className={errors.trailing_stop ? "border-red-500" : ""}
                 />
                 <p className="text-xs text-muted-foreground">
                   Percentage for trailing stop trigger (e.g., 0.1 for 10%)
@@ -810,7 +920,8 @@ export default function ProfileSettings() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label className="flex items-center gap-2">
-                      <span>Use News Analysis</span><HelpTip content="Include news-derived sentiment in decision making." />
+                      <span>Use News Analysis</span>
+                      <HelpTip content="Include news-derived sentiment in decision making." />
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3 w-3 text-muted-foreground" />
@@ -826,10 +937,12 @@ export default function ProfileSettings() {
                   </div>
                   <Switch
                     checked={tradingSettings.use_news_analysis}
-                    onCheckedChange={(checked) => setTradingSettings(prev => ({ 
-                      ...prev, 
-                      use_news_analysis: checked 
-                    }))}
+                    onCheckedChange={(checked) =>
+                      setTradingSettings((prev) => ({
+                        ...prev,
+                        use_news_analysis: checked,
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -838,8 +951,8 @@ export default function ProfileSettings() {
             <Separator />
 
             {/* Validation Summary */}
-            {Object.keys(errors).filter(key => 
-              ['sl_multiplier', 'tp_multiplier', 'trailing_stop'].includes(key)
+            {Object.keys(errors).filter((key) =>
+              ["sl_multiplier", "tp_multiplier", "trailing_stop"].includes(key),
             ).length > 0 && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -851,18 +964,38 @@ export default function ProfileSettings() {
 
             <div className="flex items-center gap-2 flex-wrap">
               <Button
-                onClick={async ()=>{
+                onClick={async () => {
                   const before = originalTradingSettings;
                   const after = tradingSettings;
-                  const diff: Record<string, { from:any; to:any }> = {};
-                  (['sl_multiplier','tp_multiplier','trailing_stop','use_news_analysis'] as const).forEach(k=>{
-                    if ((before as any)[k] !== (after as any)[k]) diff[k] = { from: (before as any)[k], to: (after as any)[k] };
+                  const diff: Record<string, { from: any; to: any }> = {};
+                  (
+                    [
+                      "sl_multiplier",
+                      "tp_multiplier",
+                      "trailing_stop",
+                      "use_news_analysis",
+                    ] as const
+                  ).forEach((k) => {
+                    if ((before as any)[k] !== (after as any)[k])
+                      diff[k] = {
+                        from: (before as any)[k],
+                        to: (after as any)[k],
+                      };
                   });
-                  const ok = window.confirm(`Review changes before saving:\n\n${JSON.stringify(diff,null,2)}`);
+                  const ok = window.confirm(
+                    `Review changes before saving:\n\n${JSON.stringify(diff, null, 2)}`,
+                  );
                   if (!ok) return;
                   await handleSaveTradingSettings();
                   try {
-                    await apiFetch('/api/config/user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: user?.id || 'user_1', settings: { trading: { ...after } } }) });
+                    await apiFetch("/api/config/user", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        userId: user?.id || "user_1",
+                        settings: { trading: { ...after } },
+                      }),
+                    });
                   } catch {}
                 }}
                 disabled={!tradingSettingsValid || isLoading.saveSettings}
@@ -880,12 +1013,40 @@ export default function ProfileSettings() {
                   </>
                 )}
               </Button>
-              <Button variant="outline" onClick={()=>{
-                const tier = selectedRiskTier;
-                const defaults = tier==='aggressive' ? { sl_multiplier: 0.8, tp_multiplier: 3.0, trailing_stop: 0.15, use_news_analysis: true } : tier==='balanced' ? { sl_multiplier: 0.5, tp_multiplier: 2.0, trailing_stop: 0.1, use_news_analysis: true } : { sl_multiplier: 0.3, tp_multiplier: 1.5, trailing_stop: 0.05, use_news_analysis: false };
-                setTradingSettings(defaults);
-                toast({ title:'Defaults applied', description:`Applied ${tier} tier defaults` });
-              }}>Reset to Tier Defaults</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const tier = selectedRiskTier;
+                  const defaults =
+                    tier === "aggressive"
+                      ? {
+                          sl_multiplier: 0.8,
+                          tp_multiplier: 3.0,
+                          trailing_stop: 0.15,
+                          use_news_analysis: true,
+                        }
+                      : tier === "balanced"
+                        ? {
+                            sl_multiplier: 0.5,
+                            tp_multiplier: 2.0,
+                            trailing_stop: 0.1,
+                            use_news_analysis: true,
+                          }
+                        : {
+                            sl_multiplier: 0.3,
+                            tp_multiplier: 1.5,
+                            trailing_stop: 0.05,
+                            use_news_analysis: false,
+                          };
+                  setTradingSettings(defaults);
+                  toast({
+                    title: "Defaults applied",
+                    description: `Applied ${tier} tier defaults`,
+                  });
+                }}
+              >
+                Reset to Tier Defaults
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -899,7 +1060,8 @@ export default function ProfileSettings() {
                 <span>Binance API Credentials</span>
               </CardTitle>
               <CardDescription>
-                Connect your Binance account for live trading. Keys are encrypted at rest and must not have withdrawal permissions.
+                Connect your Binance account for live trading. Keys are
+                encrypted at rest and must not have withdrawal permissions.
               </CardDescription>
             </div>
             <HelpTip content="Enter your Binance API key/secret; avoid withdrawal scopes. Rotate periodically." />
@@ -912,17 +1074,34 @@ export default function ProfileSettings() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="font-medium text-green-800">API Keys Configured</span>
+                      <span className="font-medium text-green-800">
+                        API Keys Configured
+                      </span>
                     </div>
                     <div className="text-sm space-y-1">
-                      <div>Key: <code className="bg-green-100 px-1 rounded">{existingApiKeys.key_masked}</code></div>
-                      <div className="flex items-center space-x-2">
-                        <Calendar className="h-3 w-3" />
-                        <span>Expires: {new Date(existingApiKeys.expires_at).toLocaleDateString()}</span>
+                      <div>
+                        Key:{" "}
+                        <code className="bg-green-100 px-1 rounded">
+                          {existingApiKeys.key_masked}
+                        </code>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">
-                          {existingApiKeys.scopes_verified ? 'Scopes Verified' : 'Pending Verification'}
+                        <Calendar className="h-3 w-3" />
+                        <span>
+                          Expires:{" "}
+                          {new Date(
+                            existingApiKeys.expires_at,
+                          ).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge
+                          variant="outline"
+                          className="bg-green-100 text-green-800 border-green-300"
+                        >
+                          {existingApiKeys.scopes_verified
+                            ? "Scopes Verified"
+                            : "Pending Verification"}
                         </Badge>
                       </div>
                     </div>
@@ -934,11 +1113,15 @@ export default function ProfileSettings() {
                       onClick={() => {
                         setExistingApiKeys(null);
                         const defaultExpiration = new Date();
-                        defaultExpiration.setDate(defaultExpiration.getDate() + 90);
+                        defaultExpiration.setDate(
+                          defaultExpiration.getDate() + 90,
+                        );
                         setBinanceCredentials({
-                          api_key: '',
-                          api_secret: '',
-                          expiration: defaultExpiration.toISOString().split('T')[0]
+                          api_key: "",
+                          api_secret: "",
+                          expiration: defaultExpiration
+                            .toISOString()
+                            .split("T")[0],
                         });
                       }}
                     >
@@ -968,17 +1151,24 @@ export default function ProfileSettings() {
               <div className="space-y-4">
                 {/* Binance API Key */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2"><Label htmlFor="apiKey">Binance API Key</Label><HelpTip content="Your Binance API key used for authenticated requests. Stored securely on the server." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="apiKey">Binance API Key</Label>
+                    <HelpTip content="Your Binance API key used for authenticated requests. Stored securely on the server." />
+                  </div>
                   <Input
                     id="apiKey"
                     type="text"
                     placeholder="Enter your 64-character Binance API key"
                     value={binanceCredentials.api_key}
-                    onChange={(e) => setBinanceCredentials(prev => ({ 
-                      ...prev, 
-                      api_key: e.target.value.replace(/[^A-Za-z0-9]/g, '').substring(0, 64)
-                    }))}
-                    className={errors.api_key ? 'border-red-500' : ''}
+                    onChange={(e) =>
+                      setBinanceCredentials((prev) => ({
+                        ...prev,
+                        api_key: e.target.value
+                          .replace(/[^A-Za-z0-9]/g, "")
+                          .substring(0, 64),
+                      }))
+                    }
+                    className={errors.api_key ? "border-red-500" : ""}
                   />
                   <p className="text-xs text-muted-foreground">
                     64-character alphanumeric string from your Binance account
@@ -990,18 +1180,25 @@ export default function ProfileSettings() {
 
                 {/* Binance API Secret */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2"><Label htmlFor="apiSecret">Binance API Secret</Label><HelpTip content="Your Binance API secret. Keep private. Required to place orders and fetch balances." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="apiSecret">Binance API Secret</Label>
+                    <HelpTip content="Your Binance API secret. Keep private. Required to place orders and fetch balances." />
+                  </div>
                   <div className="relative">
                     <Input
                       id="apiSecret"
-                      type={showApiSecret ? 'text' : 'password'}
+                      type={showApiSecret ? "text" : "password"}
                       placeholder="Enter your Binance API secret"
                       value={binanceCredentials.api_secret}
-                      onChange={(e) => setBinanceCredentials(prev => ({ 
-                        ...prev, 
-                        api_secret: e.target.value 
-                      }))}
-                      className={errors.api_secret ? 'border-red-500 pr-10' : 'pr-10'}
+                      onChange={(e) =>
+                        setBinanceCredentials((prev) => ({
+                          ...prev,
+                          api_secret: e.target.value,
+                        }))
+                      }
+                      className={
+                        errors.api_secret ? "border-red-500 pr-10" : "pr-10"
+                      }
                     />
                     <Button
                       type="button"
@@ -1010,7 +1207,11 @@ export default function ProfileSettings() {
                       className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
                       onClick={() => setShowApiSecret(!showApiSecret)}
                     >
-                      {showApiSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showApiSecret ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -1023,19 +1224,27 @@ export default function ProfileSettings() {
 
                 {/* Expiration Date */}
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2"><Label htmlFor="expiration">Expiration Date (Optional)</Label><HelpTip content="Optional expiry for rotating API credentials. Leave empty for no expiry." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="expiration">
+                      Expiration Date (Optional)
+                    </Label>
+                    <HelpTip content="Optional expiry for rotating API credentials. Leave empty for no expiry." />
+                  </div>
                   <Input
                     id="expiration"
                     type="date"
                     value={binanceCredentials.expiration}
-                    onChange={(e) => setBinanceCredentials(prev => ({ 
-                      ...prev, 
-                      expiration: e.target.value 
-                    }))}
-                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(e) =>
+                      setBinanceCredentials((prev) => ({
+                        ...prev,
+                        expiration: e.target.value,
+                      }))
+                    }
+                    min={new Date().toISOString().split("T")[0]}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Defaults to 90 days from entry. Set when you want to rotate keys.
+                    Defaults to 90 days from entry. Set when you want to rotate
+                    keys.
                   </p>
                 </div>
 
@@ -1043,14 +1252,15 @@ export default function ProfileSettings() {
                 <Alert>
                   <Shield className="h-4 w-4" />
                   <AlertDescription>
-                    <strong>Security Requirements:</strong> Your API keys must NOT have withdrawal or transfer permissions. 
-                    We only need spot trading and account information access.
+                    <strong>Security Requirements:</strong> Your API keys must
+                    NOT have withdrawal or transfer permissions. We only need
+                    spot trading and account information access.
                   </AlertDescription>
                 </Alert>
 
                 {/* Validation Errors */}
-                {Object.keys(errors).filter(key => 
-                  ['api_key', 'api_secret'].includes(key)
+                {Object.keys(errors).filter((key) =>
+                  ["api_key", "api_secret"].includes(key),
                 ).length > 0 && (
                   <Alert variant="destructive">
                     <AlertTriangle className="h-4 w-4" />
@@ -1061,7 +1271,7 @@ export default function ProfileSettings() {
                 )}
 
                 {/* Save API Keys Button */}
-                <Button 
+                <Button
                   onClick={handleSaveApiKeys}
                   disabled={!apiCredentialsValid || isLoading.saveApiKeys}
                   className="w-full md:w-auto"
@@ -1088,7 +1298,9 @@ export default function ProfileSettings() {
           <CardHeader className="flex items-start justify-between">
             <div>
               <CardTitle>Current Settings Summary</CardTitle>
-              <CardDescription>Review your current configuration</CardDescription>
+              <CardDescription>
+                Review your current configuration
+              </CardDescription>
             </div>
             <HelpTip content="Snapshot of your active profile, preferences, and API connection." />
           </CardHeader>
@@ -1097,9 +1309,12 @@ export default function ProfileSettings() {
               <div className="space-y-2">
                 <h4 className="font-medium">Risk Profile</h4>
                 <div className="flex items-center space-x-2">
-                  {React.createElement(riskTierDescriptions[selectedRiskTier].icon, {
-                    className: `h-4 w-4 ${riskTierDescriptions[selectedRiskTier].color}`
-                  })}
+                  {React.createElement(
+                    riskTierDescriptions[selectedRiskTier].icon,
+                    {
+                      className: `h-4 w-4 ${riskTierDescriptions[selectedRiskTier].color}`,
+                    },
+                  )}
                   <span className="capitalize">{selectedRiskTier}</span>
                 </div>
               </div>
@@ -1108,8 +1323,14 @@ export default function ProfileSettings() {
                 <div className="text-sm space-y-1">
                   <div>Stop-Loss: {tradingSettings.sl_multiplier}x</div>
                   <div>Take-Profit: {tradingSettings.tp_multiplier}x</div>
-                  <div>Trailing Stop: {(tradingSettings.trailing_stop * 100).toFixed(1)}%</div>
-                  <div>News Analysis: {tradingSettings.use_news_analysis ? 'Enabled' : 'Disabled'}</div>
+                  <div>
+                    Trailing Stop:{" "}
+                    {(tradingSettings.trailing_stop * 100).toFixed(1)}%
+                  </div>
+                  <div>
+                    News Analysis:{" "}
+                    {tradingSettings.use_news_analysis ? "Enabled" : "Disabled"}
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">

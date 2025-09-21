@@ -1,20 +1,26 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import apiFetch from '@/lib/apiClient';
-import copy from '@/lib/clipboard';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import HelpTip from '@/components/ui/help-tip';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import apiFetch from "@/lib/apiClient";
+import copy from "@/lib/clipboard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import HelpTip from "@/components/ui/help-tip";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from '@/components/ui/collapsible';
+} from "@/components/ui/collapsible";
 import {
   Dialog,
   DialogContent,
@@ -22,10 +28,10 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
-import { 
-  Bot, 
-  User, 
+} from "@/components/ui/dialog";
+import {
+  Bot,
+  User,
   Send,
   Copy,
   RefreshCw,
@@ -41,15 +47,15 @@ import {
   FileText,
   Activity,
   CheckCircle,
-  Info
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+  Info,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Types
 interface Trade {
   id: string;
   symbol: string;
-  action: 'buy' | 'sell';
+  action: "buy" | "sell";
   amount: number;
   price: number;
   timestamp: string;
@@ -87,17 +93,25 @@ interface RequestState {
 
 export default function AIAssistant() {
   // State
-  const [question, setQuestion] = useState('');
+  const [question, setQuestion] = useState("");
   const [response, setResponse] = useState<LLMResponse | null>(null);
-  const [includeOptions, setIncludeOptions] = useState({ signals: true, trades: true, sentiment: true, regime: true });
-  const lastRequestRef = useRef<{ question: string; include: typeof includeOptions } | null>(null);
+  const [includeOptions, setIncludeOptions] = useState({
+    signals: true,
+    trades: true,
+    sentiment: true,
+    regime: true,
+  });
+  const lastRequestRef = useRef<{
+    question: string;
+    include: typeof includeOptions;
+  } | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [showContext, setShowContext] = useState(false);
   const [isContextExpanded, setIsContextExpanded] = useState(false);
   const [requestState, setRequestState] = useState<RequestState>({
     isLoading: false,
     error: null,
-    rateLimit: { isLimited: false, resetTime: null }
+    rateLimit: { isLimited: false, resetTime: null },
   });
 
   // Refs
@@ -106,7 +120,7 @@ export default function AIAssistant() {
 
   // Constants
   const MAX_CHARS = 500;
-  const HISTORY_STORAGE_KEY = 'ai-assistant-history';
+  const HISTORY_STORAGE_KEY = "ai-assistant-history";
 
   // Load history from localStorage on mount
   useEffect(() => {
@@ -116,9 +130,9 @@ export default function AIAssistant() {
         setHistory(JSON.parse(savedHistory));
       }
     } catch (error) {
-      console.error('Failed to load history:', error);
+      console.error("Failed to load history:", error);
     }
-    
+
     // Focus question input on load
     questionInputRef.current?.focus();
   }, []);
@@ -128,7 +142,7 @@ export default function AIAssistant() {
     try {
       localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(history));
     } catch (error) {
-      console.error('Failed to save history:', error);
+      console.error("Failed to save history:", error);
     }
   }, [history]);
 
@@ -138,9 +152,9 @@ export default function AIAssistant() {
       const interval = setInterval(() => {
         const now = Date.now();
         if (now >= requestState.rateLimit.resetTime!) {
-          setRequestState(prev => ({
+          setRequestState((prev) => ({
             ...prev,
-            rateLimit: { isLimited: false, resetTime: null }
+            rateLimit: { isLimited: false, resetTime: null },
           }));
         }
       }, 1000);
@@ -151,26 +165,38 @@ export default function AIAssistant() {
 
   // Utility functions
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
     }).format(amount);
   };
 
   const copyToClipboard = async (text: string) => {
     const ok = await copy(text);
-    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Text copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
+    toast({
+      title: ok ? "Copied" : "Copy Failed",
+      description: ok
+        ? "Text copied to clipboard"
+        : "Failed to copy to clipboard",
+      variant: ok ? "default" : "destructive",
+    });
   };
 
   const copyCitation = async (citationId: string) => {
     const ok = await copy(citationId);
-    toast({ title: ok ? 'Citation copied' : 'Copy Failed', description: ok ? `Citation ID ${citationId} copied` : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
+    toast({
+      title: ok ? "Citation copied" : "Copy Failed",
+      description: ok
+        ? `Citation ID ${citationId} copied`
+        : "Failed to copy to clipboard",
+      variant: ok ? "default" : "destructive",
+    });
   };
 
   // Handle keyboard shortcuts
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       if (e.ctrlKey || e.metaKey) {
         // Ctrl+Enter or Cmd+Enter submits
         e.preventDefault();
@@ -185,35 +211,41 @@ export default function AIAssistant() {
 
   // Submit question to LLM
   const handleSubmit = async () => {
-    if (!question.trim() || requestState.isLoading || requestState.rateLimit.isLimited) {
+    if (
+      !question.trim() ||
+      requestState.isLoading ||
+      requestState.rateLimit.isLimited
+    ) {
       return;
     }
 
-    setRequestState(prev => ({ ...prev, isLoading: true, error: null }));
+    setRequestState((prev) => ({ ...prev, isLoading: true, error: null }));
 
     try {
       const payload = { question: question.trim(), include: includeOptions };
       lastRequestRef.current = payload;
-      const response = await apiFetch('/api/llm/ask', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/llm/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (response.status === 429) {
         const errorData = await response.json();
-        setRequestState(prev => ({
+        setRequestState((prev) => ({
           ...prev,
           isLoading: false,
           rateLimit: {
             isLimited: true,
-            resetTime: errorData.resetTime || Date.now() + 3600000
-          }
+            resetTime: errorData.resetTime || Date.now() + 3600000,
+          },
         }));
         toast({
           title: "Rate Limit Exceeded",
-          description: errorData.message || "Too many requests. Please wait before asking again.",
-          variant: "destructive"
+          description:
+            errorData.message ||
+            "Too many requests. Please wait before asking again.",
+          variant: "destructive",
         });
         return;
       }
@@ -221,38 +253,68 @@ export default function AIAssistant() {
       if (response.status === 401) {
         // Try to refresh token
         try {
-          const refreshResponse = await apiFetch('/api/auth/refresh', { method: 'POST' });
+          const refreshResponse = await apiFetch("/api/auth/refresh", {
+            method: "POST",
+          });
           if (refreshResponse.ok) {
             // Retry the original request
             return handleSubmit();
           }
         } catch (refreshError) {
-          console.error('Token refresh failed:', refreshError);
+          console.error("Token refresh failed:", refreshError);
         }
-        
-        setRequestState(prev => ({ 
-          ...prev, 
-          isLoading: false, 
-          error: 'Authentication failed. Please login again.' 
+
+        setRequestState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: "Authentication failed. Please login again.",
         }));
         return;
       }
 
       if (!response.ok) {
         let detail = `HTTP ${response.status}`;
-        try { const errorData = await response.json(); detail = errorData.message || detail; } catch {}
+        try {
+          const errorData = await response.json();
+          detail = errorData.message || detail;
+        } catch {}
         if (response.status === 413) {
-          setRequestState(prev => ({ ...prev, isLoading: false, error: detail }));
-          toast({ title: 'Too long', description: detail, variant: 'destructive' });
+          setRequestState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: detail,
+          }));
+          toast({
+            title: "Too long",
+            description: detail,
+            variant: "destructive",
+          });
           return;
         }
         if (response.status === 502 || response.status === 503) {
-          setRequestState(prev => ({ ...prev, isLoading: false, error: detail }));
-          toast({ title: 'Upstream error', description: detail, variant: 'destructive', action: (
-            <Button variant="outline" size="sm" onClick={()=> { if (lastRequestRef.current) { setTimeout(handleSubmit, 100); } }}>
-              Retry
-            </Button>
-          )});
+          setRequestState((prev) => ({
+            ...prev,
+            isLoading: false,
+            error: detail,
+          }));
+          toast({
+            title: "Upstream error",
+            description: detail,
+            variant: "destructive",
+            action: (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (lastRequestRef.current) {
+                    setTimeout(handleSubmit, 100);
+                  }
+                }}
+              >
+                Retry
+              </Button>
+            ),
+          });
           return;
         }
         throw new Error(detail);
@@ -260,46 +322,50 @@ export default function AIAssistant() {
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setResponse(data.data);
-        
+
         // Add to history
         const historyItem: HistoryItem = {
           id: Date.now().toString(),
           question: question.trim(),
           answer: data.data.answer,
           context: data.data.context,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
         };
-        
-        setHistory(prev => [historyItem, ...prev.slice(0, 49)]); // Keep last 50 items
-        
+
+        setHistory((prev) => [historyItem, ...prev.slice(0, 49)]); // Keep last 50 items
+
         // Scroll to response
         setTimeout(() => {
-          responseRef.current?.scrollIntoView({ behavior: 'smooth' });
+          responseRef.current?.scrollIntoView({ behavior: "smooth" });
         }, 100);
-        
       } else {
-        throw new Error(data.message || 'Failed to get response');
+        throw new Error(data.message || "Failed to get response");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to send question';
-      setRequestState(prev => ({ ...prev, error: errorMessage }));
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to send question";
+      setRequestState((prev) => ({ ...prev, error: errorMessage }));
       toast({
         title: "Request Failed",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setRequestState(prev => ({ ...prev, isLoading: false }));
+      setRequestState((prev) => ({ ...prev, isLoading: false }));
     }
   };
 
   // Clear conversation
   const handleClear = () => {
-    setQuestion('');
+    setQuestion("");
     setResponse(null);
-    setRequestState({ isLoading: false, error: null, rateLimit: { isLimited: false, resetTime: null } });
+    setRequestState({
+      isLoading: false,
+      error: null,
+      rateLimit: { isLimited: false, resetTime: null },
+    });
     questionInputRef.current?.focus();
   };
 
@@ -312,7 +378,7 @@ export default function AIAssistant() {
 
   // Delete history item
   const deleteHistoryItem = (id: string) => {
-    setHistory(prev => prev.filter(item => item.id !== id));
+    setHistory((prev) => prev.filter((item) => item.id !== id));
   };
 
   // Clear all history
@@ -327,11 +393,14 @@ export default function AIAssistant() {
 
   // Get rate limit countdown
   const getRateLimitCountdown = () => {
-    if (!requestState.rateLimit.resetTime) return '';
-    const remaining = Math.max(0, requestState.rateLimit.resetTime - Date.now());
+    if (!requestState.rateLimit.resetTime) return "";
+    const remaining = Math.max(
+      0,
+      requestState.rateLimit.resetTime - Date.now(),
+    );
     const minutes = Math.floor(remaining / 60000);
     const seconds = Math.floor((remaining % 60000) / 1000);
-    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
   const characterCount = question.length;
@@ -353,20 +422,52 @@ export default function AIAssistant() {
         <div className="flex items-center space-x-2">
           {history.length > 0 && (
             <>
-              <Button variant="outline" onClick={() => {
-                const blob = new Blob([JSON.stringify(history, null, 2)], { type:'application/json' });
-                const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ask-aether-history.json'; a.click(); URL.revokeObjectURL(url);
-              }}>Export JSON</Button>
-              <Button variant="outline" onClick={() => {
-                const headers = ['timestamp','question','answer'];
-                const rows = history.map(h => [h.timestamp, '"'+h.question.replace(/"/g,'""')+'"', '"'+h.answer.replace(/"/g,'""')+'"']);
-                const csv = [headers.join(',')].concat(rows.map(r=> r.join(','))).join('\n');
-                const blob = new Blob([csv], { type:'text/csv' });
-                const url = URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ask-aether-history.csv'; a.click(); URL.revokeObjectURL(url);
-              }}>Export CSV</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const blob = new Blob([JSON.stringify(history, null, 2)], {
+                    type: "application/json",
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "ask-aether-history.json";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export JSON
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const headers = ["timestamp", "question", "answer"];
+                  const rows = history.map((h) => [
+                    h.timestamp,
+                    '"' + h.question.replace(/"/g, '""') + '"',
+                    '"' + h.answer.replace(/"/g, '""') + '"',
+                  ]);
+                  const csv = [headers.join(",")]
+                    .concat(rows.map((r) => r.join(",")))
+                    .join("\n");
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = "ask-aether-history.csv";
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+              >
+                Export CSV
+              </Button>
             </>
           )}
-          <Button variant="outline" onClick={handleClear} disabled={requestState.isLoading}>
+          <Button
+            variant="outline"
+            onClick={handleClear}
+            disabled={requestState.isLoading}
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             Clear
           </Button>
@@ -385,7 +486,8 @@ export default function AIAssistant() {
                   Ask a Question
                 </CardTitle>
                 <CardDescription>
-                  Ask about your trades, portfolio, market conditions, or strategies (max {MAX_CHARS} characters)
+                  Ask about your trades, portfolio, market conditions, or
+                  strategies (max {MAX_CHARS} characters)
                 </CardDescription>
               </div>
               <HelpTip content="Type your question to the AI. Supports Enter to send, Shift+Enter for a new line." />
@@ -396,7 +498,8 @@ export default function AIAssistant() {
                 <Alert variant="destructive">
                   <Clock className="h-4 w-4" />
                   <AlertDescription>
-                    Rate limit exceeded. Please wait {getRateLimitCountdown()} before asking again.
+                    Rate limit exceeded. Please wait {getRateLimitCountdown()}{" "}
+                    before asking again.
                   </AlertDescription>
                 </Alert>
               )}
@@ -410,7 +513,10 @@ export default function AIAssistant() {
               )}
 
               <div className="space-y-2">
-                <div className="flex items-center gap-2"><Label htmlFor="question">Your Question</Label><HelpTip content="Be specific. For example: 'Analyze my BTC trades last week'." /></div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="question">Your Question</Label>
+                  <HelpTip content="Be specific. For example: 'Analyze my BTC trades last week'." />
+                </div>
                 <Textarea
                   ref={questionInputRef}
                   id="question"
@@ -418,22 +524,87 @@ export default function AIAssistant() {
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  disabled={requestState.isLoading || requestState.rateLimit.isLimited}
+                  disabled={
+                    requestState.isLoading || requestState.rateLimit.isLimited
+                  }
                   className="min-h-[100px] resize-none"
                   aria-describedby="char-count"
                 />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.signals} onChange={e=> setIncludeOptions(o=>({...o, signals: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Signals <HelpTip content="Include trading signals and indicators." /></span></label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.trades} onChange={e=> setIncludeOptions(o=>({...o, trades: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Trades <HelpTip content="Include your recent trades as context." /></span></label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.sentiment} onChange={e=> setIncludeOptions(o=>({...o, sentiment: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Sentiment <HelpTip content="Include news/social sentiment if available." /></span></label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.regime} onChange={e=> setIncludeOptions(o=>({...o, regime: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Market Regime <HelpTip content="Include current market regime classification." /></span></label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeOptions.signals}
+                      onChange={(e) =>
+                        setIncludeOptions((o) => ({
+                          ...o,
+                          signals: e.target.checked,
+                        }))
+                      }
+                    />{" "}
+                    <span className="inline-flex items-center gap-2">
+                      Signals{" "}
+                      <HelpTip content="Include trading signals and indicators." />
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeOptions.trades}
+                      onChange={(e) =>
+                        setIncludeOptions((o) => ({
+                          ...o,
+                          trades: e.target.checked,
+                        }))
+                      }
+                    />{" "}
+                    <span className="inline-flex items-center gap-2">
+                      Trades{" "}
+                      <HelpTip content="Include your recent trades as context." />
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeOptions.sentiment}
+                      onChange={(e) =>
+                        setIncludeOptions((o) => ({
+                          ...o,
+                          sentiment: e.target.checked,
+                        }))
+                      }
+                    />{" "}
+                    <span className="inline-flex items-center gap-2">
+                      Sentiment{" "}
+                      <HelpTip content="Include news/social sentiment if available." />
+                    </span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={includeOptions.regime}
+                      onChange={(e) =>
+                        setIncludeOptions((o) => ({
+                          ...o,
+                          regime: e.target.checked,
+                        }))
+                      }
+                    />{" "}
+                    <span className="inline-flex items-center gap-2">
+                      Market Regime{" "}
+                      <HelpTip content="Include current market regime classification." />
+                    </span>
+                  </label>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div 
+                  <div
                     id="char-count"
                     className={`text-sm ${
-                      isOverLimit ? 'text-red-600' : 
-                      isNearLimit ? 'text-yellow-600' : 'text-muted-foreground'
+                      isOverLimit
+                        ? "text-red-600"
+                        : isNearLimit
+                          ? "text-yellow-600"
+                          : "text-muted-foreground"
                     }`}
                   >
                     {characterCount}/{MAX_CHARS} characters
@@ -444,9 +615,14 @@ export default function AIAssistant() {
                 </div>
               </div>
 
-              <Button 
+              <Button
                 onClick={handleSubmit}
-                disabled={!question.trim() || isOverLimit || requestState.isLoading || requestState.rateLimit.isLimited}
+                disabled={
+                  !question.trim() ||
+                  isOverLimit ||
+                  requestState.isLoading ||
+                  requestState.rateLimit.isLimited
+                }
                 className="w-full"
                 size="lg"
               >
@@ -500,7 +676,10 @@ export default function AIAssistant() {
                       checked={showContext}
                       onCheckedChange={setShowContext}
                     />
-                    <Label htmlFor="show-context" className="text-sm inline-flex items-center gap-2">
+                    <Label
+                      htmlFor="show-context"
+                      className="text-sm inline-flex items-center gap-2"
+                    >
                       <span>Show context (trades, strategy, sentiment)</span>
                       <HelpTip content="Toggle to view the data used to generate this answer." />
                     </Label>
@@ -508,18 +687,25 @@ export default function AIAssistant() {
 
                   {/* Context Panel */}
                   {showContext && response.context && (
-                    <Collapsible 
-                      open={isContextExpanded} 
+                    <Collapsible
+                      open={isContextExpanded}
                       onOpenChange={setIsContextExpanded}
                       className="mt-4"
                     >
                       <CollapsibleTrigger asChild>
-                        <Button variant="outline" className="w-full justify-between">
+                        <Button
+                          variant="outline"
+                          className="w-full justify-between"
+                        >
                           <span className="flex items-center">
                             <BarChart3 className="h-4 w-4 mr-2" />
                             Context Details
                           </span>
-                          {isContextExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          {isContextExpanded ? (
+                            <ChevronUp className="h-4 w-4" />
+                          ) : (
+                            <ChevronDown className="h-4 w-4" />
+                          )}
                         </Button>
                       </CollapsibleTrigger>
                       <CollapsibleContent className="mt-4">
@@ -527,20 +713,38 @@ export default function AIAssistant() {
                           {/* Strategy & Market Info */}
                           <div className="space-y-4">
                             <div className="p-3 border rounded-lg">
-                              <div className="text-sm font-medium mb-1">Current Strategy</div>
-                              <div className="text-sm text-muted-foreground">{response.context.strategy}</div>
+                              <div className="text-sm font-medium mb-1">
+                                Current Strategy
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {response.context.strategy}
+                              </div>
                             </div>
                             <div className="p-3 border rounded-lg">
-                              <div className="text-sm font-medium mb-1">Market Regime</div>
-                              <div className="text-sm text-muted-foreground">{response.context.regime}</div>
+                              <div className="text-sm font-medium mb-1">
+                                Market Regime
+                              </div>
+                              <div className="text-sm text-muted-foreground">
+                                {response.context.regime}
+                              </div>
                             </div>
                             <div className="p-3 border rounded-lg">
-                              <div className="text-sm font-medium mb-1">Market Sentiment</div>
-                              <Badge variant={
-                                response.context.sentiment.toLowerCase().includes('bullish') ? 'default' :
-                                response.context.sentiment.toLowerCase().includes('bearish') ? 'destructive' :
-                                'secondary'
-                              }>
+                              <div className="text-sm font-medium mb-1">
+                                Market Sentiment
+                              </div>
+                              <Badge
+                                variant={
+                                  response.context.sentiment
+                                    .toLowerCase()
+                                    .includes("bullish")
+                                    ? "default"
+                                    : response.context.sentiment
+                                          .toLowerCase()
+                                          .includes("bearish")
+                                      ? "destructive"
+                                      : "secondary"
+                                }
+                              >
                                 {response.context.sentiment}
                               </Badge>
                             </div>
@@ -554,19 +758,31 @@ export default function AIAssistant() {
                                 Recent Trades
                               </div>
                               <div className="space-y-2">
-                                {response.context.trades.slice(0, 5).map((trade) => (
-                                  <div key={trade.id} className="text-xs flex justify-between items-center">
-                                    <span className="font-mono">{trade.symbol}</span>
-                                    <span className={`font-medium ${
-                                      trade.action === 'buy' ? 'text-green-600' : 'text-red-600'
-                                    }`}>
-                                      {trade.action.toUpperCase()} {trade.amount}
-                                    </span>
-                                    <span className="text-muted-foreground">
-                                      {formatCurrency(trade.price)}
-                                    </span>
-                                  </div>
-                                ))}
+                                {response.context.trades
+                                  .slice(0, 5)
+                                  .map((trade) => (
+                                    <div
+                                      key={trade.id}
+                                      className="text-xs flex justify-between items-center"
+                                    >
+                                      <span className="font-mono">
+                                        {trade.symbol}
+                                      </span>
+                                      <span
+                                        className={`font-medium ${
+                                          trade.action === "buy"
+                                            ? "text-green-600"
+                                            : "text-red-600"
+                                        }`}
+                                      >
+                                        {trade.action.toUpperCase()}{" "}
+                                        {trade.amount}
+                                      </span>
+                                      <span className="text-muted-foreground">
+                                        {formatCurrency(trade.price)}
+                                      </span>
+                                    </div>
+                                  ))}
                               </div>
                             </div>
                           </div>
@@ -580,19 +796,26 @@ export default function AIAssistant() {
                               Relevant Documents
                             </div>
                             <div className="space-y-2">
-                              {response.context.documents.map(([snippet, citationId], index) => (
-                                <div key={index} className="text-xs border-l-2 pl-3 border-blue-200">
-                                  <p className="text-muted-foreground mb-1">{snippet}</p>
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    className="h-auto p-0 text-xs"
-                                    onClick={() => copyCitation(citationId)}
+                              {response.context.documents.map(
+                                ([snippet, citationId], index) => (
+                                  <div
+                                    key={index}
+                                    className="text-xs border-l-2 pl-3 border-blue-200"
                                   >
-                                    Citation: {citationId}
-                                  </Button>
-                                </div>
-                              ))}
+                                    <p className="text-muted-foreground mb-1">
+                                      {snippet}
+                                    </p>
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      className="h-auto p-0 text-xs"
+                                      onClick={() => copyCitation(citationId)}
+                                    >
+                                      Citation: {citationId}
+                                    </Button>
+                                  </div>
+                                ),
+                              )}
                             </div>
                           </div>
                         )}
@@ -610,12 +833,18 @@ export default function AIAssistant() {
               {response.supabase_degraded && (
                 <Alert className="-mt-4 mb-4">
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>Context may be incomplete due to degraded data source.</AlertDescription>
+                  <AlertDescription>
+                    Context may be incomplete due to degraded data source.
+                  </AlertDescription>
                 </Alert>
               )}
               {response.warnings?.length ? (
                 <div className="-mt-2 mb-2 flex flex-wrap gap-2">
-                  {response.warnings.map((w: string, i: number)=>(<Badge key={i} variant="secondary">{w}</Badge>))}
+                  {response.warnings.map((w: string, i: number) => (
+                    <Badge key={i} variant="secondary">
+                      {w}
+                    </Badge>
+                  ))}
                 </div>
               ) : null}
             </>
@@ -628,7 +857,10 @@ export default function AIAssistant() {
                 <div className="text-center text-muted-foreground">
                   <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
                   <p>Ask a question to get started</p>
-                  <p className="text-sm mt-1">I can help with trades, portfolio analysis, market insights, and more</p>
+                  <p className="text-sm mt-1">
+                    I can help with trades, portfolio analysis, market insights,
+                    and more
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -637,14 +869,20 @@ export default function AIAssistant() {
           {/* Conversation Stream (previous messages) */}
           {history.length > 1 && (
             <div className="space-y-3">
-              {history.slice(1).map(item => (
+              {history.slice(1).map((item) => (
                 <Card key={item.id}>
                   <CardHeader>
-                    <CardTitle className="text-sm">{new Date(item.timestamp).toLocaleString()}</CardTitle>
-                    <CardDescription className="text-xs">Q: {item.question}</CardDescription>
+                    <CardTitle className="text-sm">
+                      {new Date(item.timestamp).toLocaleString()}
+                    </CardTitle>
+                    <CardDescription className="text-xs">
+                      Q: {item.question}
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">{item.answer}</div>
+                    <div className="prose prose-sm max-w-none whitespace-pre-wrap">
+                      {item.answer}
+                    </div>
                   </CardContent>
                 </Card>
               ))}
@@ -659,27 +897,32 @@ export default function AIAssistant() {
               <CardTitle className="text-lg">Question History</CardTitle>
               <div className="flex items-center gap-2">
                 <HelpTip content="Click an entry to reload its question and answer. Use the bin to clear history." />
-              {history.length > 0 && (
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Clear History</DialogTitle>
-                      <DialogDescription>
-                        Are you sure you want to clear all conversation history? This action cannot be undone.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex justify-end space-x-2">
-                      <Button variant="outline" onClick={() => {}}>Cancel</Button>
-                      <Button variant="destructive" onClick={clearHistory}>Clear All</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              )}
+                {history.length > 0 && (
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Clear History</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to clear all conversation
+                          history? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={() => {}}>
+                          Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={clearHistory}>
+                          Clear All
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -719,7 +962,9 @@ export default function AIAssistant() {
                 <div className="text-center py-8 text-muted-foreground">
                   <Activity className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p className="text-sm">No questions asked yet</p>
-                  <p className="text-xs mt-1">Your conversation history will appear here</p>
+                  <p className="text-xs mt-1">
+                    Your conversation history will appear here
+                  </p>
                 </div>
               )}
             </CardContent>

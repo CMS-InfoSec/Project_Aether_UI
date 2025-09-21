@@ -1,25 +1,36 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import apiFetch from '@/lib/apiClient';
-import copy from '@/lib/clipboard';
-import HelpTip from '@/components/ui/help-tip';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Progress } from '@/components/ui/progress';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import apiFetch from "@/lib/apiClient";
+import copy from "@/lib/clipboard";
+import HelpTip from "@/components/ui/help-tip";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -28,7 +39,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,13 +50,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -53,7 +59,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Brain,
   Play,
@@ -101,14 +107,14 @@ import {
   PieChart,
   Calendar,
   User,
-  Bot
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+  Bot,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Enhanced Types for AI Training Workflow
 interface TrainingJob {
   jobId: string;
-  modelType: 'forecast' | 'rl_agent' | 'sentiment' | 'ensemble';
+  modelType: "forecast" | "rl_agent" | "sentiment" | "ensemble";
   coins: string[];
   lookbackDays: number;
   interval: string;
@@ -117,31 +123,40 @@ interface TrainingJob {
   tuneFlag: boolean;
   callbackUrl?: string;
   environmentConfig?: any;
-  riskProfile: 'conservative' | 'moderate' | 'aggressive';
+  riskProfile: "conservative" | "moderate" | "aggressive";
   datasetVersion: string;
-  curriculumLevel: 'simple' | 'volatile' | 'multi_asset';
-  
-  status: 'pending' | 'data_prep' | 'forecasting' | 'rl_training' | 'backtesting' | 'validation' | 'completed' | 'failed' | 'cancelled';
+  curriculumLevel: "simple" | "volatile" | "multi_asset";
+
+  status:
+    | "pending"
+    | "data_prep"
+    | "forecasting"
+    | "rl_training"
+    | "backtesting"
+    | "validation"
+    | "completed"
+    | "failed"
+    | "cancelled";
   currentStage: string;
   progress: number;
   startTime: string;
   endTime?: string;
-  
+
   stages: {
-    dataPrep: { status: string; progress: number; duration?: number; };
-    forecasting: { status: string; progress: number; duration?: number; };
-    rlTraining: { status: string; progress: number; duration?: number; };
-    backtesting: { status: string; progress: number; duration?: number; };
-    validation: { status: string; progress: number; duration?: number; };
+    dataPrep: { status: string; progress: number; duration?: number };
+    forecasting: { status: string; progress: number; duration?: number };
+    rlTraining: { status: string; progress: number; duration?: number };
+    backtesting: { status: string; progress: number; duration?: number };
+    validation: { status: string; progress: number; duration?: number };
   };
-  
+
   logs: Array<{
     timestamp: string;
     stage: string;
     message: string;
-    level: 'info' | 'warning' | 'error';
+    level: "info" | "warning" | "error";
   }>;
-  
+
   metrics?: {
     sharpeRatio?: number;
     maxDrawdown?: number;
@@ -151,7 +166,7 @@ interface TrainingJob {
     profitFactor?: number;
     sortino?: number;
   };
-  
+
   experiment: {
     mlflowRunId?: string;
     dvcHash?: string;
@@ -159,9 +174,9 @@ interface TrainingJob {
     checksum?: string;
     hyperparameters?: any;
   };
-  
+
   curriculum?: {
-    level: 'simple' | 'volatile' | 'multi_asset';
+    level: "simple" | "volatile" | "multi_asset";
     stage: number;
     criteria: {
       winRatio: number;
@@ -171,13 +186,13 @@ interface TrainingJob {
       passed: boolean;
     };
   };
-  
+
   rlConfig?: {
     environment: string;
     algorithm: string;
     rewardWeights: any;
   };
-  
+
   modelId?: string;
 }
 
@@ -185,10 +200,10 @@ interface Model {
   modelId: string;
   name: string;
   version: string;
-  type: 'forecast' | 'rl_agent' | 'sentiment' | 'ensemble';
-  status: 'training' | 'trained' | 'deployed' | 'shadow' | 'archived';
+  type: "forecast" | "rl_agent" | "sentiment" | "ensemble";
+  status: "training" | "trained" | "deployed" | "shadow" | "archived";
   accuracy: number;
-  
+
   performance: {
     sharpeRatio: number;
     maxDrawdown: number;
@@ -201,7 +216,7 @@ interface Model {
     alpha?: number;
     informationRatio?: number;
   };
-  
+
   algorithmInfo: {
     name: string;
     architecture: any;
@@ -211,13 +226,13 @@ interface Model {
       finalLevel: string;
     };
   };
-  
+
   deployedAt?: string;
   shadowStart?: string;
   shadowEnd?: string;
   createdAt: string;
   createdBy: string;
-  
+
   experiment: {
     mlflowRunId: string;
     dvcHash: string;
@@ -225,23 +240,23 @@ interface Model {
     checksum: string;
     reproductionCommand?: string;
   };
-  
+
   riskProfile?: {
     leverage: number;
     positionLimits: any;
     stopLoss: number;
     takeProfit: number;
   };
-  
+
   explainability?: {
     availableExplanations: string[];
-    featureImportance?: Array<{ feature: string; importance: number; }>;
+    featureImportance?: Array<{ feature: string; importance: number }>;
   };
 }
 
 interface CurriculumStage {
   name: string;
-  level: 'simple' | 'volatile' | 'multi_asset';
+  level: "simple" | "volatile" | "multi_asset";
   description: string;
   datasetTag: string;
   criteria: {
@@ -251,7 +266,7 @@ interface CurriculumStage {
     sharpeRatio?: number;
     consecutiveWins?: number;
   };
-  status: 'locked' | 'active' | 'completed' | 'failed';
+  status: "locked" | "active" | "completed" | "failed";
   progress?: number;
   attempts?: number;
   bestPerformance?: {
@@ -266,7 +281,7 @@ interface DatasetInfo {
   dvcHash: string;
   size: string;
   description: string;
-  status: 'available' | 'processing' | 'error';
+  status: "available" | "processing" | "error";
   features: string[];
   timeRange: {
     start: string;
@@ -290,8 +305,8 @@ interface DatasetInfo {
 
 interface SentimentPipeline {
   id: string;
-  type: 'twitter' | 'rss';
-  status: 'active' | 'paused' | 'error';
+  type: "twitter" | "rss";
+  status: "active" | "paused" | "error";
   config: {
     sources: string[];
     updateFrequency: string;
@@ -310,154 +325,227 @@ export default function AdminModels() {
   // State management
   const [trainingJobs, setTrainingJobs] = useState<TrainingJob[]>([]);
   const [models, setModels] = useState<Model[]>([]);
-  const [curriculumStages, setCurriculumStages] = useState<CurriculumStage[]>([]);
+  const [curriculumStages, setCurriculumStages] = useState<CurriculumStage[]>(
+    [],
+  );
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
-  const [sentimentPipelines, setSentimentPipelines] = useState<SentimentPipeline[]>([]);
-  
+  const [sentimentPipelines, setSentimentPipelines] = useState<
+    SentimentPipeline[]
+  >([]);
+
   const [isLoading, setIsLoading] = useState({
     jobs: true,
     models: true,
     curriculum: true,
     datasets: true,
-    sentiment: true
+    sentiment: true,
   });
-  
+
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
-  const [selectedTab, setSelectedTab] = useState('training');
+  const [selectedTab, setSelectedTab] = useState("training");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
-  
+
   // Enhanced training form state
   const [trainingForm, setTrainingForm] = useState({
-    modelType: 'forecast' as 'forecast' | 'rl_agent' | 'sentiment' | 'ensemble',
+    modelType: "forecast" as "forecast" | "rl_agent" | "sentiment" | "ensemble",
     coins: [] as string[],
     lookbackDays: 30,
-    interval: '1h',
-    algorithm: 'LSTM',
-    architecture: '{"layers": [128, 64, 32], "dropout": 0.3, "attention": true}',
+    interval: "1h",
+    algorithm: "LSTM",
+    architecture:
+      '{"layers": [128, 64, 32], "dropout": 0.3, "attention": true}',
     tuneFlag: false,
-    callbackUrl: '',
-    curriculumLevel: 'simple' as 'simple' | 'volatile' | 'multi_asset',
-    environmentConfig: '{"reward_weights": {"profit": 0.7, "drawdown": 0.2, "duration": 0.1}}',
-    riskProfile: 'moderate' as 'conservative' | 'moderate' | 'aggressive',
-    datasetVersion: 'latest'
+    callbackUrl: "",
+    curriculumLevel: "simple" as "simple" | "volatile" | "multi_asset",
+    environmentConfig:
+      '{"reward_weights": {"profit": 0.7, "drawdown": 0.2, "duration": 0.1}}',
+    riskProfile: "moderate" as "conservative" | "moderate" | "aggressive",
+    datasetVersion: "latest",
   });
 
   // Model management state
-  const [selectedModelId, setSelectedModelId] = useState('');
+  const [selectedModelId, setSelectedModelId] = useState("");
   const [founderApproval, setFounderApproval] = useState(false);
-  const [rollbackToModelId, setRollbackToModelId] = useState('');
+  const [rollbackToModelId, setRollbackToModelId] = useState("");
 
   // Enhanced algorithm options based on model type and AI training specification
   const algorithmOptions = {
-    forecast: ['LSTM', 'Transformer', 'CNN-LSTM', 'GRU', 'Prophet', 'XGBoost', 'ARIMA'],
-    rl_agent: ['PPO', 'Recurrent PPO', 'SAC', 'TD3', 'A2C', 'DDPG', 'Rainbow DQN'],
-    sentiment: ['FinBERT', 'RoBERTa-Financial', 'BERT-Base', 'DistilBERT', 'Custom-Financial'],
-    ensemble: ['Voting', 'Stacking', 'Bagging', 'AdaBoost', 'Gradient Boosting']
+    forecast: [
+      "LSTM",
+      "Transformer",
+      "CNN-LSTM",
+      "GRU",
+      "Prophet",
+      "XGBoost",
+      "ARIMA",
+    ],
+    rl_agent: [
+      "PPO",
+      "Recurrent PPO",
+      "SAC",
+      "TD3",
+      "A2C",
+      "DDPG",
+      "Rainbow DQN",
+    ],
+    sentiment: [
+      "FinBERT",
+      "RoBERTa-Financial",
+      "BERT-Base",
+      "DistilBERT",
+      "Custom-Financial",
+    ],
+    ensemble: [
+      "Voting",
+      "Stacking",
+      "Bagging",
+      "AdaBoost",
+      "Gradient Boosting",
+    ],
   };
-  
-  const availableCoins = ['BTC', 'ETH', 'ADA', 'DOT', 'LINK', 'SOL', 'MATIC', 'AVAX', 'ATOM', 'UNI', 'AAVE', 'COMP'];
-  const intervalOptions = ['1m', '5m', '15m', '1h', '4h', '1d'];
-  const riskProfiles = ['conservative', 'moderate', 'aggressive'];
+
+  const availableCoins = [
+    "BTC",
+    "ETH",
+    "ADA",
+    "DOT",
+    "LINK",
+    "SOL",
+    "MATIC",
+    "AVAX",
+    "ATOM",
+    "UNI",
+    "AAVE",
+    "COMP",
+  ];
+  const intervalOptions = ["1m", "5m", "15m", "1h", "4h", "1d"];
+  const riskProfiles = ["conservative", "moderate", "aggressive"];
 
   // API integration functions
   const fetchTrainingJobs = useCallback(async () => {
     try {
-      const response = await apiFetch('/api/models/jobs');
+      const response = await apiFetch("/api/models/jobs");
       const data = await response.json();
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setTrainingJobs(data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch training jobs:', error);
+      console.error("Failed to fetch training jobs:", error);
       toast({
         title: "Error",
         description: "Failed to fetch training jobs",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(prev => ({ ...prev, jobs: false }));
+      setIsLoading((prev) => ({ ...prev, jobs: false }));
     }
   }, []);
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await apiFetch('/api/models/history');
+      const response = await apiFetch("/api/models/history");
       const data = await response.json();
-      if (data.status === 'success') {
+      if (data.status === "success") {
         // history items contain reduced fields; we will refetch full models for rich cards if needed
-        const fullResp = await apiFetch('/api/models');
-        const full = await fullResp.json().catch(()=>({status:'',data:[]}));
+        const fullResp = await apiFetch("/api/models");
+        const full = await fullResp
+          .json()
+          .catch(() => ({ status: "", data: [] }));
         const map: Record<string, any> = {};
-        if (full.status === 'success') {
+        if (full.status === "success") {
           for (const m of full.data) map[m.modelId] = m;
         }
-        const merged = data.data.map((h: any) => map[h.modelId] ? map[h.modelId] : ({
-          modelId: h.modelId,
-          name: h.name,
-          version: h.version,
-          type: h.type,
-          status: h.status,
-          accuracy: 0,
-          performance: { sharpeRatio: h.metrics?.sharpeRatio||0, maxDrawdown: h.metrics?.maxDrawdown||0, winRate: h.metrics?.winRate||0, profitFactor: h.metrics?.profitFactor||0, sortino: h.metrics?.sortino||0, calmar: 0, volatility: 0, beta: 0, alpha: 0, informationRatio: 0 },
-          algorithmInfo: { name: 'unknown', architecture: {}, hyperparameters: {} },
-          createdAt: h.createdAt,
-          createdBy: 'system',
-          experiment: { mlflowRunId: '', dvcHash: '', datasetVersion: '', checksum: h.checksum }
-        }));
+        const merged = data.data.map((h: any) =>
+          map[h.modelId]
+            ? map[h.modelId]
+            : {
+                modelId: h.modelId,
+                name: h.name,
+                version: h.version,
+                type: h.type,
+                status: h.status,
+                accuracy: 0,
+                performance: {
+                  sharpeRatio: h.metrics?.sharpeRatio || 0,
+                  maxDrawdown: h.metrics?.maxDrawdown || 0,
+                  winRate: h.metrics?.winRate || 0,
+                  profitFactor: h.metrics?.profitFactor || 0,
+                  sortino: h.metrics?.sortino || 0,
+                  calmar: 0,
+                  volatility: 0,
+                  beta: 0,
+                  alpha: 0,
+                  informationRatio: 0,
+                },
+                algorithmInfo: {
+                  name: "unknown",
+                  architecture: {},
+                  hyperparameters: {},
+                },
+                createdAt: h.createdAt,
+                createdBy: "system",
+                experiment: {
+                  mlflowRunId: "",
+                  dvcHash: "",
+                  datasetVersion: "",
+                  checksum: h.checksum,
+                },
+              },
+        );
         setModels(merged);
       }
     } catch (error) {
-      console.error('Failed to fetch models:', error);
+      console.error("Failed to fetch models:", error);
       toast({
         title: "Error",
         description: "Failed to fetch models",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setIsLoading(prev => ({ ...prev, models: false }));
+      setIsLoading((prev) => ({ ...prev, models: false }));
     }
   }, []);
 
   const fetchCurriculum = useCallback(async () => {
     try {
-      const response = await apiFetch('/api/models/curriculum');
+      const response = await apiFetch("/api/models/curriculum");
       const data = await response.json();
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setCurriculumStages(data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch curriculum:', error);
+      console.error("Failed to fetch curriculum:", error);
     } finally {
-      setIsLoading(prev => ({ ...prev, curriculum: false }));
+      setIsLoading((prev) => ({ ...prev, curriculum: false }));
     }
   }, []);
 
   const fetchDatasets = useCallback(async () => {
     try {
-      const response = await apiFetch('/api/models/datasets');
+      const response = await apiFetch("/api/models/datasets");
       const data = await response.json();
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setDatasets(data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch datasets:', error);
+      console.error("Failed to fetch datasets:", error);
     } finally {
-      setIsLoading(prev => ({ ...prev, datasets: false }));
+      setIsLoading((prev) => ({ ...prev, datasets: false }));
     }
   }, []);
 
   const fetchSentimentPipelines = useCallback(async () => {
     try {
-      const response = await apiFetch('/api/models/sentiment-pipelines');
+      const response = await apiFetch("/api/models/sentiment-pipelines");
       const data = await response.json();
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setSentimentPipelines(data.data);
       }
     } catch (error) {
-      console.error('Failed to fetch sentiment pipelines:', error);
+      console.error("Failed to fetch sentiment pipelines:", error);
     } finally {
-      setIsLoading(prev => ({ ...prev, sentiment: false }));
+      setIsLoading((prev) => ({ ...prev, sentiment: false }));
     }
   }, []);
 
@@ -468,12 +556,18 @@ export default function AdminModels() {
     fetchCurriculum();
     fetchDatasets();
     fetchSentimentPipelines();
-  }, [fetchTrainingJobs, fetchModels, fetchCurriculum, fetchDatasets, fetchSentimentPipelines]);
+  }, [
+    fetchTrainingJobs,
+    fetchModels,
+    fetchCurriculum,
+    fetchDatasets,
+    fetchSentimentPipelines,
+  ]);
 
   // Auto-refresh training jobs every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      if (selectedTab === 'training') {
+      if (selectedTab === "training") {
         fetchTrainingJobs();
       }
     }, 10000);
@@ -487,7 +581,7 @@ export default function AdminModels() {
       toast({
         title: "Validation Error",
         description: "Please select at least one coin to train on",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -496,7 +590,7 @@ export default function AdminModels() {
       toast({
         title: "Validation Error",
         description: "Lookback days must be between 1 and 365",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -507,19 +601,20 @@ export default function AdminModels() {
       toast({
         title: "Invalid Architecture",
         description: "Please provide valid JSON for architecture configuration",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    if (trainingForm.modelType === 'rl_agent') {
+    if (trainingForm.modelType === "rl_agent") {
       try {
         JSON.parse(trainingForm.environmentConfig);
       } catch {
         toast({
           title: "Invalid Environment Config",
-          description: "Please provide valid JSON for environment configuration",
-          variant: "destructive"
+          description:
+            "Please provide valid JSON for environment configuration",
+          variant: "destructive",
         });
         return;
       }
@@ -529,7 +624,7 @@ export default function AdminModels() {
       toast({
         title: "Invalid Callback URL",
         description: "Please provide a valid HTTP/HTTPS URL",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -537,54 +632,57 @@ export default function AdminModels() {
     setIsProcessing(true);
 
     try {
-      const response = await apiFetch('/api/models/train', {
-        method: 'POST',
+      const response = await apiFetch("/api/models/train", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           ...trainingForm,
           architecture: JSON.parse(trainingForm.architecture),
-          environmentConfig: trainingForm.modelType === 'rl_agent' 
-            ? JSON.parse(trainingForm.environmentConfig) 
-            : undefined
+          environmentConfig:
+            trainingForm.modelType === "rl_agent"
+              ? JSON.parse(trainingForm.environmentConfig)
+              : undefined,
         }),
       });
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setIsTrainingDialogOpen(false);
         setTrainingForm({
-          modelType: 'forecast',
+          modelType: "forecast",
           coins: [],
           lookbackDays: 30,
-          interval: '1h',
-          algorithm: 'LSTM',
+          interval: "1h",
+          algorithm: "LSTM",
           architecture: '{"layers": [128, 64, 32], "dropout": 0.3}',
           tuneFlag: false,
-          callbackUrl: '',
-          curriculumLevel: 'simple',
-          environmentConfig: '{"reward_weights": {"profit": 0.7, "drawdown": 0.2, "duration": 0.1}}',
-          riskProfile: 'moderate',
-          datasetVersion: 'latest'
+          callbackUrl: "",
+          curriculumLevel: "simple",
+          environmentConfig:
+            '{"reward_weights": {"profit": 0.7, "drawdown": 0.2, "duration": 0.1}}',
+          riskProfile: "moderate",
+          datasetVersion: "latest",
         });
-        
+
         toast({
           title: "Training Started",
-          description: `${trainingForm.modelType} model training initiated for ${trainingForm.coins.join(', ')}`,
+          description: `${trainingForm.modelType} model training initiated for ${trainingForm.coins.join(", ")}`,
         });
-        
+
         // Refresh training jobs
         fetchTrainingJobs();
       } else {
-        throw new Error(data.message || 'Failed to start training');
+        throw new Error(data.message || "Failed to start training");
       }
     } catch (error) {
       toast({
         title: "Training Failed",
-        description: error instanceof Error ? error.message : "Failed to start training",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to start training",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -595,15 +693,15 @@ export default function AdminModels() {
   const cancelTraining = async (jobId: string) => {
     try {
       const response = await apiFetch(`/api/models/train/${jobId}`, {
-        method: 'DELETE'
+        method: "DELETE",
       });
 
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         toast({
           title: "Training Cancelled",
-          description: "Training job has been cancelled successfully"
+          description: "Training job has been cancelled successfully",
         });
         fetchTrainingJobs();
       } else {
@@ -612,8 +710,9 @@ export default function AdminModels() {
     } catch (error) {
       toast({
         title: "Cancel Failed",
-        description: error instanceof Error ? error.message : "Failed to cancel training",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to cancel training",
+        variant: "destructive",
       });
     }
   };
@@ -621,70 +720,215 @@ export default function AdminModels() {
   // Deploy model
   const deployModel = async (modelId: string) => {
     if (!founderApproval) {
-      toast({ title: "Approval Required", description: "Founder approval is required for model deployment", variant: "destructive" });
+      toast({
+        title: "Approval Required",
+        description: "Founder approval is required for model deployment",
+        variant: "destructive",
+      });
       return;
     }
     try {
-      const response = await apiFetch(`/api/models/deploy/${modelId}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ founderApproval }) });
+      const response = await apiFetch(`/api/models/deploy/${modelId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ founderApproval }),
+      });
       const data = await response.json();
-      if (data.status === 'success') { toast({ title: "Model Deployed", description: "Model deployed" }); fetchModels(); setFounderApproval(false); } else { throw new Error(data.message); }
-    } catch (error) { toast({ title: "Deployment Failed", description: error instanceof Error ? error.message : "Failed to deploy model", variant: "destructive" }); }
+      if (data.status === "success") {
+        toast({ title: "Model Deployed", description: "Model deployed" });
+        fetchModels();
+        setFounderApproval(false);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      toast({
+        title: "Deployment Failed",
+        description:
+          error instanceof Error ? error.message : "Failed to deploy model",
+        variant: "destructive",
+      });
+    }
   };
 
   const promoteModel = async (modelId: string) => {
-    if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for promotion', variant:'destructive' }); return; }
+    if (!founderApproval) {
+      toast({
+        title: "Approval Required",
+        description: "Founder approval required for promotion",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      const r = await apiFetch('/api/models/promote', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId, founderApproval: true }) });
+      const r = await apiFetch("/api/models/promote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId, founderApproval: true }),
+      });
       const j = await r.json();
-      if (!r.ok) throw new Error(j.message || 'Failed');
-      toast({ title:'Promoted', description:`Model ${modelId} promoted` });
+      if (!r.ok) throw new Error(j.message || "Failed");
+      toast({ title: "Promoted", description: `Model ${modelId} promoted` });
       setFounderApproval(false);
       fetchModels();
-    } catch (e:any) { toast({ title:'Promotion Failed', description: e.message || 'Failed', variant:'destructive' }); }
+    } catch (e: any) {
+      toast({
+        title: "Promotion Failed",
+        description: e.message || "Failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const startShadow = async (modelId: string) => {
-    try { const r = await apiFetch('/api/models/shadow/start', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Started', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Failed', description:e.message||'Failed', variant:'destructive' }); }
+    try {
+      const r = await apiFetch("/api/models/shadow/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "Failed");
+      toast({ title: "Shadow Started", description: modelId });
+      fetchModels();
+    } catch (e: any) {
+      toast({
+        title: "Shadow Failed",
+        description: e.message || "Failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const stopShadow = async (modelId: string) => {
-    try { const r = await apiFetch('/api/models/shadow/stop', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ modelId }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Shadow Stopped', description:modelId }); fetchModels(); } catch(e:any){ toast({ title:'Shadow Stop Failed', description:e.message||'Failed', variant:'destructive' }); }
+    try {
+      const r = await apiFetch("/api/models/shadow/stop", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ modelId }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "Failed");
+      toast({ title: "Shadow Stopped", description: modelId });
+      fetchModels();
+    } catch (e: any) {
+      toast({
+        title: "Shadow Stop Failed",
+        description: e.message || "Failed",
+        variant: "destructive",
+      });
+    }
   };
 
   const rollbackModel = async (fromModelId: string, toModelId: string) => {
-    if (!founderApproval) { toast({ title:'Approval Required', description:'Founder approval required for rollback', variant:'destructive' }); return; }
-    try { const r = await apiFetch('/api/models/rollback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }) }); const j = await r.json(); if (!r.ok) throw new Error(j.message||'Failed'); toast({ title:'Rollback Complete', description:`${fromModelId} → ${toModelId}` }); setFounderApproval(false); fetchModels(); } catch(e:any){ toast({ title:'Rollback Failed', description:e.message||'Failed', variant:'destructive' }); }
+    if (!founderApproval) {
+      toast({
+        title: "Approval Required",
+        description: "Founder approval required for rollback",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const r = await apiFetch("/api/models/rollback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }),
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message || "Failed");
+      toast({
+        title: "Rollback Complete",
+        description: `${fromModelId} → ${toModelId}`,
+      });
+      setFounderApproval(false);
+      fetchModels();
+    } catch (e: any) {
+      toast({
+        title: "Rollback Failed",
+        description: e.message || "Failed",
+        variant: "destructive",
+      });
+    }
   };
 
   // Explainability panels state
-  const [diagModelId, setDiagModelId] = useState<string>('');
+  const [diagModelId, setDiagModelId] = useState<string>("");
   const [explainLoading, setExplainLoading] = useState(false);
-  const [explain, setExplain] = useState<any|null>(null);
-  const [shapInput, setShapInput] = useState<string>('');
-  const [shapResult, setShapResult] = useState<any|null>(null);
+  const [explain, setExplain] = useState<any | null>(null);
+  const [shapInput, setShapInput] = useState<string>("");
+  const [shapResult, setShapResult] = useState<any | null>(null);
   const [rationales, setRationales] = useState<any[]>([]);
   const [rationalesLoading, setRationalesLoading] = useState(false);
 
   const runExplain = async () => {
-    if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
+    if (!diagModelId) {
+      toast({
+        title: "Model ID required",
+        description: "Enter a model id",
+        variant: "destructive",
+      });
+      return;
+    }
     setExplainLoading(true);
-    try { const r = await apiFetch(`/api/models/explain/${encodeURIComponent(diagModelId)}`); const j = await r.json(); setExplain(j); } catch { toast({ title:'Explain failed', description:'Request failed', variant:'destructive' }); } finally { setExplainLoading(false); }
+    try {
+      const r = await apiFetch(
+        `/api/models/explain/${encodeURIComponent(diagModelId)}`,
+      );
+      const j = await r.json();
+      setExplain(j);
+    } catch {
+      toast({
+        title: "Explain failed",
+        description: "Request failed",
+        variant: "destructive",
+      });
+    } finally {
+      setExplainLoading(false);
+    }
   };
 
   const runShap = async () => {
-    if (!diagModelId) { toast({ title:'Model ID required', description:'Enter a model id', variant:'destructive' }); return; }
+    if (!diagModelId) {
+      toast({
+        title: "Model ID required",
+        description: "Enter a model id",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      const parsed = JSON.parse(shapInput || '[]');
-      if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
-      const r = await apiFetch(`/api/shap/${encodeURIComponent(diagModelId)}`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ input: parsed }) });
+      const parsed = JSON.parse(shapInput || "[]");
+      if (!Array.isArray(parsed) && typeof parsed !== "object")
+        throw new Error("Input must be array or object");
+      const r = await apiFetch(`/api/shap/${encodeURIComponent(diagModelId)}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ input: parsed }),
+      });
       const text = await r.text();
       let j: any = {};
-      if (text && text.trim().length) { try { j = JSON.parse(text); } catch { /* ignore parse error */ } }
+      if (text && text.trim().length) {
+        try {
+          j = JSON.parse(text);
+        } catch {
+          /* ignore parse error */
+        }
+      }
       if (!r.ok) throw new Error(j.detail || `HTTP ${r.status}`);
       const data = j.data || j;
       setShapResult(data);
-      toast({ title:'SHAP ready', description:`Request ${(data?.request_id||'')}` });
-    } catch(e:any) { toast({ title:'SHAP failed', description: e.message || 'Failed', variant:'destructive' }); }
+      toast({
+        title: "SHAP ready",
+        description: `Request ${data?.request_id || ""}`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "SHAP failed",
+        description: e.message || "Failed",
+        variant: "destructive",
+      });
+    }
   };
 
   // Utility functions
@@ -699,38 +943,40 @@ export default function AdminModels() {
 
   const getStatusColor = (status: string) => {
     const colors = {
-      'pending': 'bg-gray-100 text-gray-800',
-      'data_prep': 'bg-blue-100 text-blue-800',
-      'forecasting': 'bg-indigo-100 text-indigo-800',
-      'rl_training': 'bg-yellow-100 text-yellow-800', 
-      'backtesting': 'bg-purple-100 text-purple-800',
-      'validation': 'bg-cyan-100 text-cyan-800',
-      'completed': 'bg-green-100 text-green-800',
-      'failed': 'bg-red-100 text-red-800',
-      'cancelled': 'bg-gray-100 text-gray-800',
-      'deployed': 'bg-green-100 text-green-800',
-      'shadow': 'bg-blue-100 text-blue-800',
-      'archived': 'bg-gray-100 text-gray-800',
-      'training': 'bg-yellow-100 text-yellow-800',
-      'trained': 'bg-green-100 text-green-800',
-      'active': 'bg-green-100 text-green-800',
-      'paused': 'bg-yellow-100 text-yellow-800',
-      'error': 'bg-red-100 text-red-800',
-      'available': 'bg-green-100 text-green-800',
-      'processing': 'bg-yellow-100 text-yellow-800',
-      'locked': 'bg-gray-100 text-gray-800'
+      pending: "bg-gray-100 text-gray-800",
+      data_prep: "bg-blue-100 text-blue-800",
+      forecasting: "bg-indigo-100 text-indigo-800",
+      rl_training: "bg-yellow-100 text-yellow-800",
+      backtesting: "bg-purple-100 text-purple-800",
+      validation: "bg-cyan-100 text-cyan-800",
+      completed: "bg-green-100 text-green-800",
+      failed: "bg-red-100 text-red-800",
+      cancelled: "bg-gray-100 text-gray-800",
+      deployed: "bg-green-100 text-green-800",
+      shadow: "bg-blue-100 text-blue-800",
+      archived: "bg-gray-100 text-gray-800",
+      training: "bg-yellow-100 text-yellow-800",
+      trained: "bg-green-100 text-green-800",
+      active: "bg-green-100 text-green-800",
+      paused: "bg-yellow-100 text-yellow-800",
+      error: "bg-red-100 text-red-800",
+      available: "bg-green-100 text-green-800",
+      processing: "bg-yellow-100 text-yellow-800",
+      locked: "bg-gray-100 text-gray-800",
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800";
   };
 
   const getAlgorithmOptions = () => {
-    return algorithmOptions[trainingForm.modelType] || algorithmOptions.forecast;
+    return (
+      algorithmOptions[trainingForm.modelType] || algorithmOptions.forecast
+    );
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
     }).format(amount);
   };
 
@@ -740,31 +986,48 @@ export default function AdminModels() {
 
   const copyToClipboard = async (text: string) => {
     const ok = await copy(text);
-    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Text copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
+    toast({
+      title: ok ? "Copied" : "Copy Failed",
+      description: ok
+        ? "Text copied to clipboard"
+        : "Failed to copy to clipboard",
+      variant: ok ? "default" : "destructive",
+    });
   };
 
   const getModelTypeIcon = (type: string) => {
     switch (type) {
-      case 'forecast': return <TrendingUp className="h-4 w-4" />;
-      case 'rl_agent': return <Bot className="h-4 w-4" />;
-      case 'sentiment': return <MessageSquare className="h-4 w-4" />;
-      case 'ensemble': return <Layers className="h-4 w-4" />;
-      default: return <Brain className="h-4 w-4" />;
+      case "forecast":
+        return <TrendingUp className="h-4 w-4" />;
+      case "rl_agent":
+        return <Bot className="h-4 w-4" />;
+      case "sentiment":
+        return <MessageSquare className="h-4 w-4" />;
+      case "ensemble":
+        return <Layers className="h-4 w-4" />;
+      default:
+        return <Brain className="h-4 w-4" />;
     }
   };
 
   const getStageIcon = (stage: string) => {
     switch (stage) {
-      case 'data_prep': return <Database className="h-4 w-4" />;
-      case 'forecasting': return <TrendingUp className="h-4 w-4" />;
-      case 'rl_training': return <Bot className="h-4 w-4" />;
-      case 'backtesting': return <BarChart3 className="h-4 w-4" />;
-      case 'validation': return <CheckCircle className="h-4 w-4" />;
-      default: return <Activity className="h-4 w-4" />;
+      case "data_prep":
+        return <Database className="h-4 w-4" />;
+      case "forecasting":
+        return <TrendingUp className="h-4 w-4" />;
+      case "rl_training":
+        return <Bot className="h-4 w-4" />;
+      case "backtesting":
+        return <BarChart3 className="h-4 w-4" />;
+      case "validation":
+        return <CheckCircle className="h-4 w-4" />;
+      default:
+        return <Activity className="h-4 w-4" />;
     }
   };
 
-  if (Object.values(isLoading).some(loading => loading)) {
+  if (Object.values(isLoading).some((loading) => loading)) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center h-96">
@@ -779,23 +1042,32 @@ export default function AdminModels() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">AI Model Management</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              AI Model Management
+            </h1>
             <p className="text-muted-foreground">
-              Train, deploy and manage AI models for algorithmic trading with comprehensive workflow support
+              Train, deploy and manage AI models for algorithmic trading with
+              comprehensive workflow support
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <Button variant="outline" onClick={() => {
-              fetchTrainingJobs();
-              fetchModels();
-              fetchCurriculum();
-              fetchDatasets();
-              fetchSentimentPipelines();
-            }}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                fetchTrainingJobs();
+                fetchModels();
+                fetchCurriculum();
+                fetchDatasets();
+                fetchSentimentPipelines();
+              }}
+            >
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh All
             </Button>
-            <Dialog open={isTrainingDialogOpen} onOpenChange={setIsTrainingDialogOpen}>
+            <Dialog
+              open={isTrainingDialogOpen}
+              onOpenChange={setIsTrainingDialogOpen}
+            >
               <DialogTrigger asChild>
                 <Button>
                   <Brain className="h-4 w-4 mr-2" />
@@ -806,22 +1078,24 @@ export default function AdminModels() {
                 <DialogHeader>
                   <DialogTitle>Start AI Model Training</DialogTitle>
                   <DialogDescription>
-                    Configure and launch a comprehensive training job with data preprocessing, forecasting, RL policy search, and backtesting
+                    Configure and launch a comprehensive training job with data
+                    preprocessing, forecasting, RL policy search, and
+                    backtesting
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="grid gap-6 py-4">
                   {/* Model Type Selection with tooltips */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-center">Model Type</Label>
                     <div className="col-span-3">
-                      <Select 
-                        value={trainingForm.modelType} 
+                      <Select
+                        value={trainingForm.modelType}
                         onValueChange={(value: any) => {
-                          setTrainingForm(prev => ({ 
-                            ...prev, 
+                          setTrainingForm((prev) => ({
+                            ...prev,
                             modelType: value,
-                            algorithm: algorithmOptions[value][0]
+                            algorithm: algorithmOptions[value][0],
                           }));
                         }}
                       >
@@ -862,19 +1136,32 @@ export default function AdminModels() {
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-center">Algorithm</Label>
                     <div className="col-span-3">
-                      <Select 
-                        value={trainingForm.algorithm} 
-                        onValueChange={(value) => setTrainingForm(prev => ({ ...prev, algorithm: value }))}
+                      <Select
+                        value={trainingForm.algorithm}
+                        onValueChange={(value) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            algorithm: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {getAlgorithmOptions().map(algo => (
+                          {getAlgorithmOptions().map((algo) => (
                             <SelectItem key={algo} value={algo}>
                               {algo}
-                              {algo === 'FinBERT' && <span className="text-xs text-muted-foreground ml-2">(Financial)</span>}
-                              {algo === 'PPO' && <span className="text-xs text-muted-foreground ml-2">(Proximal Policy)</span>}
+                              {algo === "FinBERT" && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Financial)
+                                </span>
+                              )}
+                              {algo === "PPO" && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  (Proximal Policy)
+                                </span>
+                              )}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -884,66 +1171,87 @@ export default function AdminModels() {
 
                   {/* Asset Selection (multi-select with universe rotation) */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-start pt-2">Trading Pairs</Label>
+                    <Label className="text-right self-start pt-2">
+                      Trading Pairs
+                    </Label>
                     <div className="col-span-3">
                       <div className="grid grid-cols-4 gap-2 mb-2">
-                        {availableCoins.map(coin => (
-                          <div key={coin} className="flex items-center space-x-2">
+                        {availableCoins.map((coin) => (
+                          <div
+                            key={coin}
+                            className="flex items-center space-x-2"
+                          >
                             <Checkbox
                               id={coin}
                               checked={trainingForm.coins.includes(coin)}
                               onCheckedChange={(checked) => {
                                 if (checked) {
-                                  setTrainingForm(prev => ({
+                                  setTrainingForm((prev) => ({
                                     ...prev,
-                                    coins: [...prev.coins, coin]
+                                    coins: [...prev.coins, coin],
                                   }));
                                 } else {
-                                  setTrainingForm(prev => ({
+                                  setTrainingForm((prev) => ({
                                     ...prev,
-                                    coins: prev.coins.filter(c => c !== coin)
+                                    coins: prev.coins.filter((c) => c !== coin),
                                   }));
                                 }
                               }}
                             />
-                            <Label htmlFor={coin} className="text-sm">{coin}</Label>
+                            <Label htmlFor={coin} className="text-sm">
+                              {coin}
+                            </Label>
                           </div>
                         ))}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        Select trading pairs for training. Multi-asset RL agents can learn cross-asset correlations.
+                        Select trading pairs for training. Multi-asset RL agents
+                        can learn cross-asset correlations.
                       </p>
                     </div>
                   </div>
 
                   {/* Training Parameters */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">Lookback Days</Label>
+                    <Label className="text-right self-center">
+                      Lookback Days
+                    </Label>
                     <div className="col-span-1">
                       <Input
                         type="number"
                         value={trainingForm.lookbackDays}
-                        onChange={(e) => setTrainingForm(prev => ({
-                          ...prev,
-                          lookbackDays: parseInt(e.target.value) || 30
-                        }))}
+                        onChange={(e) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            lookbackDays: parseInt(e.target.value) || 30,
+                          }))
+                        }
                         min="1"
                         max="365"
                       />
-                      <p className="text-xs text-muted-foreground mt-1">1-365 days</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        1-365 days
+                      </p>
                     </div>
                     <Label className="text-right self-center">Interval</Label>
                     <div className="col-span-1">
-                      <Select 
-                        value={trainingForm.interval} 
-                        onValueChange={(value) => setTrainingForm(prev => ({ ...prev, interval: value }))}
+                      <Select
+                        value={trainingForm.interval}
+                        onValueChange={(value) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            interval: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {intervalOptions.map(interval => (
-                            <SelectItem key={interval} value={interval}>{interval}</SelectItem>
+                          {intervalOptions.map((interval) => (
+                            <SelectItem key={interval} value={interval}>
+                              {interval}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -952,35 +1260,54 @@ export default function AdminModels() {
 
                   {/* Dataset and Curriculum */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">Dataset Version</Label>
+                    <Label className="text-right self-center">
+                      Dataset Version
+                    </Label>
                     <div className="col-span-1">
-                      <Select 
-                        value={trainingForm.datasetVersion} 
-                        onValueChange={(value) => setTrainingForm(prev => ({ ...prev, datasetVersion: value }))}
+                      <Select
+                        value={trainingForm.datasetVersion}
+                        onValueChange={(value) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            datasetVersion: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {datasets.map(dataset => (
-                            <SelectItem key={dataset.version} value={dataset.version}>
+                          {datasets.map((dataset) => (
+                            <SelectItem
+                              key={dataset.version}
+                              value={dataset.version}
+                            >
                               {dataset.version} ({dataset.size})
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                    <Label className="text-right self-center">Risk Profile</Label>
+                    <Label className="text-right self-center">
+                      Risk Profile
+                    </Label>
                     <div className="col-span-1">
-                      <Select 
-                        value={trainingForm.riskProfile} 
-                        onValueChange={(value: any) => setTrainingForm(prev => ({ ...prev, riskProfile: value }))}
+                      <Select
+                        value={trainingForm.riskProfile}
+                        onValueChange={(value: any) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            riskProfile: value,
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="conservative">Conservative</SelectItem>
+                          <SelectItem value="conservative">
+                            Conservative
+                          </SelectItem>
                           <SelectItem value="moderate">Moderate</SelectItem>
                           <SelectItem value="aggressive">Aggressive</SelectItem>
                         </SelectContent>
@@ -989,44 +1316,65 @@ export default function AdminModels() {
                   </div>
 
                   {/* RL Specific Options */}
-                  {trainingForm.modelType === 'rl_agent' && (
+                  {trainingForm.modelType === "rl_agent" && (
                     <>
                       <Separator />
                       <div className="text-sm font-medium text-muted-foreground mb-2">
                         Reinforcement Learning Configuration
                       </div>
-                      
+
                       <div className="grid grid-cols-4 gap-4">
-                        <Label className="text-right self-center">Curriculum Level</Label>
+                        <Label className="text-right self-center">
+                          Curriculum Level
+                        </Label>
                         <div className="col-span-3">
-                          <Select 
-                            value={trainingForm.curriculumLevel} 
-                            onValueChange={(value: any) => setTrainingForm(prev => ({ ...prev, curriculumLevel: value }))}
+                          <Select
+                            value={trainingForm.curriculumLevel}
+                            onValueChange={(value: any) =>
+                              setTrainingForm((prev) => ({
+                                ...prev,
+                                curriculumLevel: value,
+                              }))
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="simple">Simple Market Patterns</SelectItem>
-                              <SelectItem value="volatile">Volatile Market Conditions</SelectItem>
-                              <SelectItem value="multi_asset">Multi-Asset Trading</SelectItem>
+                              <SelectItem value="simple">
+                                Simple Market Patterns
+                              </SelectItem>
+                              <SelectItem value="volatile">
+                                Volatile Market Conditions
+                              </SelectItem>
+                              <SelectItem value="multi_asset">
+                                Multi-Asset Trading
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-4 gap-4">
-                        <Label className="text-right self-start pt-2">Environment Config</Label>
+                        <Label className="text-right self-start pt-2">
+                          Environment Config
+                        </Label>
                         <div className="col-span-3">
                           <Textarea
                             value={trainingForm.environmentConfig}
-                            onChange={(e) => setTrainingForm(prev => ({ ...prev, environmentConfig: e.target.value }))}
+                            onChange={(e) =>
+                              setTrainingForm((prev) => ({
+                                ...prev,
+                                environmentConfig: e.target.value,
+                              }))
+                            }
                             placeholder="Environment and reward configuration JSON"
                             rows={3}
                             className="font-mono text-sm"
                           />
                           <p className="text-xs text-muted-foreground mt-1">
-                            Configure reward weights: profit, drawdown, duration, winRate
+                            Configure reward weights: profit, drawdown,
+                            duration, winRate
                           </p>
                         </div>
                       </div>
@@ -1035,28 +1383,43 @@ export default function AdminModels() {
 
                   {/* Architecture Configuration */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-start pt-2">Architecture</Label>
+                    <Label className="text-right self-start pt-2">
+                      Architecture
+                    </Label>
                     <div className="col-span-3">
                       <Textarea
                         value={trainingForm.architecture}
-                        onChange={(e) => setTrainingForm(prev => ({ ...prev, architecture: e.target.value }))}
+                        onChange={(e) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            architecture: e.target.value,
+                          }))
+                        }
                         placeholder="Model architecture configuration JSON"
                         rows={4}
                         className="font-mono text-sm"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        Define layers, dropout, learning rate, and other architecture parameters
+                        Define layers, dropout, learning rate, and other
+                        architecture parameters
                       </p>
                     </div>
                   </div>
 
                   {/* Advanced Options */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center">Callback URL</Label>
+                    <Label className="text-right self-center">
+                      Callback URL
+                    </Label>
                     <div className="col-span-2">
                       <Input
                         value={trainingForm.callbackUrl}
-                        onChange={(e) => setTrainingForm(prev => ({ ...prev, callbackUrl: e.target.value }))}
+                        onChange={(e) =>
+                          setTrainingForm((prev) => ({
+                            ...prev,
+                            callbackUrl: e.target.value,
+                          }))
+                        }
                         placeholder="Optional webhook URL for completion notification"
                       />
                     </div>
@@ -1065,7 +1428,12 @@ export default function AdminModels() {
                         <Checkbox
                           id="tuning"
                           checked={trainingForm.tuneFlag}
-                          onCheckedChange={(checked) => setTrainingForm(prev => ({ ...prev, tuneFlag: !!checked }))}
+                          onCheckedChange={(checked) =>
+                            setTrainingForm((prev) => ({
+                              ...prev,
+                              tuneFlag: !!checked,
+                            }))
+                          }
                         />
                         <Label htmlFor="tuning">Hyperparameter Tuning</Label>
                         <Tooltip>
@@ -1082,7 +1450,10 @@ export default function AdminModels() {
                 </div>
 
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsTrainingDialogOpen(false)}>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsTrainingDialogOpen(false)}
+                  >
                     Cancel
                   </Button>
                   <Button onClick={startTraining} disabled={isProcessing}>
@@ -1120,38 +1491,55 @@ export default function AdminModels() {
               <CardHeader>
                 <CardTitle>Active Training Jobs</CardTitle>
                 <CardDescription>
-                  Monitor comprehensive AI model training workflows with data preprocessing, forecasting, RL policy search, and validation
+                  Monitor comprehensive AI model training workflows with data
+                  preprocessing, forecasting, RL policy search, and validation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {trainingJobs.length > 0 ? (
                     trainingJobs.map((job) => (
-                      <div key={job.jobId} className="border rounded-lg p-4 space-y-4">
+                      <div
+                        key={job.jobId}
+                        className="border rounded-lg p-4 space-y-4"
+                      >
                         {/* Job Header */}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-3">
                             {getModelTypeIcon(job.modelType)}
                             <div>
                               <h3 className="font-medium flex items-center space-x-2">
-                                <span>{job.algorithm} {job.modelType}</span>
+                                <span>
+                                  {job.algorithm} {job.modelType}
+                                </span>
                                 {job.tuneFlag && (
-                                  <Badge variant="secondary" className="text-xs">
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs"
+                                  >
                                     <Zap className="h-3 w-3 mr-1" />
                                     Tuning
                                   </Badge>
                                 )}
                               </h3>
                               <p className="text-sm text-muted-foreground">
-                                {job.coins.join(', ')} • {job.lookbackDays} days • {job.interval} • {job.jobId}
+                                {job.coins.join(", ")} • {job.lookbackDays} days
+                                • {job.interval} • {job.jobId}
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
                             <Badge className={getStatusColor(job.status)}>
-                              {job.status.replace('_', ' ')}
+                              {job.status.replace("_", " ")}
                             </Badge>
-                            {['pending', 'data_prep', 'forecasting', 'rl_training', 'backtesting', 'validation'].includes(job.status) && (
+                            {[
+                              "pending",
+                              "data_prep",
+                              "forecasting",
+                              "rl_training",
+                              "backtesting",
+                              "validation",
+                            ].includes(job.status) && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -1167,63 +1555,93 @@ export default function AdminModels() {
                         {/* Training Pipeline Stages */}
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm font-medium">Training Pipeline Progress</span>
-                            <span className="text-sm text-muted-foreground">{job.progress}% complete</span>
+                            <span className="text-sm font-medium">
+                              Training Pipeline Progress
+                            </span>
+                            <span className="text-sm text-muted-foreground">
+                              {job.progress}% complete
+                            </span>
                           </div>
-                          
+
                           <Progress value={job.progress} className="h-2" />
-                          
+
                           <div className="grid grid-cols-5 gap-2 text-xs">
-                            {Object.entries(job.stages).map(([stageName, stage]) => (
-                              <div key={stageName} className="text-center">
-                                <div className={`w-8 h-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
-                                  stage.status === 'completed' ? 'bg-green-100 text-green-600' :
-                                  stage.status === 'running' ? 'bg-blue-100 text-blue-600' :
-                                  stage.status === 'pending' ? 'bg-gray-100 text-gray-400' :
-                                  'bg-gray-100 text-gray-400'
-                                }`}>
-                                  {stage.status === 'completed' ? (
-                                    <CheckCircle className="h-4 w-4" />
-                                  ) : stage.status === 'running' ? (
-                                    getStageIcon(stageName)
-                                  ) : (
-                                    <div className="w-2 h-2 rounded-full bg-current" />
+                            {Object.entries(job.stages).map(
+                              ([stageName, stage]) => (
+                                <div key={stageName} className="text-center">
+                                  <div
+                                    className={`w-8 h-8 rounded-full mx-auto mb-1 flex items-center justify-center ${
+                                      stage.status === "completed"
+                                        ? "bg-green-100 text-green-600"
+                                        : stage.status === "running"
+                                          ? "bg-blue-100 text-blue-600"
+                                          : stage.status === "pending"
+                                            ? "bg-gray-100 text-gray-400"
+                                            : "bg-gray-100 text-gray-400"
+                                    }`}
+                                  >
+                                    {stage.status === "completed" ? (
+                                      <CheckCircle className="h-4 w-4" />
+                                    ) : stage.status === "running" ? (
+                                      getStageIcon(stageName)
+                                    ) : (
+                                      <div className="w-2 h-2 rounded-full bg-current" />
+                                    )}
+                                  </div>
+                                  <div className="capitalize font-medium">
+                                    {stageName
+                                      .replace(/([A-Z])/g, " $1")
+                                      .trim()}
+                                  </div>
+                                  {stage.duration && (
+                                    <div className="text-gray-500">
+                                      {stage.duration}m
+                                    </div>
                                   )}
                                 </div>
-                                <div className="capitalize font-medium">
-                                  {stageName.replace(/([A-Z])/g, ' $1').trim()}
-                                </div>
-                                {stage.duration && (
-                                  <div className="text-gray-500">{stage.duration}m</div>
-                                )}
-                              </div>
-                            ))}
+                              ),
+                            )}
                           </div>
                         </div>
 
                         {/* Current Stage and Metrics */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div>
-                            <p className="text-xs text-muted-foreground">Current Stage</p>
-                            <p className="text-sm font-medium">{job.currentStage}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Runtime</p>
+                            <p className="text-xs text-muted-foreground">
+                              Current Stage
+                            </p>
                             <p className="text-sm font-medium">
-                              {job.endTime 
-                                ? `${Math.round((new Date(job.endTime).getTime() - new Date(job.startTime).getTime()) / 60000)}m`
-                                : `${Math.round((Date.now() - new Date(job.startTime).getTime()) / 60000)}m`
-                              }
+                              {job.currentStage}
                             </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Dataset</p>
-                            <p className="text-sm font-medium">{job.experiment.datasetVersion}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Runtime
+                            </p>
+                            <p className="text-sm font-medium">
+                              {job.endTime
+                                ? `${Math.round((new Date(job.endTime).getTime() - new Date(job.startTime).getTime()) / 60000)}m`
+                                : `${Math.round((Date.now() - new Date(job.startTime).getTime()) / 60000)}m`}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-xs text-muted-foreground">
+                              Dataset
+                            </p>
+                            <p className="text-sm font-medium">
+                              {job.experiment.datasetVersion}
+                            </p>
                           </div>
                           {job.experiment.mlflowRunId && (
                             <div>
-                              <p className="text-xs text-muted-foreground">MLflow Run</p>
-                              <Button variant="link" className="h-auto p-0 text-sm" size="sm">
+                              <p className="text-xs text-muted-foreground">
+                                MLflow Run
+                              </p>
+                              <Button
+                                variant="link"
+                                className="h-auto p-0 text-sm"
+                                size="sm"
+                              >
                                 <ExternalLink className="h-3 w-3 mr-1" />
                                 {job.experiment.mlflowRunId.slice(0, 8)}...
                               </Button>
@@ -1236,26 +1654,44 @@ export default function AdminModels() {
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-3 bg-muted rounded-lg">
                             {job.metrics.sharpeRatio && (
                               <div>
-                                <p className="text-xs text-muted-foreground">Sharpe Ratio</p>
-                                <p className="text-sm font-medium">{job.metrics.sharpeRatio.toFixed(2)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Sharpe Ratio
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {job.metrics.sharpeRatio.toFixed(2)}
+                                </p>
                               </div>
                             )}
                             {job.metrics.winRate && (
                               <div>
-                                <p className="text-xs text-muted-foreground">Win Rate</p>
-                                <p className="text-sm font-medium">{formatPercentage(job.metrics.winRate)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Win Rate
+                                </p>
+                                <p className="text-sm font-medium">
+                                  {formatPercentage(job.metrics.winRate)}
+                                </p>
                               </div>
                             )}
                             {job.metrics.maxDrawdown && (
                               <div>
-                                <p className="text-xs text-muted-foreground">Max Drawdown</p>
-                                <p className="text-sm font-medium text-red-600">{formatPercentage(Math.abs(job.metrics.maxDrawdown))}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Max Drawdown
+                                </p>
+                                <p className="text-sm font-medium text-red-600">
+                                  {formatPercentage(
+                                    Math.abs(job.metrics.maxDrawdown),
+                                  )}
+                                </p>
                               </div>
                             )}
                             {job.metrics.totalReward && (
                               <div>
-                                <p className="text-xs text-muted-foreground">Total Reward</p>
-                                <p className="text-sm font-medium text-green-600">{job.metrics.totalReward.toFixed(1)}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  Total Reward
+                                </p>
+                                <p className="text-sm font-medium text-green-600">
+                                  {job.metrics.totalReward.toFixed(1)}
+                                </p>
                               </div>
                             )}
                           </div>
@@ -1266,9 +1702,20 @@ export default function AdminModels() {
                           <div className="p-3 bg-blue-50 rounded-lg">
                             <div className="flex items-center justify-between mb-2">
                               <div>
-                                <p className="text-sm font-medium">Curriculum: {job.curriculum.level} (Stage {job.curriculum.stage})</p>
+                                <p className="text-sm font-medium">
+                                  Curriculum: {job.curriculum.level} (Stage{" "}
+                                  {job.curriculum.stage})
+                                </p>
                                 <p className="text-xs text-muted-foreground">
-                                  Win Ratio: {formatPercentage(job.curriculum.criteria.winRatio)} / {formatPercentage(job.curriculum.criteria.targetWinRatio)} target
+                                  Win Ratio:{" "}
+                                  {formatPercentage(
+                                    job.curriculum.criteria.winRatio,
+                                  )}{" "}
+                                  /{" "}
+                                  {formatPercentage(
+                                    job.curriculum.criteria.targetWinRatio,
+                                  )}{" "}
+                                  target
                                 </p>
                               </div>
                               {job.curriculum.criteria.passed ? (
@@ -1277,9 +1724,13 @@ export default function AdminModels() {
                                 <Clock className="h-5 w-5 text-yellow-600" />
                               )}
                             </div>
-                            <Progress 
-                              value={(job.curriculum.criteria.winRatio / job.curriculum.criteria.targetWinRatio) * 100} 
-                              className="h-2" 
+                            <Progress
+                              value={
+                                (job.curriculum.criteria.winRatio /
+                                  job.curriculum.criteria.targetWinRatio) *
+                                100
+                              }
+                              className="h-2"
                             />
                           </div>
                         )}
@@ -1288,27 +1739,52 @@ export default function AdminModels() {
                         {job.logs.length > 0 && (
                           <div className="border-t pt-3">
                             <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-medium">Recent Activity</p>
-                              <Button 
-                                variant="ghost" 
+                              <p className="text-sm font-medium">
+                                Recent Activity
+                              </p>
+                              <Button
+                                variant="ghost"
                                 size="sm"
-                                onClick={() => setSelectedJobId(selectedJobId === job.jobId ? null : job.jobId)}
+                                onClick={() =>
+                                  setSelectedJobId(
+                                    selectedJobId === job.jobId
+                                      ? null
+                                      : job.jobId,
+                                  )
+                                }
                               >
-                                {selectedJobId === job.jobId ? 'Hide' : 'Show'} Logs
+                                {selectedJobId === job.jobId ? "Hide" : "Show"}{" "}
+                                Logs
                               </Button>
                             </div>
-                            
+
                             {selectedJobId === job.jobId ? (
                               <div className="space-y-1 max-h-40 overflow-y-auto">
                                 {job.logs.slice(-10).map((log, idx) => (
-                                  <div key={idx} className="text-xs p-2 bg-gray-50 rounded flex items-start space-x-2">
+                                  <div
+                                    key={idx}
+                                    className="text-xs p-2 bg-gray-50 rounded flex items-start space-x-2"
+                                  >
                                     <span className="text-muted-foreground font-mono">
-                                      {new Date(log.timestamp).toLocaleTimeString()}
+                                      {new Date(
+                                        log.timestamp,
+                                      ).toLocaleTimeString()}
                                     </span>
-                                    <Badge variant="outline" className="text-xs">
+                                    <Badge
+                                      variant="outline"
+                                      className="text-xs"
+                                    >
                                       {log.stage}
                                     </Badge>
-                                    <span className={log.level === 'error' ? 'text-red-600' : log.level === 'warning' ? 'text-yellow-600' : ''}>
+                                    <span
+                                      className={
+                                        log.level === "error"
+                                          ? "text-red-600"
+                                          : log.level === "warning"
+                                            ? "text-yellow-600"
+                                            : ""
+                                      }
+                                    >
                                       {log.message}
                                     </span>
                                   </div>
@@ -1318,7 +1794,10 @@ export default function AdminModels() {
                               <div className="space-y-1">
                                 {job.logs.slice(-3).map((log, idx) => (
                                   <div key={idx} className="text-xs">
-                                    <span className="text-muted-foreground">[{log.stage}]</span> {log.message}
+                                    <span className="text-muted-foreground">
+                                      [{log.stage}]
+                                    </span>{" "}
+                                    {log.message}
                                   </div>
                                 ))}
                               </div>
@@ -1327,12 +1806,12 @@ export default function AdminModels() {
                         )}
 
                         {/* Generated Model Link */}
-                        {job.modelId && job.status === 'completed' && (
+                        {job.modelId && job.status === "completed" && (
                           <div className="border-t pt-3">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
-                              onClick={() => setSelectedTab('models')}
+                              onClick={() => setSelectedTab("models")}
                             >
                               <Rocket className="h-3 w-3 mr-1" />
                               View Generated Model: {job.modelId}
@@ -1344,8 +1823,12 @@ export default function AdminModels() {
                   ) : (
                     <div className="text-center py-8">
                       <Brain className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No training jobs running</p>
-                      <p className="text-sm text-muted-foreground mt-2">Start a new training job to begin</p>
+                      <p className="text-muted-foreground">
+                        No training jobs running
+                      </p>
+                      <p className="text-sm text-muted-foreground mt-2">
+                        Start a new training job to begin
+                      </p>
                     </div>
                   )}
                 </div>
@@ -1359,7 +1842,8 @@ export default function AdminModels() {
               <CardHeader>
                 <CardTitle>Model Registry</CardTitle>
                 <CardDescription>
-                  Manage trained models with comprehensive performance metrics, explainability, and deployment controls
+                  Manage trained models with comprehensive performance metrics,
+                  explainability, and deployment controls
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1367,270 +1851,484 @@ export default function AdminModels() {
                   <div className="lg:col-span-2 space-y-4">
                     {models.length > 0 ? (
                       models.map((model) => (
-                        <div key={model.modelId} className="border rounded-lg p-4 space-y-4">
-                        {/* Model Header */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-3">
-                            {getModelTypeIcon(model.type)}
+                        <div
+                          key={model.modelId}
+                          className="border rounded-lg p-4 space-y-4"
+                        >
+                          {/* Model Header */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              {getModelTypeIcon(model.type)}
+                              <div>
+                                <h3 className="font-medium">{model.name}</h3>
+                                <p className="text-sm text-muted-foreground">
+                                  {model.algorithmInfo.name} • v{model.version}{" "}
+                                  • {model.type} •{" "}
+                                  {formatPercentage(model.accuracy)} accuracy
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Badge className={getStatusColor(model.status)}>
+                                {model.status}
+                              </Badge>
+                              {model.status === "trained" && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <Rocket className="h-3 w-3 mr-1" />
+                                      Deploy
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        Deploy Model to Production
+                                      </DialogTitle>
+                                      <DialogDescription>
+                                        Deploy {model.name} to live trading
+                                        environment with founder approval
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="py-4 space-y-4">
+                                      <Alert>
+                                        <Shield className="h-4 w-4" />
+                                        <AlertDescription>
+                                          Deploying a model will replace the
+                                          current production model and affect
+                                          live trading.
+                                        </AlertDescription>
+                                      </Alert>
+                                      <div className="flex items-center space-x-2">
+                                        <Checkbox
+                                          id="approval"
+                                          checked={founderApproval}
+                                          onCheckedChange={setFounderApproval}
+                                        />
+                                        <Label htmlFor="approval">
+                                          I have founder approval for this
+                                          deployment
+                                        </Label>
+                                      </div>
+                                    </div>
+                                    <DialogFooter>
+                                      <Button
+                                        onClick={() =>
+                                          deployModel(model.modelId)
+                                        }
+                                        disabled={!founderApproval}
+                                      >
+                                        Deploy Model
+                                      </Button>
+                                    </DialogFooter>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Enhanced Performance Metrics */}
+                          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                             <div>
-                              <h3 className="font-medium">{model.name}</h3>
-                              <p className="text-sm text-muted-foreground">
-                                {model.algorithmInfo.name} • v{model.version} • {model.type} • {formatPercentage(model.accuracy)} accuracy
+                              <p className="text-xs text-muted-foreground">
+                                Sharpe Ratio
+                              </p>
+                              <p className="text-sm font-medium">
+                                {model.performance.sharpeRatio.toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Win Rate
+                              </p>
+                              <p className="text-sm font-medium">
+                                {formatPercentage(model.performance.winRate)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Max Drawdown
+                              </p>
+                              <p className="text-sm font-medium text-red-600">
+                                {formatPercentage(
+                                  Math.abs(model.performance.maxDrawdown),
+                                )}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Sortino Ratio
+                              </p>
+                              <p className="text-sm font-medium">
+                                {model.performance.sortino.toFixed(2)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Profit Factor
+                              </p>
+                              <p className="text-sm font-medium text-green-600">
+                                {model.performance.profitFactor.toFixed(2)}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge className={getStatusColor(model.status)}>
-                              {model.status}
-                            </Badge>
-                            {model.status === 'trained' && (
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="outline" size="sm">
-                                    <Rocket className="h-3 w-3 mr-1" />
-                                    Deploy
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Deploy Model to Production</DialogTitle>
-                                    <DialogDescription>
-                                      Deploy {model.name} to live trading environment with founder approval
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="py-4 space-y-4">
-                                    <Alert>
-                                      <Shield className="h-4 w-4" />
-                                      <AlertDescription>
-                                        Deploying a model will replace the current production model and affect live trading.
-                                      </AlertDescription>
-                                    </Alert>
-                                    <div className="flex items-center space-x-2">
-                                      <Checkbox
-                                        id="approval"
-                                        checked={founderApproval}
-                                        onCheckedChange={setFounderApproval}
-                                      />
-                                      <Label htmlFor="approval">
-                                        I have founder approval for this deployment
-                                      </Label>
-                                    </div>
-                                  </div>
-                                  <DialogFooter>
-                                    <Button 
-                                      onClick={() => deployModel(model.modelId)}
-                                      disabled={!founderApproval}
-                                    >
-                                      Deploy Model
-                                    </Button>
-                                  </DialogFooter>
-                                </DialogContent>
-                              </Dialog>
-                            )}
-                          </div>
-                        </div>
 
-                        {/* Enhanced Performance Metrics */}
-                        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Sharpe Ratio</p>
-                            <p className="text-sm font-medium">{model.performance.sharpeRatio.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Win Rate</p>
-                            <p className="text-sm font-medium">{formatPercentage(model.performance.winRate)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Max Drawdown</p>
-                            <p className="text-sm font-medium text-red-600">{formatPercentage(Math.abs(model.performance.maxDrawdown))}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Sortino Ratio</p>
-                            <p className="text-sm font-medium">{model.performance.sortino.toFixed(2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Profit Factor</p>
-                            <p className="text-sm font-medium text-green-600">{model.performance.profitFactor.toFixed(2)}</p>
-                          </div>
-                        </div>
-
-                        {/* Experiment Tracking and Reproduction */}
-                        <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
-                          <div>
-                            <p className="text-xs text-muted-foreground">MLflow Run</p>
-                            <div className="flex items-center space-x-1">
-                              <Button variant="link" className="h-auto p-0 text-sm">
-                                <ExternalLink className="h-3 w-3 mr-1" />
-                                {model.experiment.mlflowRunId.slice(0, 12)}...
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => copyToClipboard(model.experiment.mlflowRunId)}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">DVC Hash</p>
-                            <div className="flex items-center space-x-1">
-                              <p className="text-sm font-mono">{model.experiment.dvcHash}</p>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => copyToClipboard(model.experiment.dvcHash)}
-                              >
-                                <Copy className="h-3 w-3" />
-                              </Button>
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Dataset Version</p>
-                            <p className="text-sm font-medium">{model.experiment.datasetVersion}</p>
-                          </div>
-                        </div>
-
-                        {/* Model Explainability */}
-                        {model.explainability && (
-                          <div className="p-3 bg-blue-50 rounded-lg">
-                            <div className="flex items-center justify-between mb-2">
-                              <p className="text-sm font-medium">Model Explainability</p>
-                              <div className="flex space-x-1">
-                                {model.explainability.availableExplanations.map(exp => (
-                                  <Badge key={exp} variant="outline" className="text-xs">
-                                    {exp}
-                                  </Badge>
-                                ))}
+                          {/* Experiment Tracking and Reproduction */}
+                          <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                MLflow Run
+                              </p>
+                              <div className="flex items-center space-x-1">
+                                <Button
+                                  variant="link"
+                                  className="h-auto p-0 text-sm"
+                                >
+                                  <ExternalLink className="h-3 w-3 mr-1" />
+                                  {model.experiment.mlflowRunId.slice(0, 12)}...
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() =>
+                                    copyToClipboard(
+                                      model.experiment.mlflowRunId,
+                                    )
+                                  }
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
                               </div>
                             </div>
-                            {model.explainability.featureImportance && (
-                              <div className="text-xs space-y-1">
-                                <p className="font-medium">Top Features:</p>
-                                {model.explainability.featureImportance.slice(0, 3).map(feature => (
-                                  <div key={feature.feature} className="flex justify-between">
-                                    <span>{feature.feature}</span>
-                                    <span>{formatPercentage(feature.importance)}</span>
-                                  </div>
-                                ))}
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                DVC Hash
+                              </p>
+                              <div className="flex items-center space-x-1">
+                                <p className="text-sm font-mono">
+                                  {model.experiment.dvcHash}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={() =>
+                                    copyToClipboard(model.experiment.dvcHash)
+                                  }
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
                               </div>
-                            )}
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">
+                                Dataset Version
+                              </p>
+                              <p className="text-sm font-medium">
+                                {model.experiment.datasetVersion}
+                              </p>
+                            </div>
                           </div>
-                        )}
 
-                        {/* Model Actions */}
-                        <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-                          {model.experiment.reproductionCommand && (
-                            <Button variant="outline" size="sm"><FileText className="h-3 w-3 mr-1" />Reproduction</Button>
-                          )}
-                          <Button variant="outline" size="sm"><BarChart3 className="h-3 w-3 mr-1" />Performance Report</Button>
-                          {model.status === 'deployed' && (<Button variant="outline" size="sm"><Eye className="h-3 w-3 mr-1" />Live Monitoring</Button>)}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm"><Rocket className="h-3 w-3 mr-1" />Promote</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Promote Model</DialogTitle>
-                                <DialogDescription>Promote {model.name} to production (founder supermajority enforced server-side)</DialogDescription>
-                              </DialogHeader>
-                              <div className="flex items-center space-x-2">
-                                <Checkbox id={`prom_${model.modelId}`} checked={founderApproval} onCheckedChange={setFounderApproval} />
-                                <Label htmlFor={`prom_${model.modelId}`}>I have founder approval</Label>
-                              </div>
-                              <DialogFooter>
-                                <Button onClick={()=> promoteModel(model.modelId)} disabled={!founderApproval}>Confirm Promote</Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                          {model.status !== 'shadow' ? (
-                            <Button variant="outline" size="sm" onClick={()=> startShadow(model.modelId)}>
-                              <Play className="h-3 w-3 mr-1" /> Start Shadow
-                            </Button>
-                          ) : (
-                            <Button variant="outline" size="sm" onClick={()=> stopShadow(model.modelId)}>
-                              <Square className="h-3 w-3 mr-1" /> Stop Shadow
-                            </Button>
-                          )}
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button variant="outline" size="sm"><RotateCcw className="h-3 w-3 mr-1" />Rollback</Button>
-                            </DialogTrigger>
-                            <DialogContent>
-                              <DialogHeader>
-                                <DialogTitle>Rollback Model</DialogTitle>
-                                <DialogDescription>Select target model to rollback to</DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-3">
-                                <div>
-                                  <Label>Rollback target</Label>
-                                  <Select onValueChange={(v)=> setRollbackToModelId(v)}>
-                                    <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
-                                    <SelectContent>
-                                      {models.filter(m=> m.modelId!==model.modelId).map(m => (
-                                        <SelectItem key={m.modelId} value={m.modelId}>{m.name} (v{m.version})</SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                          {/* Model Explainability */}
+                          {model.explainability && (
+                            <div className="p-3 bg-blue-50 rounded-lg">
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium">
+                                  Model Explainability
+                                </p>
+                                <div className="flex space-x-1">
+                                  {model.explainability.availableExplanations.map(
+                                    (exp) => (
+                                      <Badge
+                                        key={exp}
+                                        variant="outline"
+                                        className="text-xs"
+                                      >
+                                        {exp}
+                                      </Badge>
+                                    ),
+                                  )}
                                 </div>
+                              </div>
+                              {model.explainability.featureImportance && (
+                                <div className="text-xs space-y-1">
+                                  <p className="font-medium">Top Features:</p>
+                                  {model.explainability.featureImportance
+                                    .slice(0, 3)
+                                    .map((feature) => (
+                                      <div
+                                        key={feature.feature}
+                                        className="flex justify-between"
+                                      >
+                                        <span>{feature.feature}</span>
+                                        <span>
+                                          {formatPercentage(feature.importance)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Model Actions */}
+                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+                            {model.experiment.reproductionCommand && (
+                              <Button variant="outline" size="sm">
+                                <FileText className="h-3 w-3 mr-1" />
+                                Reproduction
+                              </Button>
+                            )}
+                            <Button variant="outline" size="sm">
+                              <BarChart3 className="h-3 w-3 mr-1" />
+                              Performance Report
+                            </Button>
+                            {model.status === "deployed" && (
+                              <Button variant="outline" size="sm">
+                                <Eye className="h-3 w-3 mr-1" />
+                                Live Monitoring
+                              </Button>
+                            )}
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <Rocket className="h-3 w-3 mr-1" />
+                                  Promote
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Promote Model</DialogTitle>
+                                  <DialogDescription>
+                                    Promote {model.name} to production (founder
+                                    supermajority enforced server-side)
+                                  </DialogDescription>
+                                </DialogHeader>
                                 <div className="flex items-center space-x-2">
-                                  <Checkbox id={`rb_${model.modelId}`} checked={founderApproval} onCheckedChange={setFounderApproval} />
-                                  <Label htmlFor={`rb_${model.modelId}`}>I have founder approval</Label>
+                                  <Checkbox
+                                    id={`prom_${model.modelId}`}
+                                    checked={founderApproval}
+                                    onCheckedChange={setFounderApproval}
+                                  />
+                                  <Label htmlFor={`prom_${model.modelId}`}>
+                                    I have founder approval
+                                  </Label>
                                 </div>
-                              </div>
-                              <DialogFooter>
-                                <Button onClick={()=> rollbackModel(model.modelId, rollbackToModelId)} disabled={!rollbackToModelId || !founderApproval}>Confirm Rollback</Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
+                                <DialogFooter>
+                                  <Button
+                                    onClick={() => promoteModel(model.modelId)}
+                                    disabled={!founderApproval}
+                                  >
+                                    Confirm Promote
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                            {model.status !== "shadow" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => startShadow(model.modelId)}
+                              >
+                                <Play className="h-3 w-3 mr-1" /> Start Shadow
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => stopShadow(model.modelId)}
+                              >
+                                <Square className="h-3 w-3 mr-1" /> Stop Shadow
+                              </Button>
+                            )}
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <RotateCcw className="h-3 w-3 mr-1" />
+                                  Rollback
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Rollback Model</DialogTitle>
+                                  <DialogDescription>
+                                    Select target model to rollback to
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-3">
+                                  <div>
+                                    <Label>Rollback target</Label>
+                                    <Select
+                                      onValueChange={(v) =>
+                                        setRollbackToModelId(v)
+                                      }
+                                    >
+                                      <SelectTrigger>
+                                        <SelectValue placeholder="Select model" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {models
+                                          .filter(
+                                            (m) => m.modelId !== model.modelId,
+                                          )
+                                          .map((m) => (
+                                            <SelectItem
+                                              key={m.modelId}
+                                              value={m.modelId}
+                                            >
+                                              {m.name} (v{m.version})
+                                            </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  <div className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`rb_${model.modelId}`}
+                                      checked={founderApproval}
+                                      onCheckedChange={setFounderApproval}
+                                    />
+                                    <Label htmlFor={`rb_${model.modelId}`}>
+                                      I have founder approval
+                                    </Label>
+                                  </div>
+                                </div>
+                                <DialogFooter>
+                                  <Button
+                                    onClick={() =>
+                                      rollbackModel(
+                                        model.modelId,
+                                        rollbackToModelId,
+                                      )
+                                    }
+                                    disabled={
+                                      !rollbackToModelId || !founderApproval
+                                    }
+                                  >
+                                    Confirm Rollback
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
                         </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Rocket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">
+                          No trained models available
+                        </p>
+                        <p className="text-sm text-muted-foreground mt-2">
+                          Complete a training job to see models here
+                        </p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="text-center py-8">
-                      <Rocket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                      <p className="text-muted-foreground">No trained models available</p>
-                      <p className="text-sm text-muted-foreground mt-2">Complete a training job to see models here</p>
-                    </div>
-                  )}
+                    )}
                   </div>
                   <div className="space-y-4">
                     <div className="border rounded-lg p-4 space-y-3">
-                      <div className="font-medium">Explainability & Diagnostics</div>
+                      <div className="font-medium">
+                        Explainability & Diagnostics
+                      </div>
                       <div className="space-y-2">
                         <Label htmlFor="diagModel">Model ID</Label>
-                        <Input id="diagModel" value={diagModelId} onChange={(e)=> setDiagModelId(e.target.value)} placeholder="model_001" />
+                        <Input
+                          id="diagModel"
+                          value={diagModelId}
+                          onChange={(e) => setDiagModelId(e.target.value)}
+                          placeholder="model_001"
+                        />
                         <div className="flex gap-2">
-                          <Button onClick={runExplain} disabled={explainLoading}>Fetch Feature Importance</Button>
-                          <Button variant="outline" onClick={()=>{ (async()=>{ try{ setRationalesLoading(true); const r=await apiFetch('/api/strategies/explain'); const j=await r.json(); setRationales(j.items||j||[]);} catch{} finally{ setRationalesLoading(false);} })(); }}>Load Strategy Rationales</Button>
+                          <Button
+                            onClick={runExplain}
+                            disabled={explainLoading}
+                          >
+                            Fetch Feature Importance
+                          </Button>
+                          <Button
+                            variant="outline"
+                            onClick={() => {
+                              (async () => {
+                                try {
+                                  setRationalesLoading(true);
+                                  const r = await apiFetch(
+                                    "/api/strategies/explain",
+                                  );
+                                  const j = await r.json();
+                                  setRationales(j.items || j || []);
+                                } catch {
+                                } finally {
+                                  setRationalesLoading(false);
+                                }
+                              })();
+                            }}
+                          >
+                            Load Strategy Rationales
+                          </Button>
                         </div>
                         {explain && explain.features && (
                           <div className="text-xs p-2 bg-muted rounded">
                             <div className="font-medium mb-1">Top features</div>
-                            {explain.features.slice(0,5).map((f:any)=>(
-                              <div key={f.name} className="flex justify-between"><span>{f.name}</span><span>{(f.importance*100).toFixed(1)}%</span></div>
+                            {explain.features.slice(0, 5).map((f: any) => (
+                              <div
+                                key={f.name}
+                                className="flex justify-between"
+                              >
+                                <span>{f.name}</span>
+                                <span>{(f.importance * 100).toFixed(1)}%</span>
+                              </div>
                             ))}
                           </div>
                         )}
                       </div>
                       <div className="space-y-2">
-                        <div className="flex items-center gap-2"><Label>Manual SHAP Input</Label><HelpTip content="Enter numeric features to compute SHAP values. Accepts array or object of numbers." /></div>
-                        <Textarea rows={4} value={shapInput} onChange={(e)=> setShapInput(e.target.value)} placeholder='[1.2, 0.4, -0.1, 2.3]' />
+                        <div className="flex items-center gap-2">
+                          <Label>Manual SHAP Input</Label>
+                          <HelpTip content="Enter numeric features to compute SHAP values. Accepts array or object of numbers." />
+                        </div>
+                        <Textarea
+                          rows={4}
+                          value={shapInput}
+                          onChange={(e) => setShapInput(e.target.value)}
+                          placeholder="[1.2, 0.4, -0.1, 2.3]"
+                        />
                         <div className="flex gap-2">
                           <Button onClick={runShap}>Run SHAP</Button>
                           {shapResult && (
-                            <Button variant="outline" onClick={()=>{ const blob = new Blob([JSON.stringify(shapResult,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`shap_${diagModelId||'model'}.json`; a.click(); }}>Download JSON</Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const blob = new Blob(
+                                  [JSON.stringify(shapResult, null, 2)],
+                                  { type: "application/json" },
+                                );
+                                const a = document.createElement("a");
+                                a.href = URL.createObjectURL(blob);
+                                a.download = `shap_${diagModelId || "model"}.json`;
+                                a.click();
+                              }}
+                            >
+                              Download JSON
+                            </Button>
                           )}
                         </div>
                         {shapResult && (
                           <div className="overflow-auto">
                             <table className="w-full text-xs">
-                              <thead><tr><th className="text-left p-1">Feature</th><th className="text-left p-1">SHAP</th></tr></thead>
+                              <thead>
+                                <tr>
+                                  <th className="text-left p-1">Feature</th>
+                                  <th className="text-left p-1">SHAP</th>
+                                </tr>
+                              </thead>
                               <tbody>
-                                {(shapResult.features||[]).map((f:any)=> (
-                                  <tr key={f.name} className="border-t"><td className="p-1">{f.name}</td><td className="p-1">{f.shap}</td></tr>
+                                {(shapResult.features || []).map((f: any) => (
+                                  <tr key={f.name} className="border-t">
+                                    <td className="p-1">{f.name}</td>
+                                    <td className="p-1">{f.shap}</td>
+                                  </tr>
                                 ))}
                               </tbody>
                             </table>
@@ -1638,17 +2336,27 @@ export default function AdminModels() {
                         )}
                       </div>
                       <div className="space-y-2">
-                        <div className="text-sm font-medium">Recent Strategy Rationales</div>
+                        <div className="text-sm font-medium">
+                          Recent Strategy Rationales
+                        </div>
                         {rationalesLoading ? (
-                          <div className="text-xs text-muted-foreground">Loading…</div>
+                          <div className="text-xs text-muted-foreground">
+                            Loading…
+                          </div>
                         ) : (
                           <div className="space-y-1 text-xs max-h-40 overflow-auto">
-                            {rationales.slice(0,10).map((it:any,idx:number)=> (
-                              <div key={idx} className="border-t pt-1">
-                                <div className="font-medium">{it.strategy || it.name || 'strategy'}</div>
-                                <div className="text-muted-foreground">{it.reason || it.rationale || ''}</div>
-                              </div>
-                            ))}
+                            {rationales
+                              .slice(0, 10)
+                              .map((it: any, idx: number) => (
+                                <div key={idx} className="border-t pt-1">
+                                  <div className="font-medium">
+                                    {it.strategy || it.name || "strategy"}
+                                  </div>
+                                  <div className="text-muted-foreground">
+                                    {it.reason || it.rationale || ""}
+                                  </div>
+                                </div>
+                              ))}
                           </div>
                         )}
                       </div>
@@ -1665,7 +2373,8 @@ export default function AdminModels() {
               <CardHeader>
                 <CardTitle>Curriculum Learning</CardTitle>
                 <CardDescription>
-                  Progressive training stages for reinforcement learning agents with adaptive advancement criteria
+                  Progressive training stages for reinforcement learning agents
+                  with adaptive advancement criteria
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -1674,33 +2383,47 @@ export default function AdminModels() {
                     <div key={stage.name} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                            stage.status === 'completed' ? 'bg-green-100 text-green-600' :
-                            stage.status === 'active' ? 'bg-blue-100 text-blue-600' :
-                            stage.status === 'failed' ? 'bg-red-100 text-red-600' :
-                            'bg-gray-100 text-gray-400'
-                          }`}>
-                            {stage.status === 'completed' ? (
+                          <div
+                            className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                              stage.status === "completed"
+                                ? "bg-green-100 text-green-600"
+                                : stage.status === "active"
+                                  ? "bg-blue-100 text-blue-600"
+                                  : stage.status === "failed"
+                                    ? "bg-red-100 text-red-600"
+                                    : "bg-gray-100 text-gray-400"
+                            }`}
+                          >
+                            {stage.status === "completed" ? (
                               <CheckCircle className="h-5 w-5" />
-                            ) : stage.status === 'active' ? (
+                            ) : stage.status === "active" ? (
                               <Activity className="h-5 w-5" />
-                            ) : stage.status === 'failed' ? (
+                            ) : stage.status === "failed" ? (
                               <XCircle className="h-5 w-5" />
                             ) : (
-                              <span className="text-sm font-medium">{index + 1}</span>
+                              <span className="text-sm font-medium">
+                                {index + 1}
+                              </span>
                             )}
                           </div>
                           <div>
                             <h3 className="font-medium">{stage.name}</h3>
-                            <p className="text-sm text-muted-foreground">{stage.description}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {stage.description}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <Badge variant="outline" className={
-                            stage.level === 'simple' ? 'bg-green-50 text-green-700 border-green-200' :
-                            stage.level === 'volatile' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                            'bg-red-50 text-red-700 border-red-200'
-                          }>
+                          <Badge
+                            variant="outline"
+                            className={
+                              stage.level === "simple"
+                                ? "bg-green-50 text-green-700 border-green-200"
+                                : stage.level === "volatile"
+                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200"
+                                  : "bg-red-50 text-red-700 border-red-200"
+                            }
+                          >
                             {stage.level}
                           </Badge>
                           {stage.attempts && (
@@ -1714,21 +2437,37 @@ export default function AdminModels() {
                       {/* Curriculum Criteria */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         <div>
-                          <p className="text-xs text-muted-foreground">Win Ratio Target</p>
-                          <p className="text-sm font-medium">{formatPercentage(stage.criteria.winRatio)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Win Ratio Target
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatPercentage(stage.criteria.winRatio)}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Min Trades</p>
-                          <p className="text-sm font-medium">{stage.criteria.minTrades}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Min Trades
+                          </p>
+                          <p className="text-sm font-medium">
+                            {stage.criteria.minTrades}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Max Drawdown</p>
-                          <p className="text-sm font-medium">{formatPercentage(stage.criteria.maxDrawdown)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Max Drawdown
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatPercentage(stage.criteria.maxDrawdown)}
+                          </p>
                         </div>
                         {stage.criteria.sharpeRatio && (
                           <div>
-                            <p className="text-xs text-muted-foreground">Sharpe Ratio</p>
-                            <p className="text-sm font-medium">{stage.criteria.sharpeRatio.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Sharpe Ratio
+                            </p>
+                            <p className="text-sm font-medium">
+                              {stage.criteria.sharpeRatio.toFixed(2)}
+                            </p>
                           </div>
                         )}
                       </div>
@@ -1737,7 +2476,9 @@ export default function AdminModels() {
                       {stage.progress !== undefined && (
                         <div className="mb-4">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-muted-foreground">Progress</span>
+                            <span className="text-sm text-muted-foreground">
+                              Progress
+                            </span>
                             <span className="text-sm">{stage.progress}%</span>
                           </div>
                           <Progress value={stage.progress} />
@@ -1747,16 +2488,28 @@ export default function AdminModels() {
                       {stage.bestPerformance && (
                         <div className="grid grid-cols-3 gap-4 p-3 bg-muted rounded-lg">
                           <div>
-                            <p className="text-xs text-muted-foreground">Best Win Ratio</p>
-                            <p className="text-sm font-medium">{formatPercentage(stage.bestPerformance.winRatio)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Best Win Ratio
+                            </p>
+                            <p className="text-sm font-medium">
+                              {formatPercentage(stage.bestPerformance.winRatio)}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Best Sharpe</p>
-                            <p className="text-sm font-medium">{stage.bestPerformance.sharpeRatio.toFixed(2)}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Best Sharpe
+                            </p>
+                            <p className="text-sm font-medium">
+                              {stage.bestPerformance.sharpeRatio.toFixed(2)}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-xs text-muted-foreground">Total Trades</p>
-                            <p className="text-sm font-medium">{stage.bestPerformance.totalTrades}</p>
+                            <p className="text-xs text-muted-foreground">
+                              Total Trades
+                            </p>
+                            <p className="text-sm font-medium">
+                              {stage.bestPerformance.totalTrades}
+                            </p>
                           </div>
                         </div>
                       )}
@@ -1773,20 +2526,28 @@ export default function AdminModels() {
               <CardHeader>
                 <CardTitle>Dataset Management</CardTitle>
                 <CardDescription>
-                  DVC-versioned datasets with comprehensive metadata and feature tracking
+                  DVC-versioned datasets with comprehensive metadata and feature
+                  tracking
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {datasets.map((dataset) => (
-                    <div key={dataset.version} className="border rounded-lg p-4 space-y-4">
+                    <div
+                      key={dataset.version}
+                      className="border rounded-lg p-4 space-y-4"
+                    >
                       {/* Dataset Header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
                           <Database className="h-5 w-5 text-primary" />
                           <div>
-                            <h3 className="font-medium">Dataset {dataset.version}</h3>
-                            <p className="text-sm text-muted-foreground">{dataset.description}</p>
+                            <h3 className="font-medium">
+                              Dataset {dataset.version}
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                              {dataset.description}
+                            </p>
                           </div>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -1807,32 +2568,59 @@ export default function AdminModels() {
                           <p className="text-sm font-medium">{dataset.size}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Rows × Columns</p>
-                          <p className="text-sm font-medium">{dataset.metadata.rows.toLocaleString()} × {dataset.metadata.columns}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Rows × Columns
+                          </p>
+                          <p className="text-sm font-medium">
+                            {dataset.metadata.rows.toLocaleString()} ×{" "}
+                            {dataset.metadata.columns}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Sampling Rate</p>
-                          <p className="text-sm font-medium">{dataset.metadata.samplingRate}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sampling Rate
+                          </p>
+                          <p className="text-sm font-medium">
+                            {dataset.metadata.samplingRate}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Quality Score</p>
-                          <p className="text-sm font-medium">{formatPercentage(dataset.metadata.qualityScore)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Quality Score
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatPercentage(dataset.metadata.qualityScore)}
+                          </p>
                         </div>
                       </div>
 
                       {/* Time Range and Assets */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs text-muted-foreground">Time Range</p>
+                          <p className="text-xs text-muted-foreground">
+                            Time Range
+                          </p>
                           <p className="text-sm font-medium">
-                            {new Date(dataset.timeRange.start).toLocaleDateString()} - {new Date(dataset.timeRange.end).toLocaleDateString()}
+                            {new Date(
+                              dataset.timeRange.start,
+                            ).toLocaleDateString()}{" "}
+                            -{" "}
+                            {new Date(
+                              dataset.timeRange.end,
+                            ).toLocaleDateString()}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Asset Coverage</p>
+                          <p className="text-xs text-muted-foreground">
+                            Asset Coverage
+                          </p>
                           <div className="flex flex-wrap gap-1">
-                            {dataset.metadata.assetCoverage.map(asset => (
-                              <Badge key={asset} variant="secondary" className="text-xs">
+                            {dataset.metadata.assetCoverage.map((asset) => (
+                              <Badge
+                                key={asset}
+                                variant="secondary"
+                                className="text-xs"
+                              >
                                 {asset}
                               </Badge>
                             ))}
@@ -1842,10 +2630,16 @@ export default function AdminModels() {
 
                       {/* Features */}
                       <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-2">Features ({dataset.features.length})</p>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Features ({dataset.features.length})
+                        </p>
                         <div className="flex flex-wrap gap-1">
-                          {dataset.features.map(feature => (
-                            <Badge key={feature} variant="outline" className="text-xs">
+                          {dataset.features.map((feature) => (
+                            <Badge
+                              key={feature}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {feature}
                             </Badge>
                           ))}
@@ -1855,9 +2649,13 @@ export default function AdminModels() {
                       {/* Version Info */}
                       <div className="grid grid-cols-3 gap-4 p-3 bg-blue-50 rounded-lg">
                         <div>
-                          <p className="text-xs text-muted-foreground">DVC Hash</p>
+                          <p className="text-xs text-muted-foreground">
+                            DVC Hash
+                          </p>
                           <div className="flex items-center space-x-1">
-                            <p className="text-sm font-mono">{dataset.dvcHash}</p>
+                            <p className="text-sm font-mono">
+                              {dataset.dvcHash}
+                            </p>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1869,14 +2667,22 @@ export default function AdminModels() {
                           </div>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Creator</p>
-                          <p className="text-sm font-medium">{dataset.versionInfo.creator}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Creator
+                          </p>
+                          <p className="text-sm font-medium">
+                            {dataset.versionInfo.creator}
+                          </p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground">Tags</p>
                           <div className="flex flex-wrap gap-1">
-                            {dataset.versionInfo.tags.map(tag => (
-                              <Badge key={tag} variant="secondary" className="text-xs">
+                            {dataset.versionInfo.tags.map((tag) => (
+                              <Badge
+                                key={tag}
+                                variant="secondary"
+                                className="text-xs"
+                              >
                                 {tag}
                               </Badge>
                             ))}
@@ -1886,7 +2692,9 @@ export default function AdminModels() {
 
                       {/* Change Log */}
                       <div className="text-sm">
-                        <p className="text-muted-foreground mb-1">Change Log:</p>
+                        <p className="text-muted-foreground mb-1">
+                          Change Log:
+                        </p>
                         <p>{dataset.versionInfo.changeLog}</p>
                       </div>
                     </div>
@@ -1902,25 +2710,32 @@ export default function AdminModels() {
               <CardHeader>
                 <CardTitle>Sentiment Ingestion Pipelines</CardTitle>
                 <CardDescription>
-                  Monitor Twitter and RSS news feeds for sentiment analysis and market signal generation
+                  Monitor Twitter and RSS news feeds for sentiment analysis and
+                  market signal generation
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {sentimentPipelines.map((pipeline) => (
-                    <div key={pipeline.id} className="border rounded-lg p-4 space-y-4">
+                    <div
+                      key={pipeline.id}
+                      className="border rounded-lg p-4 space-y-4"
+                    >
                       {/* Pipeline Header */}
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-3">
-                          {pipeline.type === 'twitter' ? (
+                          {pipeline.type === "twitter" ? (
                             <Twitter className="h-5 w-5 text-blue-500" />
                           ) : (
                             <Rss className="h-5 w-5 text-orange-500" />
                           )}
                           <div>
-                            <h3 className="font-medium capitalize">{pipeline.type} Pipeline</h3>
+                            <h3 className="font-medium capitalize">
+                              {pipeline.type} Pipeline
+                            </h3>
                             <p className="text-sm text-muted-foreground">
-                              Processing {pipeline.config.processingModel} • {pipeline.config.updateFrequency} updates
+                              Processing {pipeline.config.processingModel} •{" "}
+                              {pipeline.config.updateFrequency} updates
                             </p>
                           </div>
                         </div>
@@ -1929,7 +2744,7 @@ export default function AdminModels() {
                             {pipeline.status}
                           </Badge>
                           <Button variant="outline" size="sm">
-                            {pipeline.status === 'active' ? (
+                            {pipeline.status === "active" ? (
                               <>
                                 <Pause className="h-3 w-3 mr-1" />
                                 Pause
@@ -1947,26 +2762,46 @@ export default function AdminModels() {
                       {/* Pipeline Stats */}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-xs text-muted-foreground">Total Processed</p>
-                          <p className="text-sm font-medium">{pipeline.stats.totalProcessed.toLocaleString()}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-muted-foreground">Avg Sentiment</p>
-                          <p className={`text-sm font-medium ${
-                            pipeline.stats.avgSentimentScore > 0 ? 'text-green-600' : 
-                            pipeline.stats.avgSentimentScore < 0 ? 'text-red-600' : 'text-gray-600'
-                          }`}>
-                            {pipeline.stats.avgSentimentScore > 0 ? '+' : ''}{pipeline.stats.avgSentimentScore.toFixed(3)}
+                          <p className="text-xs text-muted-foreground">
+                            Total Processed
+                          </p>
+                          <p className="text-sm font-medium">
+                            {pipeline.stats.totalProcessed.toLocaleString()}
                           </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Flagged Content</p>
-                          <p className="text-sm font-medium text-red-600">{pipeline.stats.flaggedContent}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Avg Sentiment
+                          </p>
+                          <p
+                            className={`text-sm font-medium ${
+                              pipeline.stats.avgSentimentScore > 0
+                                ? "text-green-600"
+                                : pipeline.stats.avgSentimentScore < 0
+                                  ? "text-red-600"
+                                  : "text-gray-600"
+                            }`}
+                          >
+                            {pipeline.stats.avgSentimentScore > 0 ? "+" : ""}
+                            {pipeline.stats.avgSentimentScore.toFixed(3)}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Last Updated</p>
+                          <p className="text-xs text-muted-foreground">
+                            Flagged Content
+                          </p>
+                          <p className="text-sm font-medium text-red-600">
+                            {pipeline.stats.flaggedContent}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">
+                            Last Updated
+                          </p>
                           <p className="text-sm font-medium">
-                            {new Date(pipeline.stats.lastUpdated).toLocaleTimeString()}
+                            {new Date(
+                              pipeline.stats.lastUpdated,
+                            ).toLocaleTimeString()}
                           </p>
                         </div>
                       </div>
@@ -1974,17 +2809,25 @@ export default function AdminModels() {
                       {/* Sources and Configuration */}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <p className="text-xs text-muted-foreground mb-2">Sources</p>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Sources
+                          </p>
                           <div className="flex flex-wrap gap-1">
-                            {pipeline.config.sources.map(source => (
-                              <Badge key={source} variant="outline" className="text-xs">
+                            {pipeline.config.sources.map((source) => (
+                              <Badge
+                                key={source}
+                                variant="outline"
+                                className="text-xs"
+                              >
                                 {source}
                               </Badge>
                             ))}
                           </div>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground mb-2">Processing Model</p>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Processing Model
+                          </p>
                           <Badge variant="secondary">
                             {pipeline.config.processingModel}
                           </Badge>
@@ -1993,14 +2836,20 @@ export default function AdminModels() {
 
                       {/* Filter Rules */}
                       <div className="p-3 bg-muted rounded-lg">
-                        <p className="text-xs text-muted-foreground mb-2">Filter Rules</p>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Filter Rules
+                        </p>
                         <div className="text-sm">
-                          {Object.entries(pipeline.config.filterRules).map(([key, value]) => (
-                            <div key={key} className="flex justify-between">
-                              <span className="capitalize">{key.replace('_', ' ')}:</span>
-                              <span>{String(value)}</span>
-                            </div>
-                          ))}
+                          {Object.entries(pipeline.config.filterRules).map(
+                            ([key, value]) => (
+                              <div key={key} className="flex justify-between">
+                                <span className="capitalize">
+                                  {key.replace("_", " ")}:
+                                </span>
+                                <span>{String(value)}</span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2022,9 +2871,12 @@ export default function AdminModels() {
               <CardContent>
                 <div className="text-center py-12">
                   <Beaker className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium mb-2">MLflow Integration</h3>
+                  <h3 className="text-lg font-medium mb-2">
+                    MLflow Integration
+                  </h3>
                   <p className="text-muted-foreground mb-6">
-                    All training experiments are automatically tracked in MLflow with full reproducibility
+                    All training experiments are automatically tracked in MLflow
+                    with full reproducibility
                   </p>
                   <div className="flex justify-center space-x-4">
                     <Button>

@@ -1,17 +1,36 @@
-import { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import apiFetch from '@/lib/apiClient';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import apiFetch from "@/lib/apiClient";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Users,
   UserPlus,
@@ -28,14 +47,14 @@ import {
   AlertTriangle,
   ExternalLink,
   Trash2,
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Types
 interface PendingUser {
   id: string;
   email: string;
-  requestedRole: 'user' | 'admin';
+  requestedRole: "user" | "admin";
   approvalsReceived: number;
   approvalsNeeded: number;
   invitedAt: string;
@@ -47,32 +66,34 @@ interface UserSettings {
   takeProfitMultiplier: number;
   newsAnalysisEnabled: boolean;
   trailingStop: number;
-  riskTier: 'low' | 'medium' | 'high';
+  riskTier: "low" | "medium" | "high";
 }
 
 const FALLBACK_FOUNDERS = [
-  { id: 'founder1', name: 'Founder 1' },
-  { id: 'founder2', name: 'Founder 2' },
-  { id: 'founder3', name: 'Founder 3' },
-  { id: 'founder4', name: 'Founder 4' },
-  { id: 'founder5', name: 'Founder 5' },
+  { id: "founder1", name: "Founder 1" },
+  { id: "founder2", name: "Founder 2" },
+  { id: "founder3", name: "Founder 3" },
+  { id: "founder4", name: "Founder 4" },
+  { id: "founder5", name: "Founder 5" },
 ];
 
 const MAX_PAGE_LIMIT = 50;
 
 export default function UserManagement() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('invite');
+  const [activeTab, setActiveTab] = useState("invite");
 
   // Identity & Profile
   const [identity, setIdentity] = useState<any | null>(null);
-  const [profile, setProfile] = useState<{ risk_tier: 'aggressive' | 'balanced' | 'conservative' } | null>(null);
+  const [profile, setProfile] = useState<{
+    risk_tier: "aggressive" | "balanced" | "conservative";
+  } | null>(null);
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
   // Invite Users State
   const [inviteForm, setInviteForm] = useState({
-    email: '',
-    role: 'user' as 'user' | 'admin',
+    email: "",
+    role: "user" as "user" | "admin",
     founderApprovals: [] as string[],
     expiryDays: 7,
   });
@@ -80,7 +101,7 @@ export default function UserManagement() {
 
   // Pending Users Queue
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [limit, setLimit] = useState(10);
   const [offset, setOffset] = useState(0);
   const [totalPending, setTotalPending] = useState(0);
@@ -90,14 +111,19 @@ export default function UserManagement() {
   // Approval Drawer
   const [approveOpen, setApproveOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
-  const [assignedRole, setAssignedRole] = useState<'user' | 'admin'>('user');
+  const [assignedRole, setAssignedRole] = useState<"user" | "admin">("user");
   const [isApproving, setIsApproving] = useState(false);
   const [approvalAuditId, setApprovalAuditId] = useState<string | null>(null);
 
   // Founders roster
-  const [founders, setFounders] = useState<Array<{ id: string; email?: string; name: string }>>(FALLBACK_FOUNDERS);
-  const [bootstrapStatus, setBootstrapStatus] = useState<{ foundersExist: boolean } | null>(null);
-  const [newFounder, setNewFounder] = useState({ email: '', name: '' });
+  const [founders, setFounders] =
+    useState<Array<{ id: string; email?: string; name: string }>>(
+      FALLBACK_FOUNDERS,
+    );
+  const [bootstrapStatus, setBootstrapStatus] = useState<{
+    foundersExist: boolean;
+  } | null>(null);
+  const [newFounder, setNewFounder] = useState({ email: "", name: "" });
   const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [foundersError, setFoundersError] = useState<string | null>(null);
 
@@ -107,7 +133,7 @@ export default function UserManagement() {
     takeProfitMultiplier: 2.0,
     newsAnalysisEnabled: true,
     trailingStop: 0.05,
-    riskTier: 'medium',
+    riskTier: "medium",
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
 
@@ -119,17 +145,17 @@ export default function UserManagement() {
     (async () => {
       try {
         const [meRes, profRes, foundersRes, bootRes] = await Promise.all([
-          apiFetch('/api/auth/me'),
-          apiFetch('/api/user/profile'),
-          apiFetch('/api/founders'),
-          apiFetch('/api/founders/bootstrap-status'),
+          apiFetch("/api/auth/me"),
+          apiFetch("/api/user/profile"),
+          apiFetch("/api/founders"),
+          apiFetch("/api/founders/bootstrap-status"),
         ]);
         const me = await meRes.json().catch(() => null);
         const prof = await profRes.json().catch(() => null);
         const fList = await foundersRes.json().catch(() => []);
         const bStat = await bootRes.json().catch(() => null);
         if (me) setIdentity(me);
-        if (prof?.status === 'success') setProfile(prof.data);
+        if (prof?.status === "success") setProfile(prof.data);
         if (Array.isArray(fList) && fList.length) setFounders(fList);
         else setFounders(FALLBACK_FOUNDERS);
         if (bStat) setBootstrapStatus(bStat);
@@ -146,20 +172,27 @@ export default function UserManagement() {
         offset: String(Math.max(0, offset)),
         search: searchTerm,
       });
-      const response = await apiFetch(`/api/users/pending?${params}`, { cache: 'no-store' });
+      const response = await apiFetch(`/api/users/pending?${params}`, {
+        cache: "no-store",
+      });
       const data = await response.json().catch(() => ({}));
 
       if ([422, 502, 503, 504].includes(response.status)) {
-        setQueueError(data.error || 'Queue temporarily unavailable');
+        setQueueError(data.error || "Queue temporarily unavailable");
         return;
       }
-      if (!response.ok || data.status !== 'success') throw new Error(data.error || 'Failed to fetch queue');
+      if (!response.ok || data.status !== "success")
+        throw new Error(data.error || "Failed to fetch queue");
 
       setPendingUsers(data.data.users || []);
       setTotalPending(data.data.total || 0);
       setHasMore(Boolean(data.data.hasMore));
     } catch (error) {
-      setQueueError(error instanceof Error ? error.message : 'Failed to fetch pending users');
+      setQueueError(
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch pending users",
+      );
     }
   };
 
@@ -170,51 +203,89 @@ export default function UserManagement() {
   // Invite User
   const handleInviteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const requiredApprovals = inviteForm.role === 'admin' ? 5 : 3;
-    if (!inviteForm.email || inviteForm.founderApprovals.length < requiredApprovals) {
-      toast({ title: 'Validation Error', description: `Email is required and ${requiredApprovals} founder approvals needed for ${inviteForm.role} role.`, variant: 'destructive' });
+    const requiredApprovals = inviteForm.role === "admin" ? 5 : 3;
+    if (
+      !inviteForm.email ||
+      inviteForm.founderApprovals.length < requiredApprovals
+    ) {
+      toast({
+        title: "Validation Error",
+        description: `Email is required and ${requiredApprovals} founder approvals needed for ${inviteForm.role} role.`,
+        variant: "destructive",
+      });
       return;
     }
-    if (adminCapReached && inviteForm.role === 'admin') {
-      toast({ title: 'Admin Limit', description: 'Maximum of 3 admins reached. Adjust roles before inviting another admin.', variant: 'destructive' });
+    if (adminCapReached && inviteForm.role === "admin") {
+      toast({
+        title: "Admin Limit",
+        description:
+          "Maximum of 3 admins reached. Adjust roles before inviting another admin.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsInviting(true);
     try {
-      const response = await apiFetch('/api/users/invite', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/users/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(inviteForm),
       });
       const data = await response.json().catch(() => ({}));
 
       if (response.status === 429) {
-        toast({ title: 'Rate limited', description: 'Please wait and try again.', variant: 'destructive' });
+        toast({
+          title: "Rate limited",
+          description: "Please wait and try again.",
+          variant: "destructive",
+        });
         return;
       }
       if ([422, 502, 503, 504].includes(response.status)) {
-        toast({ title: 'Service degraded', description: data.error || response.statusText, variant: 'destructive' });
+        toast({
+          title: "Service degraded",
+          description: data.error || response.statusText,
+          variant: "destructive",
+        });
         return;
       }
-      if (!response.ok) throw new Error(data.error || 'Failed to send invitation');
+      if (!response.ok)
+        throw new Error(data.error || "Failed to send invitation");
 
-      toast({ title: 'Invitation Sent', description: data?.data?.id ? `Invite ID: ${data.data.id}` : `Invitation sent to ${inviteForm.email}.` });
-      setInviteForm({ email: '', role: 'user', founderApprovals: [], expiryDays: 7 });
+      toast({
+        title: "Invitation Sent",
+        description: data?.data?.id
+          ? `Invite ID: ${data.data.id}`
+          : `Invitation sent to ${inviteForm.email}.`,
+      });
+      setInviteForm({
+        email: "",
+        role: "user",
+        founderApprovals: [],
+        expiryDays: 7,
+      });
       setOffset(0);
       await fetchPendingUsers();
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to send invitation. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to send invitation. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsInviting(false);
     }
   };
 
   const handleFounderToggle = (founderId: string) => {
-    setInviteForm(prev => ({
+    setInviteForm((prev) => ({
       ...prev,
       founderApprovals: prev.founderApprovals.includes(founderId)
-        ? prev.founderApprovals.filter(id => id !== founderId)
+        ? prev.founderApprovals.filter((id) => id !== founderId)
         : [...prev.founderApprovals, founderId],
     }));
   };
@@ -222,31 +293,50 @@ export default function UserManagement() {
   // Approvals
   const handleApproveSelected = async () => {
     if (!selectedUser) return;
-    if (adminCapReached && assignedRole === 'admin') {
-      toast({ title: 'Admin Limit', description: 'Maximum of 3 admins reached. Adjust roles before approving another admin.', variant: 'destructive' });
+    if (adminCapReached && assignedRole === "admin") {
+      toast({
+        title: "Admin Limit",
+        description:
+          "Maximum of 3 admins reached. Adjust roles before approving another admin.",
+        variant: "destructive",
+      });
       return;
     }
     setIsApproving(true);
     try {
-      const response = await apiFetch('/api/users/approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/users/approve", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: selectedUser.id, assignedRole }),
       });
       const data = await response.json().catch(() => ({}));
       if ([422, 502, 503, 504].includes(response.status)) {
-        toast({ title: 'Service degraded', description: data.error || response.statusText, variant: 'destructive' });
+        toast({
+          title: "Service degraded",
+          description: data.error || response.statusText,
+          variant: "destructive",
+        });
         return;
       }
-      if (!response.ok) throw new Error(data.error || 'Failed to approve user');
+      if (!response.ok) throw new Error(data.error || "Failed to approve user");
 
       setApprovalAuditId(data?.data?.audit_id || null);
-      toast({ title: 'User Approved', description: 'Activation complete. View audit for details.' });
+      toast({
+        title: "User Approved",
+        description: "Activation complete. View audit for details.",
+      });
       setApproveOpen(false);
       setSelectedUser(null);
       await fetchPendingUsers();
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to approve user. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to approve user. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsApproving(false);
     }
@@ -254,13 +344,25 @@ export default function UserManagement() {
 
   const handleRejectUser = async (userId: string) => {
     try {
-      const response = await apiFetch(`/api/users/pending/${userId}`, { method: 'DELETE' });
+      const response = await apiFetch(`/api/users/pending/${userId}`, {
+        method: "DELETE",
+      });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Failed to reject user');
-      toast({ title: 'User Rejected', description: 'User invitation has been rejected.' });
+      if (!response.ok) throw new Error(data.error || "Failed to reject user");
+      toast({
+        title: "User Rejected",
+        description: "User invitation has been rejected.",
+      });
       await fetchPendingUsers();
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to reject user. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to reject user. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -268,9 +370,10 @@ export default function UserManagement() {
   useEffect(() => {
     const fetchUserSettings = async () => {
       try {
-        const response = await apiFetch('/api/users/settings');
+        const response = await apiFetch("/api/users/settings");
         const data = await response.json();
-        if (response.ok && data.status === 'success') setUserSettings(data.data);
+        if (response.ok && data.status === "success")
+          setUserSettings(data.data);
       } catch {}
     };
     fetchUserSettings();
@@ -278,31 +381,57 @@ export default function UserManagement() {
 
   const handleSettingsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (userSettings.stopLossMultiplier < 0.1 || userSettings.stopLossMultiplier > 1.0) {
-      toast({ title: 'Validation Error', description: 'Stop-loss multiplier must be between 0.1 and 1.0.', variant: 'destructive' });
+    if (
+      userSettings.stopLossMultiplier < 0.1 ||
+      userSettings.stopLossMultiplier > 1.0
+    ) {
+      toast({
+        title: "Validation Error",
+        description: "Stop-loss multiplier must be between 0.1 and 1.0.",
+        variant: "destructive",
+      });
       return;
     }
     if (userSettings.takeProfitMultiplier < 1.0) {
-      toast({ title: 'Validation Error', description: 'Take-profit multiplier must be at least 1.0.', variant: 'destructive' });
+      toast({
+        title: "Validation Error",
+        description: "Take-profit multiplier must be at least 1.0.",
+        variant: "destructive",
+      });
       return;
     }
     if (userSettings.trailingStop <= 0) {
-      toast({ title: 'Validation Error', description: 'Trailing stop must be greater than 0.', variant: 'destructive' });
+      toast({
+        title: "Validation Error",
+        description: "Trailing stop must be greater than 0.",
+        variant: "destructive",
+      });
       return;
     }
 
     setIsUpdatingSettings(true);
     try {
-      const response = await apiFetch('/api/users/settings', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/users/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(userSettings),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Failed to save settings');
-      toast({ title: 'Settings Saved', description: 'Your trading preferences have been updated successfully.' });
+      if (!response.ok)
+        throw new Error(data.error || "Failed to save settings");
+      toast({
+        title: "Settings Saved",
+        description: "Your trading preferences have been updated successfully.",
+      });
     } catch (error) {
-      toast({ title: 'Error', description: error instanceof Error ? error.message : 'Failed to save settings. Please try again.', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to save settings. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdatingSettings(false);
     }
@@ -312,7 +441,7 @@ export default function UserManagement() {
   const refreshFounders = async () => {
     setFoundersError(null);
     try {
-      const r = await apiFetch('/api/founders');
+      const r = await apiFetch("/api/founders");
       if (r.ok) {
         const j = await r.json();
         setFounders(Array.isArray(j) && j.length ? j : FALLBACK_FOUNDERS);
@@ -327,74 +456,98 @@ export default function UserManagement() {
   const tryBootstrap = async () => {
     setIsBootstrapping(true);
     try {
-      const r = await apiFetch('/api/founders/bootstrap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newFounder.email, password: 'ChangeMe123!', name: newFounder.name }),
+      const r = await apiFetch("/api/founders/bootstrap", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: newFounder.email,
+          password: "ChangeMe123!",
+          name: newFounder.name,
+        }),
       });
       if (r.status === 404 || r.status === 503) {
-        setFoundersError('Bootstrap unavailable: maintenance');
+        setFoundersError("Bootstrap unavailable: maintenance");
         return;
       }
       if (r.status === 409) {
-        toast({ title: 'Already bootstrapped', description: 'Founders already exist' });
+        toast({
+          title: "Already bootstrapped",
+          description: "Founders already exist",
+        });
         await refreshFounders();
         return;
       }
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || 'Bootstrap failed');
+        throw new Error(j.error || "Bootstrap failed");
       }
-      toast({ title: 'Founder created', description: 'Bootstrap successful' });
+      toast({ title: "Founder created", description: "Bootstrap successful" });
       await Promise.all([refreshFounders()]);
       setBootstrapStatus({ foundersExist: true });
     } catch (e: any) {
-      setFoundersError(e.message || 'Bootstrap failed');
+      setFoundersError(e.message || "Bootstrap failed");
     } finally {
       setIsBootstrapping(false);
     }
   };
 
   const removeFounder = async (id: string) => {
-    if (!confirm('Remove founder? This may force logout.')) return;
+    if (!confirm("Remove founder? This may force logout.")) return;
     try {
-      const r = await apiFetch(`/api/founders/${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const r = await apiFetch(`/api/founders/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
-        throw new Error(j.error || 'Failed to remove founder');
+        throw new Error(j.error || "Failed to remove founder");
       }
-      toast({ title: 'Founder removed' });
+      toast({ title: "Founder removed" });
       await refreshFounders();
     } catch (e: any) {
-      toast({ title: 'Error', description: e.message || 'Failed to remove founder', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: e.message || "Failed to remove founder",
+        variant: "destructive",
+      });
     }
   };
 
-  const updateRiskTier = async (tier: 'aggressive' | 'balanced' | 'conservative') => {
+  const updateRiskTier = async (
+    tier: "aggressive" | "balanced" | "conservative",
+  ) => {
     setIsUpdatingProfile(true);
     try {
-      const r = await apiFetch('/api/user/profile', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const r = await apiFetch("/api/user/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ risk_tier: tier }),
       });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || 'Failed to update profile');
+      if (!r.ok) throw new Error(j.error || "Failed to update profile");
       setProfile(j.data || { risk_tier: tier });
-      toast({ title: 'Profile Updated', description: `Risk tier set to ${tier}` });
+      toast({
+        title: "Profile Updated",
+        description: `Risk tier set to ${tier}`,
+      });
     } catch (e: any) {
-      toast({ title: 'Error', description: e.message || 'Failed to update risk tier', variant: 'destructive' });
+      toast({
+        title: "Error",
+        description: e.message || "Failed to update risk tier",
+        variant: "destructive",
+      });
     } finally {
       setIsUpdatingProfile(false);
     }
   };
 
-  if (!user || user.role !== 'admin') {
+  if (!user || user.role !== "admin") {
     return (
       <div className="flex items-center justify-center h-96">
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>Access denied. Admin privileges required.</AlertDescription>
+          <AlertDescription>
+            Access denied. Admin privileges required.
+          </AlertDescription>
         </Alert>
       </div>
     );
@@ -405,20 +558,32 @@ export default function UserManagement() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">User Management</h1>
-          <p className="text-muted-foreground">Invite, approve, and manage users, founders, and settings</p>
+          <p className="text-muted-foreground">
+            Invite, approve, and manage users, founders, and settings
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          <Badge
+            variant="outline"
+            className="bg-primary/10 text-primary border-primary/20"
+          >
             <Users className="h-3 w-3 mr-1" />
             Admin Access
           </Badge>
-          <Badge variant="outline" className="bg-accent/10 text-accent border-accent/20">
+          <Badge
+            variant="outline"
+            className="bg-accent/10 text-accent border-accent/20"
+          >
             {totalPending} Pending
           </Badge>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-5 md:grid-cols-6">
           <TabsTrigger value="invite">Invite</TabsTrigger>
           <TabsTrigger value="pending">Pending Queue</TabsTrigger>
@@ -436,18 +601,37 @@ export default function UserManagement() {
                 <UserPlus className="h-5 w-5" />
                 <span>Invite New User</span>
               </CardTitle>
-              <CardDescription>Governance-gated invitation orchestration</CardDescription>
+              <CardDescription>
+                Governance-gated invitation orchestration
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleInviteSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email Address</Label>
-                    <Input id="email" type="email" placeholder="user@example.com" value={inviteForm.email} onChange={(e) => setInviteForm(prev => ({ ...prev, email: e.target.value }))} required />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="user@example.com"
+                      value={inviteForm.email}
+                      onChange={(e) =>
+                        setInviteForm((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      required
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Initial Role</Label>
-                    <Select value={inviteForm.role} onValueChange={(value: 'user' | 'admin') => setInviteForm(prev => ({ ...prev, role: value }))}>
+                    <Select
+                      value={inviteForm.role}
+                      onValueChange={(value: "user" | "admin") =>
+                        setInviteForm((prev) => ({ ...prev, role: value }))
+                      }
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>
@@ -459,40 +643,98 @@ export default function UserManagement() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="expiry">Expiry (days)</Label>
-                    <Input id="expiry" type="number" min={1} max={30} value={inviteForm.expiryDays} onChange={(e) => setInviteForm(prev => ({ ...prev, expiryDays: Math.max(1, Math.min(30, parseInt(e.target.value) || 7)) }))} />
-                    <div className="text-xs text-muted-foreground">Default 7 days</div>
+                    <Input
+                      id="expiry"
+                      type="number"
+                      min={1}
+                      max={30}
+                      value={inviteForm.expiryDays}
+                      onChange={(e) =>
+                        setInviteForm((prev) => ({
+                          ...prev,
+                          expiryDays: Math.max(
+                            1,
+                            Math.min(30, parseInt(e.target.value) || 7),
+                          ),
+                        }))
+                      }
+                    />
+                    <div className="text-xs text-muted-foreground">
+                      Default 7 days
+                    </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <Label>Founder Approvals ({inviteForm.founderApprovals.length}/5 selected)</Label>
-                    <Badge variant={inviteForm.founderApprovals.length >= 3 ? 'default' : 'destructive'}>
-                      {inviteForm.founderApprovals.length >= 3 ? 'Valid Quorum' : 'Need 3 minimum'}
+                    <Label>
+                      Founder Approvals ({inviteForm.founderApprovals.length}/5
+                      selected)
+                    </Label>
+                    <Badge
+                      variant={
+                        inviteForm.founderApprovals.length >= 3
+                          ? "default"
+                          : "destructive"
+                      }
+                    >
+                      {inviteForm.founderApprovals.length >= 3
+                        ? "Valid Quorum"
+                        : "Need 3 minimum"}
                     </Badge>
                   </div>
-                  {inviteForm.role === 'admin' && (inviteForm.founderApprovals.length < 5 || adminCapReached) && (
-                    <Alert>
-                      <AlertTriangle className="h-4 w-4" />
-                      <AlertDescription>
-                        {adminCapReached ? 'Admin cap reached (3). Adjust roles before adding another admin.' : `Admin role requires all 5 founder approvals. Currently selected: ${inviteForm.founderApprovals.length}/5`}
-                      </AlertDescription>
-                    </Alert>
-                  )}
+                  {inviteForm.role === "admin" &&
+                    (inviteForm.founderApprovals.length < 5 ||
+                      adminCapReached) && (
+                      <Alert>
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          {adminCapReached
+                            ? "Admin cap reached (3). Adjust roles before adding another admin."
+                            : `Admin role requires all 5 founder approvals. Currently selected: ${inviteForm.founderApprovals.length}/5`}
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   <div className="grid gap-3 md:grid-cols-2">
                     {founders.map((founder) => (
-                      <div key={founder.id} className="flex items-center space-x-3 p-3 border rounded-lg">
-                        <input type="checkbox" id={founder.id} checked={inviteForm.founderApprovals.includes(founder.id)} onChange={() => handleFounderToggle(founder.id)} className="rounded border-gray-300" />
-                        <Label htmlFor={founder.id} className="flex-1 cursor-pointer">{founder.name || founder.email}</Label>
+                      <div
+                        key={founder.id}
+                        className="flex items-center space-x-3 p-3 border rounded-lg"
+                      >
+                        <input
+                          type="checkbox"
+                          id={founder.id}
+                          checked={inviteForm.founderApprovals.includes(
+                            founder.id,
+                          )}
+                          onChange={() => handleFounderToggle(founder.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <Label
+                          htmlFor={founder.id}
+                          className="flex-1 cursor-pointer"
+                        >
+                          {founder.name || founder.email}
+                        </Label>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isInviting || !inviteForm.email || inviteForm.founderApprovals.length < (inviteForm.role === 'admin' ? 5 : 3)}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={
+                    isInviting ||
+                    !inviteForm.email ||
+                    inviteForm.founderApprovals.length <
+                      (inviteForm.role === "admin" ? 5 : 3)
+                  }
+                >
                   {isInviting ? (
                     <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" /> Sending Invitation...
+                      <Clock className="h-4 w-4 mr-2 animate-spin" /> Sending
+                      Invitation...
                     </>
                   ) : (
                     <>
@@ -512,15 +754,33 @@ export default function UserManagement() {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Pending Users</CardTitle>
-                  <CardDescription>Paginated queue with governance status</CardDescription>
+                  <CardDescription>
+                    Paginated queue with governance status
+                  </CardDescription>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Search by email..." value={searchTerm} onChange={(e) => { setOffset(0); setSearchTerm(e.target.value); }} className="pl-9 w-64" />
+                    <Input
+                      placeholder="Search by email..."
+                      value={searchTerm}
+                      onChange={(e) => {
+                        setOffset(0);
+                        setSearchTerm(e.target.value);
+                      }}
+                      className="pl-9 w-64"
+                    />
                   </div>
-                  <Select value={String(limit)} onValueChange={(v) => { setOffset(0); setLimit(Math.min(parseInt(v) || 10, MAX_PAGE_LIMIT)); }}>
-                    <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+                  <Select
+                    value={String(limit)}
+                    onValueChange={(v) => {
+                      setOffset(0);
+                      setLimit(Math.min(parseInt(v) || 10, MAX_PAGE_LIMIT));
+                    }}
+                  >
+                    <SelectTrigger className="w-28">
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="10">10 / page</SelectItem>
                       <SelectItem value="20">20 / page</SelectItem>
@@ -532,7 +792,10 @@ export default function UserManagement() {
             </CardHeader>
             <CardContent>
               {queueError && (
-                <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{queueError}</AlertDescription></Alert>
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{queueError}</AlertDescription>
+                </Alert>
               )}
               <div className="space-y-3">
                 {pendingUsers.map((u) => (
@@ -540,34 +803,102 @@ export default function UserManagement() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">{u.email}</div>
-                        <div className="text-sm text-muted-foreground">Requested: {u.requestedRole} • Invited: {new Date(u.invitedAt).toLocaleDateString()}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Requested: {u.requestedRole} • Invited:{" "}
+                          {new Date(u.invitedAt).toLocaleDateString()}
+                        </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Badge variant={u.approvalsReceived >= u.approvalsNeeded ? 'default' : 'secondary'}>{u.approvalsReceived}/{u.approvalsNeeded} approvals</Badge>
+                        <Badge
+                          variant={
+                            u.approvalsReceived >= u.approvalsNeeded
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {u.approvalsReceived}/{u.approvalsNeeded} approvals
+                        </Badge>
                         <Badge variant="outline">{u.requestedRole}</Badge>
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <div className="flex justify-between text-xs"><span>Approval Progress</span><span>{Math.round((u.approvalsReceived / u.approvalsNeeded) * 100)}%</span></div>
-                      <div className="w-full bg-muted rounded-full h-2"><div className={`${u.approvalsReceived >= u.approvalsNeeded ? 'bg-accent' : 'bg-primary'} h-2 rounded-full`} style={{ width: `${(u.approvalsReceived / u.approvalsNeeded) * 100}%` }} /></div>
+                      <div className="flex justify-between text-xs">
+                        <span>Approval Progress</span>
+                        <span>
+                          {Math.round(
+                            (u.approvalsReceived / u.approvalsNeeded) * 100,
+                          )}
+                          %
+                        </span>
+                      </div>
+                      <div className="w-full bg-muted rounded-full h-2">
+                        <div
+                          className={`${u.approvalsReceived >= u.approvalsNeeded ? "bg-accent" : "bg-primary"} h-2 rounded-full`}
+                          style={{
+                            width: `${(u.approvalsReceived / u.approvalsNeeded) * 100}%`,
+                          }}
+                        />
+                      </div>
                     </div>
                     <div className="flex items-center justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => handleRejectUser(u.id)}><X className="h-4 w-4 mr-1" />Reject</Button>
-                      <Button size="sm" onClick={() => { setSelectedUser(u); setAssignedRole(u.requestedRole); setApproveOpen(true); }} disabled={!(u.approvalsReceived >= u.approvalsNeeded)}><CheckCircle className="h-4 w-4 mr-1" />Approve</Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRejectUser(u.id)}
+                      >
+                        <X className="h-4 w-4 mr-1" />
+                        Reject
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUser(u);
+                          setAssignedRole(u.requestedRole);
+                          setApproveOpen(true);
+                        }}
+                        disabled={!(u.approvalsReceived >= u.approvalsNeeded)}
+                      >
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Approve
+                      </Button>
                     </div>
                   </div>
                 ))}
 
                 {pendingUsers.length === 0 && !queueError && (
-                  <div className="text-center py-8 text-muted-foreground"><Users className="h-8 w-8 mx-auto mb-2" /><p>No pending users</p></div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="h-8 w-8 mx-auto mb-2" />
+                    <p>No pending users</p>
+                  </div>
                 )}
 
                 <div className="flex items-center justify-between pt-2">
-                  <div className="text-sm text-muted-foreground">Total: {totalPending}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Total: {totalPending}
+                  </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setOffset(Math.max(0, offset - limit))} disabled={offset === 0}><ChevronLeft className="h-4 w-4" /></Button>
-                    <span className="text-sm">{totalPending === 0 ? 0 : offset + 1}-{Math.min(offset + limit, totalPending)}</span>
-                    <Button variant="outline" size="sm" onClick={() => setOffset(hasMore ? offset + limit : offset)} disabled={!hasMore}><ChevronRight className="h-4 w-4" /></Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setOffset(Math.max(0, offset - limit))}
+                      disabled={offset === 0}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-sm">
+                      {totalPending === 0 ? 0 : offset + 1}-
+                      {Math.min(offset + limit, totalPending)}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setOffset(hasMore ? offset + limit : offset)
+                      }
+                      disabled={!hasMore}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
               </div>
@@ -579,45 +910,87 @@ export default function UserManagement() {
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Approve User</DialogTitle>
-                <DialogDescription>Verify quorum, role, and proceed</DialogDescription>
+                <DialogDescription>
+                  Verify quorum, role, and proceed
+                </DialogDescription>
               </DialogHeader>
               {selectedUser && (
                 <div className="space-y-4">
-                  <div className="text-sm">{selectedUser.email} • Requested: {selectedUser.requestedRole}</div>
+                  <div className="text-sm">
+                    {selectedUser.email} • Requested:{" "}
+                    {selectedUser.requestedRole}
+                  </div>
                   <div className="space-y-2">
                     <Label>Assigned Role</Label>
-                    <Select value={assignedRole} onValueChange={(v: 'user' | 'admin') => setAssignedRole(v)}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={assignedRole}
+                      onValueChange={(v: "user" | "admin") =>
+                        setAssignedRole(v)
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="user">User</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
-                    {adminCapReached && assignedRole === 'admin' && (
-                      <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>Admin cap reached (3). Adjust roles first.</AlertDescription></Alert>
+                    {adminCapReached && assignedRole === "admin" && (
+                      <Alert variant="destructive">
+                        <AlertTriangle className="h-4 w-4" />
+                        <AlertDescription>
+                          Admin cap reached (3). Adjust roles first.
+                        </AlertDescription>
+                      </Alert>
                     )}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Badge variant={selectedUser.approvalsReceived >= selectedUser.approvalsNeeded ? 'default' : 'secondary'}>{selectedUser.approvalsReceived}/{selectedUser.approvalsNeeded} approvals</Badge>
-                    <span>Supermajority {selectedUser.approvalsNeeded} required</span>
+                    <Badge
+                      variant={
+                        selectedUser.approvalsReceived >=
+                        selectedUser.approvalsNeeded
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
+                      {selectedUser.approvalsReceived}/
+                      {selectedUser.approvalsNeeded} approvals
+                    </Badge>
+                    <span>
+                      Supermajority {selectedUser.approvalsNeeded} required
+                    </span>
                   </div>
                 </div>
               )}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setApproveOpen(false)}>Cancel</Button>
-                <Button onClick={handleApproveSelected} disabled={isApproving || !selectedUser || (adminCapReached && assignedRole === 'admin')}>
+                <Button variant="outline" onClick={() => setApproveOpen(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleApproveSelected}
+                  disabled={
+                    isApproving ||
+                    !selectedUser ||
+                    (adminCapReached && assignedRole === "admin")
+                  }
+                >
                   {isApproving ? (
                     <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" /> Approving...
+                      <Clock className="h-4 w-4 mr-2 animate-spin" />{" "}
+                      Approving...
                     </>
                   ) : (
-                    'Approve'
+                    "Approve"
                   )}
                 </Button>
               </DialogFooter>
               {approvalAuditId && (
                 <div className="pt-2 text-xs">
-                  <a className="inline-flex items-center gap-1 text-primary hover:underline" href={`/audit?ref=${approvalAuditId}`}>
+                  <a
+                    className="inline-flex items-center gap-1 text-primary hover:underline"
+                    href={`/audit?ref=${approvalAuditId}`}
+                  >
                     <ExternalLink className="h-3 w-3" /> View Audit
                   </a>
                 </div>
@@ -634,28 +1007,45 @@ export default function UserManagement() {
                 <CheckCircle className="h-5 w-5" />
                 <span>Approve Users</span>
               </CardTitle>
-              <CardDescription>Review and approve pending registrations</CardDescription>
+              <CardDescription>
+                Review and approve pending registrations
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Select User to Approve</Label>
-                <Select value={selectedUser?.id || ''} onValueChange={(id) => { const u = pendingUsers.find(p => p.id === id) || null; setSelectedUser(u); setAssignedRole(u?.requestedRole || 'user'); setApproveOpen(!!u); }}>
+                <Select
+                  value={selectedUser?.id || ""}
+                  onValueChange={(id) => {
+                    const u = pendingUsers.find((p) => p.id === id) || null;
+                    setSelectedUser(u);
+                    setAssignedRole(u?.requestedRole || "user");
+                    setApproveOpen(!!u);
+                  }}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Choose a pending user" />
                   </SelectTrigger>
                   <SelectContent>
-                    {pendingUsers.filter(u => u.approvalsReceived >= u.approvalsNeeded).map((u) => (
-                      <SelectItem key={u.id} value={u.id}>
-                        {u.email} - {u.requestedRole} ({u.approvalsReceived}/{u.approvalsNeeded} approvals)
-                      </SelectItem>
-                    ))}
+                    {pendingUsers
+                      .filter((u) => u.approvalsReceived >= u.approvalsNeeded)
+                      .map((u) => (
+                        <SelectItem key={u.id} value={u.id}>
+                          {u.email} - {u.requestedRole} ({u.approvalsReceived}/
+                          {u.approvalsNeeded} approvals)
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </div>
-              {pendingUsers.filter(u => u.approvalsReceived >= u.approvalsNeeded).length === 0 && (
+              {pendingUsers.filter(
+                (u) => u.approvalsReceived >= u.approvalsNeeded,
+              ).length === 0 && (
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>No users currently have sufficient approvals.</AlertDescription>
+                  <AlertDescription>
+                    No users currently have sufficient approvals.
+                  </AlertDescription>
                 </Alert>
               )}
             </CardContent>
@@ -667,16 +1057,59 @@ export default function UserManagement() {
           <Card>
             <CardHeader>
               <CardTitle>Founders Roster</CardTitle>
-              <CardDescription>Manage founder records and bootstrap</CardDescription>
+              <CardDescription>
+                Manage founder records and bootstrap
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {foundersError && (<Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>{foundersError}</AlertDescription></Alert>)}
-              <div className="p-3 border rounded-md bg-muted/50 text-sm">Bootstrap status: {bootstrapStatus?.foundersExist ? 'Founders exist' : 'Eligible for bootstrap'}</div>
+              {foundersError && (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>{foundersError}</AlertDescription>
+                </Alert>
+              )}
+              <div className="p-3 border rounded-md bg-muted/50 text-sm">
+                Bootstrap status:{" "}
+                {bootstrapStatus?.foundersExist
+                  ? "Founders exist"
+                  : "Eligible for bootstrap"}
+              </div>
               {!bootstrapStatus?.foundersExist && (
                 <div className="grid gap-3 md:grid-cols-3 items-end">
-                  <div className="space-y-1"><Label>Email</Label><Input value={newFounder.email} onChange={e => setNewFounder(prev => ({ ...prev, email: e.target.value }))} placeholder="founder@example.com" /></div>
-                  <div className="space-y-1"><Label>Name</Label><Input value={newFounder.name} onChange={e => setNewFounder(prev => ({ ...prev, name: e.target.value }))} placeholder="Full name" /></div>
-                  <Button onClick={tryBootstrap} disabled={isBootstrapping || !newFounder.email || !newFounder.name}>{isBootstrapping ? 'Bootstrapping...' : 'Bootstrap Founder'}</Button>
+                  <div className="space-y-1">
+                    <Label>Email</Label>
+                    <Input
+                      value={newFounder.email}
+                      onChange={(e) =>
+                        setNewFounder((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      placeholder="founder@example.com"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label>Name</Label>
+                    <Input
+                      value={newFounder.name}
+                      onChange={(e) =>
+                        setNewFounder((prev) => ({
+                          ...prev,
+                          name: e.target.value,
+                        }))
+                      }
+                      placeholder="Full name"
+                    />
+                  </div>
+                  <Button
+                    onClick={tryBootstrap}
+                    disabled={
+                      isBootstrapping || !newFounder.email || !newFounder.name
+                    }
+                  >
+                    {isBootstrapping ? "Bootstrapping..." : "Bootstrap Founder"}
+                  </Button>
                 </div>
               )}
 
@@ -684,14 +1117,30 @@ export default function UserManagement() {
               <div className="space-y-2">
                 <div className="text-sm font-medium">Current Founders</div>
                 <div className="space-y-2">
-                  {founders.map(f => (
-                    <div key={f.id} className="flex items-center justify-between p-3 border rounded-md">
-                      <div className="text-sm">{f.name || f.email} <span className="text-muted-foreground">({f.id})</span></div>
-                      <Button variant="outline" size="sm" onClick={() => removeFounder(f.id)}><Trash2 className="h-4 w-4 mr-1" />Remove</Button>
+                  {founders.map((f) => (
+                    <div
+                      key={f.id}
+                      className="flex items-center justify-between p-3 border rounded-md"
+                    >
+                      <div className="text-sm">
+                        {f.name || f.email}{" "}
+                        <span className="text-muted-foreground">({f.id})</span>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeFounder(f.id)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Remove
+                      </Button>
                     </div>
                   ))}
                 </div>
-                <Button variant="outline" size="sm" onClick={refreshFounders}><Clock className="h-4 w-4 mr-1" />Refresh</Button>
+                <Button variant="outline" size="sm" onClick={refreshFounders}>
+                  <Clock className="h-4 w-4 mr-1" />
+                  Refresh
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -705,11 +1154,28 @@ export default function UserManagement() {
               <CardDescription>Session and profile context</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
-              <div className="p-3 border rounded-md">{identity ? <div>Email: {identity?.email || 'unknown'} • Role: {identity?.role || 'unknown'}</div> : 'Loading identity...'}</div>
+              <div className="p-3 border rounded-md">
+                {identity ? (
+                  <div>
+                    Email: {identity?.email || "unknown"} • Role:{" "}
+                    {identity?.role || "unknown"}
+                  </div>
+                ) : (
+                  "Loading identity..."
+                )}
+              </div>
               <div className="space-y-2">
                 <Label>Risk Tier</Label>
-                <Select value={profile?.risk_tier || 'balanced'} onValueChange={(v: 'aggressive' | 'balanced' | 'conservative') => updateRiskTier(v)} disabled={isUpdatingProfile}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                <Select
+                  value={profile?.risk_tier || "balanced"}
+                  onValueChange={(
+                    v: "aggressive" | "balanced" | "conservative",
+                  ) => updateRiskTier(v)}
+                  disabled={isUpdatingProfile}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="aggressive">Aggressive</SelectItem>
                     <SelectItem value="balanced">Balanced</SelectItem>
@@ -729,30 +1195,85 @@ export default function UserManagement() {
                 <Settings className="h-5 w-5" />
                 <span>Trading Preferences</span>
               </CardTitle>
-              <CardDescription>Configure your personal trading settings and risk parameters</CardDescription>
+              <CardDescription>
+                Configure your personal trading settings and risk parameters
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSettingsSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="stopLoss">Stop-loss Multiplier</Label>
-                    <Input id="stopLoss" type="number" min="0.1" max="1.0" step="0.01" value={userSettings.stopLossMultiplier} onChange={(e) => setUserSettings(prev => ({ ...prev, stopLossMultiplier: parseFloat(e.target.value) || 0 }))} />
-                    <p className="text-xs text-muted-foreground">Range: 0.1 - 1.0</p>
+                    <Input
+                      id="stopLoss"
+                      type="number"
+                      min="0.1"
+                      max="1.0"
+                      step="0.01"
+                      value={userSettings.stopLossMultiplier}
+                      onChange={(e) =>
+                        setUserSettings((prev) => ({
+                          ...prev,
+                          stopLossMultiplier: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Range: 0.1 - 1.0
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="takeProfit">Take-profit Multiplier</Label>
-                    <Input id="takeProfit" type="number" min="1.0" step="0.1" value={userSettings.takeProfitMultiplier} onChange={(e) => setUserSettings(prev => ({ ...prev, takeProfitMultiplier: parseFloat(e.target.value) || 1 }))} />
-                    <p className="text-xs text-muted-foreground">Minimum: 1.0</p>
+                    <Input
+                      id="takeProfit"
+                      type="number"
+                      min="1.0"
+                      step="0.1"
+                      value={userSettings.takeProfitMultiplier}
+                      onChange={(e) =>
+                        setUserSettings((prev) => ({
+                          ...prev,
+                          takeProfitMultiplier: parseFloat(e.target.value) || 1,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum: 1.0
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="trailingStop">Trailing Stop</Label>
-                    <Input id="trailingStop" type="number" min="0.01" step="0.01" value={userSettings.trailingStop} onChange={(e) => setUserSettings(prev => ({ ...prev, trailingStop: parseFloat(e.target.value) || 0 }))} />
-                    <p className="text-xs text-muted-foreground">Must be greater than 0</p>
+                    <Input
+                      id="trailingStop"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={userSettings.trailingStop}
+                      onChange={(e) =>
+                        setUserSettings((prev) => ({
+                          ...prev,
+                          trailingStop: parseFloat(e.target.value) || 0,
+                        }))
+                      }
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Must be greater than 0
+                    </p>
                   </div>
                   <div className="space-y-2">
                     <Label>Risk Tier</Label>
-                    <Select value={userSettings.riskTier} onValueChange={(value: 'low' | 'medium' | 'high') => setUserSettings(prev => ({ ...prev, riskTier: value }))}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                    <Select
+                      value={userSettings.riskTier}
+                      onValueChange={(value: "low" | "medium" | "high") =>
+                        setUserSettings((prev) => ({
+                          ...prev,
+                          riskTier: value,
+                        }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="low">Low Risk</SelectItem>
                         <SelectItem value="medium">Medium Risk</SelectItem>
@@ -763,17 +1284,35 @@ export default function UserManagement() {
                 </div>
 
                 <div className="flex items-center space-x-3 p-4 border rounded-lg">
-                  <Switch id="newsAnalysis" checked={userSettings.newsAnalysisEnabled} onCheckedChange={(checked) => setUserSettings(prev => ({ ...prev, newsAnalysisEnabled: checked }))} />
+                  <Switch
+                    id="newsAnalysis"
+                    checked={userSettings.newsAnalysisEnabled}
+                    onCheckedChange={(checked) =>
+                      setUserSettings((prev) => ({
+                        ...prev,
+                        newsAnalysisEnabled: checked,
+                      }))
+                    }
+                  />
                   <div className="flex-1">
-                    <Label htmlFor="newsAnalysis" className="cursor-pointer">Enable News Analysis</Label>
-                    <p className="text-xs text-muted-foreground">Include news sentiment analysis in trading signals</p>
+                    <Label htmlFor="newsAnalysis" className="cursor-pointer">
+                      Enable News Analysis
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Include news sentiment analysis in trading signals
+                    </p>
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full" disabled={isUpdatingSettings}>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isUpdatingSettings}
+                >
                   {isUpdatingSettings ? (
                     <>
-                      <Clock className="h-4 w-4 mr-2 animate-spin" /> Saving Settings...
+                      <Clock className="h-4 w-4 mr-2 animate-spin" /> Saving
+                      Settings...
                     </>
                   ) : (
                     <>

@@ -1,15 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import HelpTip from '@/components/ui/help-tip';
-import apiFetch from '@/lib/apiClient';
-import copy from '@/lib/clipboard';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
+import { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import HelpTip from "@/components/ui/help-tip";
+import apiFetch from "@/lib/apiClient";
+import copy from "@/lib/clipboard";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
 import {
   Table,
   TableBody,
@@ -17,7 +23,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Dialog,
   DialogContent,
@@ -26,7 +32,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,11 +43,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
-import { 
-  Wallet, 
-  Shield, 
+} from "@/components/ui/alert-dialog";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Tooltip as RechartsTooltip,
+} from "recharts";
+import {
+  Wallet,
+  Shield,
   DollarSign,
   ArrowDownRight,
   RefreshCw,
@@ -58,9 +70,9 @@ import {
   Eye,
   TrendingUp,
   TrendingDown,
-  HelpCircle
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
+  HelpCircle,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 // Types
 interface HedgeRecord {
@@ -68,9 +80,9 @@ interface HedgeRecord {
   userId: string;
   amount: number;
   timestamp: string;
-  type: 'profit_hedge' | 'manual_hedge' | 'auto_hedge';
+  type: "profit_hedge" | "manual_hedge" | "auto_hedge";
   triggerPrice: number;
-  status: 'active' | 'closed' | 'expired';
+  status: "active" | "closed" | "expired";
   pnl: number;
   fees: number;
 }
@@ -101,7 +113,7 @@ interface HedgeSettings {
   effectivePercent?: number;
   marketConditions?: {
     volatility: number;
-    riskLevel: 'low' | 'medium' | 'high';
+    riskLevel: "low" | "medium" | "high";
     recommendedHedgePercent: number;
     lastUpdated: string;
   };
@@ -156,7 +168,7 @@ export default function WalletHedge() {
       hasNext: boolean;
     };
   } | null>(null);
-  
+
   const [balances, setBalances] = useState<{
     balances: Balance[];
     summary: {
@@ -166,25 +178,44 @@ export default function WalletHedge() {
       assetCount: number;
     };
   } | null>(null);
-  
-  const [withdrawable, setWithdrawable] = useState<WithdrawableCalculation | null>(null);
+
+  const [withdrawable, setWithdrawable] =
+    useState<WithdrawableCalculation | null>(null);
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [hedgeSettings, setHedgeSettings] = useState<HedgeSettings | null>(null);
+  const [hedgeSettings, setHedgeSettings] = useState<HedgeSettings | null>(
+    null,
+  );
 
   // Exchange API status (read-only; keys managed in Profile)
-  const [apiStatus, setApiStatus] = useState<{present:boolean; valid:boolean; expiring_soon:boolean; expires_at:string|null; key_masked:string|null} | null>(null);
+  const [apiStatus, setApiStatus] = useState<{
+    present: boolean;
+    valid: boolean;
+    expiring_soon: boolean;
+    expires_at: string | null;
+    key_masked: string | null;
+  } | null>(null);
 
   // Risk panel state
   const [runtimeConfig, setRuntimeConfig] = useState<any>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
-  const [tradeDiagId, setTradeDiagId] = useState('');
+  const [tradeDiagId, setTradeDiagId] = useState("");
   const [tradeDiag, setTradeDiag] = useState<any>(null);
 
   // Personal overrides state
   const [currentOverrides, setCurrentOverrides] = useState<any>(null);
-  const [overrideForm, setOverrideForm] = useState<{ sl_multiplier:number; tp_multiplier:number; trailing_stop:number; use_news_analysis:boolean }>({ sl_multiplier:0.5, tp_multiplier:2.0, trailing_stop:0.1, use_news_analysis:true });
+  const [overrideForm, setOverrideForm] = useState<{
+    sl_multiplier: number;
+    tp_multiplier: number;
+    trailing_stop: number;
+    use_news_analysis: boolean;
+  }>({
+    sl_multiplier: 0.5,
+    tp_multiplier: 2.0,
+    trailing_stop: 0.1,
+    use_news_analysis: true,
+  });
   const [confirmOverridesOpen, setConfirmOverridesOpen] = useState(false);
-  
+
   // Loading states
   const [loading, setLoading] = useState({
     hedges: true,
@@ -197,12 +228,12 @@ export default function WalletHedge() {
     runtime: true,
     profile: true,
     overrides: false,
-    tradeDiag: false
+    tradeDiag: false,
   });
-  
+
   // Error states
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // UI state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -212,10 +243,10 @@ export default function WalletHedge() {
 
   // Utility functions
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
     }).format(amount);
   };
 
@@ -226,24 +257,46 @@ export default function WalletHedge() {
   const copyToClipboard = async (text: string) => {
     const ok = await copy(text);
     if (ok) {
-      toast({ title: "Copied", description: "Transaction ID copied to clipboard" });
+      toast({
+        title: "Copied",
+        description: "Transaction ID copied to clipboard",
+      });
     } else {
-      toast({ title: "Copy Failed", description: "Failed to copy to clipboard", variant: "destructive" });
+      toast({
+        title: "Copy Failed",
+        description: "Failed to copy to clipboard",
+        variant: "destructive",
+      });
     }
   };
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      'active': { variant: 'default' as const, icon: CheckCircle, className: 'bg-green-100 text-green-800 border-green-200' },
-      'closed': { variant: 'secondary' as const, icon: XCircle, className: 'bg-gray-100 text-gray-800 border-gray-200' },
-      'expired': { variant: 'destructive' as const, icon: AlertTriangle, className: 'bg-red-100 text-red-800 border-red-200' }
+      active: {
+        variant: "default" as const,
+        icon: CheckCircle,
+        className: "bg-green-100 text-green-800 border-green-200",
+      },
+      closed: {
+        variant: "secondary" as const,
+        icon: XCircle,
+        className: "bg-gray-100 text-gray-800 border-gray-200",
+      },
+      expired: {
+        variant: "destructive" as const,
+        icon: AlertTriangle,
+        className: "bg-red-100 text-red-800 border-red-200",
+      },
     };
 
     const config = variants[status as keyof typeof variants] || variants.active;
     const Icon = config.icon;
 
     return (
-      <Badge variant={config.variant} className={`flex items-center space-x-1 ${config.className}`}>
+      <Badge
+        variant={config.variant}
+        className={`flex items-center space-x-1 ${config.className}`}
+      >
         <Icon className="h-3 w-3" />
         <span className="capitalize">{status}</span>
       </Badge>
@@ -252,170 +305,192 @@ export default function WalletHedge() {
 
   const getTypeBadge = (type: string) => {
     const variants = {
-      'profit_hedge': { label: 'Profit', className: 'bg-blue-100 text-blue-800 border-blue-200' },
-      'manual_hedge': { label: 'Manual', className: 'bg-gray-100 text-gray-800 border-gray-200' },
-      'auto_hedge': { label: 'Auto', className: 'bg-purple-100 text-purple-800 border-purple-200' }
+      profit_hedge: {
+        label: "Profit",
+        className: "bg-blue-100 text-blue-800 border-blue-200",
+      },
+      manual_hedge: {
+        label: "Manual",
+        className: "bg-gray-100 text-gray-800 border-gray-200",
+      },
+      auto_hedge: {
+        label: "Auto",
+        className: "bg-purple-100 text-purple-800 border-purple-200",
+      },
     };
 
-    const config = variants[type as keyof typeof variants] || variants.manual_hedge;
+    const config =
+      variants[type as keyof typeof variants] || variants.manual_hedge;
 
-    return (
-      <Badge className={config.className}>
-        {config.label}
-      </Badge>
-    );
+    return <Badge className={config.className}>{config.label}</Badge>;
   };
 
   // API Functions
 
   // 1. Fetch hedge history & summary
-  const fetchHedgeHistory = useCallback(async (page = 1) => {
-    setLoading(prev => ({ ...prev, hedges: true }));
-    setErrors(prev => ({ ...prev, hedges: '' }));
-    
-    try {
-      const offset = (page - 1) * itemsPerPage;
-      const response = await apiFetch(`/api/wallet/hedges?limit=${itemsPerPage}&offset=${offset}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+  const fetchHedgeHistory = useCallback(
+    async (page = 1) => {
+      setLoading((prev) => ({ ...prev, hedges: true }));
+      setErrors((prev) => ({ ...prev, hedges: "" }));
+
+      try {
+        const offset = (page - 1) * itemsPerPage;
+        const response = await apiFetch(
+          `/api/wallet/hedges?limit=${itemsPerPage}&offset=${offset}`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (data.status === "success") {
+          setHedgeData(data.data);
+        } else {
+          throw new Error(data.message || "Failed to fetch hedge history");
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Failed to fetch hedge history";
+        setErrors((prev) => ({ ...prev, hedges: errorMessage }));
+      } finally {
+        setLoading((prev) => ({ ...prev, hedges: false }));
       }
-      
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setHedgeData(data.data);
-      } else {
-        throw new Error(data.message || 'Failed to fetch hedge history');
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch hedge history';
-      setErrors(prev => ({ ...prev, hedges: errorMessage }));
-    } finally {
-      setLoading(prev => ({ ...prev, hedges: false }));
-    }
-  }, [itemsPerPage]);
+    },
+    [itemsPerPage],
+  );
 
   // 2. Fetch wallet balances
   const fetchWalletBalances = useCallback(async () => {
-    setLoading(prev => ({ ...prev, balances: true }));
-    setErrors(prev => ({ ...prev, balances: '' }));
-    
+    setLoading((prev) => ({ ...prev, balances: true }));
+    setErrors((prev) => ({ ...prev, balances: "" }));
+
     try {
-      const response = await apiFetch('/api/wallet/balances');
-      
+      const response = await apiFetch("/api/wallet/balances");
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setBalances(data.data);
       } else {
-        throw new Error(data.message || 'Failed to fetch balances');
+        throw new Error(data.message || "Failed to fetch balances");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch balances';
-      setErrors(prev => ({ ...prev, balances: errorMessage }));
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch balances";
+      setErrors((prev) => ({ ...prev, balances: errorMessage }));
     } finally {
-      setLoading(prev => ({ ...prev, balances: false }));
+      setLoading((prev) => ({ ...prev, balances: false }));
     }
   }, []);
 
   // 3. Fetch withdrawable funds
   const fetchWithdrawableFunds = useCallback(async () => {
-    setLoading(prev => ({ ...prev, withdrawable: true }));
-    setErrors(prev => ({ ...prev, withdrawable: '' }));
-    
+    setLoading((prev) => ({ ...prev, withdrawable: true }));
+    setErrors((prev) => ({ ...prev, withdrawable: "" }));
+
     try {
-      const response = await apiFetch('/api/wallet/withdrawable');
-      
+      const response = await apiFetch("/api/wallet/withdrawable");
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setWithdrawable(data.data);
       } else {
-        throw new Error(data.message || 'Failed to fetch withdrawable funds');
+        throw new Error(data.message || "Failed to fetch withdrawable funds");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch withdrawable funds';
-      setErrors(prev => ({ ...prev, withdrawable: errorMessage }));
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch withdrawable funds";
+      setErrors((prev) => ({ ...prev, withdrawable: errorMessage }));
     } finally {
-      setLoading(prev => ({ ...prev, withdrawable: false }));
+      setLoading((prev) => ({ ...prev, withdrawable: false }));
     }
   }, []);
 
   // 4. Fetch live snapshot
   const fetchLiveSnapshot = useCallback(async () => {
-    setLoading(prev => ({ ...prev, snapshot: true }));
-    setErrors(prev => ({ ...prev, snapshot: '' }));
-    
+    setLoading((prev) => ({ ...prev, snapshot: true }));
+    setErrors((prev) => ({ ...prev, snapshot: "" }));
+
     try {
-      const response = await apiFetch('/api/wallet/snapshot');
-      
+      const response = await apiFetch("/api/wallet/snapshot");
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setSnapshot(data.data);
       } else {
-        throw new Error(data.message || 'Failed to fetch snapshot');
+        throw new Error(data.message || "Failed to fetch snapshot");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch snapshot';
-      setErrors(prev => ({ ...prev, snapshot: errorMessage }));
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch snapshot";
+      setErrors((prev) => ({ ...prev, snapshot: errorMessage }));
     } finally {
-      setLoading(prev => ({ ...prev, snapshot: false }));
+      setLoading((prev) => ({ ...prev, snapshot: false }));
     }
   }, []);
 
   // 5. Fetch hedge settings
   const fetchHedgeSettings = useCallback(async () => {
-    setLoading(prev => ({ ...prev, settings: true }));
-    setErrors(prev => ({ ...prev, settings: '' }));
-    
+    setLoading((prev) => ({ ...prev, settings: true }));
+    setErrors((prev) => ({ ...prev, settings: "" }));
+
     try {
-      const response = await apiFetch('/api/hedge/percent');
-      
+      const response = await apiFetch("/api/hedge/percent");
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
-      if (data.status === 'success') {
+
+      if (data.status === "success") {
         setHedgeSettings(data.data);
         setHedgePercent(data.data.hedgePercent * 100);
         setAutoAdjustEnabled(data.data.autoAdjust);
       } else {
-        throw new Error(data.message || 'Failed to fetch hedge settings');
+        throw new Error(data.message || "Failed to fetch hedge settings");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch hedge settings';
-      setErrors(prev => ({ ...prev, settings: errorMessage }));
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch hedge settings";
+      setErrors((prev) => ({ ...prev, settings: errorMessage }));
     } finally {
-      setLoading(prev => ({ ...prev, settings: false }));
+      setLoading((prev) => ({ ...prev, settings: false }));
     }
   }, []);
 
   // Execute hedge
   const executeHedge = useCallback(async () => {
-    setLoading(prev => ({ ...prev, executeHedge: true }));
-    
+    setLoading((prev) => ({ ...prev, executeHedge: true }));
+
     try {
-      const response = await apiFetch('/api/hedge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/hedge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          type: 'manual_hedge'
+          type: "manual_hedge",
         }),
       });
 
@@ -426,33 +501,39 @@ export default function WalletHedge() {
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         toast({
           title: "Hedge Executed",
           description: `Hedge executed successfully`,
         });
         setIsHedgeDialogOpen(false);
-        
+
         // Refresh data after execution
         await Promise.all([
           fetchHedgeHistory(currentPage),
           fetchWalletBalances(),
-          fetchWithdrawableFunds()
+          fetchWithdrawableFunds(),
         ]);
       } else {
-        throw new Error(data.message || 'Failed to execute hedge');
+        throw new Error(data.message || "Failed to execute hedge");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to execute hedge";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to execute hedge";
       toast({
         title: "Hedge Failed",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, executeHedge: false }));
+      setLoading((prev) => ({ ...prev, executeHedge: false }));
     }
-  }, [currentPage, fetchHedgeHistory, fetchWalletBalances, fetchWithdrawableFunds]);
+  }, [
+    currentPage,
+    fetchHedgeHistory,
+    fetchWalletBalances,
+    fetchWithdrawableFunds,
+  ]);
 
   // Save hedge settings
   const saveHedgeSettings = useCallback(async () => {
@@ -460,20 +541,20 @@ export default function WalletHedge() {
       toast({
         title: "Invalid Input",
         description: "Hedge percent must be between 0 and 100",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    setLoading(prev => ({ ...prev, saveSettings: true }));
-    
+    setLoading((prev) => ({ ...prev, saveSettings: true }));
+
     try {
-      const response = await apiFetch('/api/hedge/percent', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+      const response = await apiFetch("/api/hedge/percent", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           hedgePercent: hedgePercent / 100,
-          autoAdjust: autoAdjustEnabled
+          autoAdjust: autoAdjustEnabled,
         }),
       });
 
@@ -484,24 +565,25 @@ export default function WalletHedge() {
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setHedgeSettings(data.data);
         toast({
           title: "Settings Updated",
           description: "Hedge settings updated successfully",
         });
       } else {
-        throw new Error(data.message || 'Failed to update settings');
+        throw new Error(data.message || "Failed to update settings");
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to update settings";
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to update settings";
       toast({
         title: "Update Failed",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setLoading(prev => ({ ...prev, saveSettings: false }));
+      setLoading((prev) => ({ ...prev, saveSettings: false }));
     }
   }, [hedgePercent, autoAdjustEnabled]);
 
@@ -512,11 +594,48 @@ export default function WalletHedge() {
     fetchWithdrawableFunds();
     fetchHedgeSettings();
     fetchLiveSnapshot();
-    (async()=>{ try{ const r=await apiFetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
-    (async()=>{ try{ const r=await apiFetch('/api/config/runtime'); const j=await r.json(); setRuntimeConfig(j.data);}catch{} finally { setLoading(prev=>({...prev,runtime:false})); }})();
-    (async()=>{ try{ const r=await apiFetch('/api/user/profile'); const j=await r.json(); setUserProfile(j.data);}catch{} finally { setLoading(prev=>({...prev,profile:false})); }})();
-    (async()=>{ try{ const r=await apiFetch('/api/user/trading-settings'); const j=await r.json(); setCurrentOverrides(j.data.settings); setOverrideForm(j.data.settings);}catch{}})();
-  }, [fetchHedgeHistory, fetchWalletBalances, fetchWithdrawableFunds, fetchHedgeSettings, fetchLiveSnapshot]);
+    (async () => {
+      try {
+        const r = await apiFetch("/api/wallet/api-keys/status");
+        const j = await r.json();
+        setApiStatus(j.data);
+      } catch {}
+    })();
+    (async () => {
+      try {
+        const r = await apiFetch("/api/config/runtime");
+        const j = await r.json();
+        setRuntimeConfig(j.data);
+      } catch {
+      } finally {
+        setLoading((prev) => ({ ...prev, runtime: false }));
+      }
+    })();
+    (async () => {
+      try {
+        const r = await apiFetch("/api/user/profile");
+        const j = await r.json();
+        setUserProfile(j.data);
+      } catch {
+      } finally {
+        setLoading((prev) => ({ ...prev, profile: false }));
+      }
+    })();
+    (async () => {
+      try {
+        const r = await apiFetch("/api/user/trading-settings");
+        const j = await r.json();
+        setCurrentOverrides(j.data.settings);
+        setOverrideForm(j.data.settings);
+      } catch {}
+    })();
+  }, [
+    fetchHedgeHistory,
+    fetchWalletBalances,
+    fetchWithdrawableFunds,
+    fetchHedgeSettings,
+    fetchLiveSnapshot,
+  ]);
 
   // Refresh data when page changes
   useEffect(() => {
@@ -529,34 +648,44 @@ export default function WalletHedge() {
     fetchWalletBalances();
     fetchWithdrawableFunds();
     fetchHedgeSettings();
-    (async()=>{ try{ const r=await apiFetch('/api/wallet/api-keys/status'); const j=await r.json(); setApiStatus(j.data);}catch{}})();
+    (async () => {
+      try {
+        const r = await apiFetch("/api/wallet/api-keys/status");
+        const j = await r.json();
+        setApiStatus(j.data);
+      } catch {}
+    })();
   };
 
   // Pagination
-  const totalPages = hedgeData ? Math.ceil(hedgeData.pagination.total / itemsPerPage) : 1;
+  const totalPages = hedgeData
+    ? Math.ceil(hedgeData.pagination.total / itemsPerPage)
+    : 1;
   const hasNext = hedgeData?.pagination.hasNext || false;
   const hasPrevious = currentPage > 1;
 
   // Get USDT balance
-  const usdtBalance = balances?.balances.find(b => b.asset === 'USDT');
-  
+  const usdtBalance = balances?.balances.find((b) => b.asset === "USDT");
+
   // Get non-USDT holdings
-  const holdings = balances?.balances.filter(b => b.asset !== 'USDT') || [];
+  const holdings = balances?.balances.filter((b) => b.asset !== "USDT") || [];
 
   // Prepare pie chart data
-  const pieChartData = holdings.map(balance => ({
+  const pieChartData = holdings.map((balance) => ({
     name: balance.asset,
     value: balance.valueUsd,
-    total: balance.total
+    total: balance.total,
   }));
 
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Hedge & Wallet Control</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Hedge & Wallet Control
+          </h1>
           <p className="text-muted-foreground">
             Manage hedged funds, view balances, and control USDT exposure
           </p>
@@ -584,12 +713,16 @@ export default function WalletHedge() {
                 <Alert>
                   <Info className="h-4 w-4" />
                   <AlertDescription>
-                    Max safe hedge amount: {formatCurrency(withdrawable.maxSafeWithdrawal)}
+                    Max safe hedge amount:{" "}
+                    {formatCurrency(withdrawable.maxSafeWithdrawal)}
                   </AlertDescription>
                 </Alert>
               )}
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsHedgeDialogOpen(false)}>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsHedgeDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button onClick={executeHedge} disabled={loading.executeHedge}>
@@ -599,7 +732,7 @@ export default function WalletHedge() {
                       Executing...
                     </>
                   ) : (
-                    'Execute Hedge'
+                    "Execute Hedge"
                   )}
                 </Button>
               </DialogFooter>
@@ -641,23 +774,43 @@ export default function WalletHedge() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${snapshot?.drift.exceeded ? 'text-red-600' : 'text-green-600'}`}>{snapshot ? `${snapshot.drift.percent>=0?'+':''}${snapshot.drift.percent.toFixed(2)}%` : '--'}</div>
-            <p className="text-xs text-muted-foreground">{snapshot ? (snapshot.drift.exceeded ? 'Drift exceeds tolerance' : 'Within tolerance') : 'Snapshot pending'}</p>
+            <div
+              className={`text-2xl font-bold ${snapshot?.drift.exceeded ? "text-red-600" : "text-green-600"}`}
+            >
+              {snapshot
+                ? `${snapshot.drift.percent >= 0 ? "+" : ""}${snapshot.drift.percent.toFixed(2)}%`
+                : "--"}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {snapshot
+                ? snapshot.drift.exceeded
+                  ? "Drift exceeds tolerance"
+                  : "Within tolerance"
+                : "Snapshot pending"}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Available to Withdraw
+            </CardTitle>
             <div className="flex items-center gap-1">
               <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
               <HelpTip content="Amount of USDT you can safely withdraw without impacting hedges." />
             </div>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${
-              withdrawable && withdrawable.availableToWithdraw < (hedgeData?.summary.totalHedged || 0) ? 'text-red-600' : 'text-green-600'
-            }`}>
+            <div
+              className={`text-2xl font-bold ${
+                withdrawable &&
+                withdrawable.availableToWithdraw <
+                  (hedgeData?.summary.totalHedged || 0)
+                  ? "text-red-600"
+                  : "text-green-600"
+              }`}
+            >
               {loading.withdrawable ? (
                 <RefreshCw className="h-6 w-6 animate-spin" />
               ) : (
@@ -665,17 +818,20 @@ export default function WalletHedge() {
               )}
             </div>
             <p className="text-xs text-muted-foreground">
-              {withdrawable && withdrawable.availableToWithdraw < (hedgeData?.summary.totalHedged || 0) 
-                ? 'Below required hedge!' 
-                : 'After safety buffer'
-              }
+              {withdrawable &&
+              withdrawable.availableToWithdraw <
+                (hedgeData?.summary.totalHedged || 0)
+                ? "Below required hedge!"
+                : "After safety buffer"}
             </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Max Safe Withdrawal</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Max Safe Withdrawal
+            </CardTitle>
             <div className="flex items-center gap-1">
               <DollarSign className="h-4 w-4 text-muted-foreground" />
               <HelpTip content="Upper bound you can withdraw after safety buffers." />
@@ -696,14 +852,23 @@ export default function WalletHedge() {
         </Card>
       </div>
 
-      {apiStatus && (!apiStatus.present || !apiStatus.valid || apiStatus.expiring_soon) && (
-        <Alert variant={(!apiStatus.present || !apiStatus.valid) ? 'destructive' : 'default'}>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            {!apiStatus.present ? 'No exchange API credentials found. Please add your Binance API keys in your Profile page.' : !apiStatus.valid ? 'Invalid exchange API credentials. Please rotate your keys in your Profile.' : 'API key expiry approaching. Rotate keys soon in your Profile.'}
-          </AlertDescription>
-        </Alert>
-      )}
+      {apiStatus &&
+        (!apiStatus.present || !apiStatus.valid || apiStatus.expiring_soon) && (
+          <Alert
+            variant={
+              !apiStatus.present || !apiStatus.valid ? "destructive" : "default"
+            }
+          >
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>
+              {!apiStatus.present
+                ? "No exchange API credentials found. Please add your Binance API keys in your Profile page."
+                : !apiStatus.valid
+                  ? "Invalid exchange API credentials. Please rotate your keys in your Profile."
+                  : "API key expiry approaching. Rotate keys soon in your Profile."}
+            </AlertDescription>
+          </Alert>
+        )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 1. Hedge History & Summary */}
@@ -723,7 +888,9 @@ export default function WalletHedge() {
                 onClick={() => fetchHedgeHistory(currentPage)}
                 disabled={loading.hedges}
               >
-                <RefreshCw className={`h-4 w-4 mr-1 ${loading.hedges ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${loading.hedges ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
@@ -757,10 +924,15 @@ export default function WalletHedge() {
                     <TableBody>
                       {hedgeData?.hedges.length ? (
                         hedgeData.hedges.map((hedge) => (
-                          <TableRow 
+                          <TableRow
                             key={hedge.id}
-                            className={hedge.status === 'active' ? 'bg-green-50/50' : 
-                                     hedge.status === 'closed' ? 'bg-gray-50/50' : 'bg-red-50/50'}
+                            className={
+                              hedge.status === "active"
+                                ? "bg-green-50/50"
+                                : hedge.status === "closed"
+                                  ? "bg-gray-50/50"
+                                  : "bg-red-50/50"
+                            }
                           >
                             <TableCell className="font-mono text-sm">
                               <div className="flex items-center space-x-2">
@@ -776,10 +948,20 @@ export default function WalletHedge() {
                               </div>
                             </TableCell>
                             <TableCell>{getTypeBadge(hedge.type)}</TableCell>
-                            <TableCell className="font-medium">{formatUSDT(hedge.amount)}</TableCell>
-                            <TableCell>{getStatusBadge(hedge.status)}</TableCell>
+                            <TableCell className="font-medium">
+                              {formatUSDT(hedge.amount)}
+                            </TableCell>
                             <TableCell>
-                              <span className={hedge.pnl >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
+                              {getStatusBadge(hedge.status)}
+                            </TableCell>
+                            <TableCell>
+                              <span
+                                className={
+                                  hedge.pnl >= 0
+                                    ? "text-green-600 font-medium"
+                                    : "text-red-600 font-medium"
+                                }
+                              >
                                 {formatCurrency(hedge.pnl)}
                               </span>
                             </TableCell>
@@ -806,13 +988,18 @@ export default function WalletHedge() {
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between mt-4">
                     <div className="text-sm text-muted-foreground">
-                      Showing {((currentPage - 1) * itemsPerPage) + 1}-{Math.min(currentPage * itemsPerPage, hedgeData?.pagination.total || 0)} of {hedgeData?.pagination.total || 0} records
+                      Showing {(currentPage - 1) * itemsPerPage + 1}-
+                      {Math.min(
+                        currentPage * itemsPerPage,
+                        hedgeData?.pagination.total || 0,
+                      )}{" "}
+                      of {hedgeData?.pagination.total || 0} records
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(prev => prev - 1)}
+                        onClick={() => setCurrentPage((prev) => prev - 1)}
                         disabled={!hasPrevious || loading.hedges}
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -824,7 +1011,7 @@ export default function WalletHedge() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => setCurrentPage(prev => prev + 1)}
+                        onClick={() => setCurrentPage((prev) => prev + 1)}
                         disabled={!hasNext || loading.hedges}
                       >
                         Next
@@ -865,11 +1052,15 @@ export default function WalletHedge() {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Available:</span>
-                    <div className="font-medium text-green-600">{formatUSDT(usdtBalance.available)}</div>
+                    <div className="font-medium text-green-600">
+                      {formatUSDT(usdtBalance.available)}
+                    </div>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Locked:</span>
-                    <div className="font-medium text-yellow-600">{formatUSDT(usdtBalance.locked)}</div>
+                    <div className="font-medium text-yellow-600">
+                      {formatUSDT(usdtBalance.locked)}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -896,10 +1087,15 @@ export default function WalletHedge() {
                 {/* Asset list */}
                 <div className="space-y-2">
                   {holdings.slice(0, 3).map((balance) => (
-                    <div key={balance.asset} className="flex items-center justify-between">
+                    <div
+                      key={balance.asset}
+                      className="flex items-center justify-between"
+                    >
                       <div className="font-medium">{balance.asset}</div>
                       <div className="text-right">
-                        <div className="font-bold">{formatCurrency(balance.valueUsd)}</div>
+                        <div className="font-bold">
+                          {formatCurrency(balance.valueUsd)}
+                        </div>
                         <div className="text-xs text-muted-foreground">
                           {balance.total.toFixed(4)}
                         </div>
@@ -926,11 +1122,17 @@ export default function WalletHedge() {
                         dataKey="value"
                       >
                         {pieChartData.slice(0, 5).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
-                      <RechartsTooltip 
-                        formatter={(value) => [formatCurrency(value as number), 'Value']}
+                      <RechartsTooltip
+                        formatter={(value) => [
+                          formatCurrency(value as number),
+                          "Value",
+                        ]}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -950,7 +1152,9 @@ export default function WalletHedge() {
           <CardHeader className="flex items-start justify-between">
             <div>
               <CardTitle>Withdrawable Funds</CardTitle>
-              <CardDescription>Safe USDT amount not needed for hedges</CardDescription>
+              <CardDescription>
+                Safe USDT amount not needed for hedges
+              </CardDescription>
             </div>
             <HelpTip content="Breakdown of totals contributing to your safe withdrawal amount." />
           </CardHeader>
@@ -967,24 +1171,38 @@ export default function WalletHedge() {
             ) : withdrawable ? (
               <div className="grid grid-cols-2 gap-4">
                 <div className="p-3 border rounded-lg">
-                  <div className="text-sm text-muted-foreground">Total Value</div>
-                  <div className="text-lg font-bold">{formatCurrency(withdrawable.totalValue)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Value
+                  </div>
+                  <div className="text-lg font-bold">
+                    {formatCurrency(withdrawable.totalValue)}
+                  </div>
                 </div>
                 <div className="p-3 border rounded-lg">
-                  <div className="text-sm text-muted-foreground">Hedged Value</div>
-                  <div className="text-lg font-bold text-blue-600">{formatCurrency(withdrawable.hedgedValue)}</div>
+                  <div className="text-sm text-muted-foreground">
+                    Hedged Value
+                  </div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {formatCurrency(withdrawable.hedgedValue)}
+                  </div>
                 </div>
                 <div className="p-3 border rounded-lg bg-green-50">
                   <div className="text-sm text-muted-foreground">Available</div>
-                  <div className="text-lg font-bold text-green-600">{formatCurrency(withdrawable.availableToWithdraw)}</div>
+                  <div className="text-lg font-bold text-green-600">
+                    {formatCurrency(withdrawable.availableToWithdraw)}
+                  </div>
                 </div>
                 <div className="p-3 border rounded-lg bg-blue-50">
                   <div className="text-sm text-muted-foreground">Max Safe</div>
-                  <div className="text-lg font-bold text-blue-600">{formatCurrency(withdrawable.maxSafeWithdrawal)}</div>
+                  <div className="text-lg font-bold text-blue-600">
+                    {formatCurrency(withdrawable.maxSafeWithdrawal)}
+                  </div>
                 </div>
               </div>
             ) : (
-              <div className="text-muted-foreground">Unable to load withdrawable funds</div>
+              <div className="text-muted-foreground">
+                Unable to load withdrawable funds
+              </div>
             )}
           </CardContent>
         </Card>
@@ -1004,7 +1222,9 @@ export default function WalletHedge() {
                 onClick={fetchLiveSnapshot}
                 disabled={loading.snapshot}
               >
-                <RefreshCw className={`h-4 w-4 mr-1 ${loading.snapshot ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-1 ${loading.snapshot ? "animate-spin" : ""}`}
+                />
                 Refresh
               </Button>
             </div>
@@ -1023,40 +1243,61 @@ export default function WalletHedge() {
               <div className="space-y-4">
                 {/* Drift warning */}
                 {snapshot.drift.exceeded && (
-                  <Alert variant={snapshot.drift.percent > 0 ? "default" : "destructive"}>
+                  <Alert
+                    variant={
+                      snapshot.drift.percent > 0 ? "default" : "destructive"
+                    }
+                  >
                     <AlertTriangle className="h-4 w-4" />
                     <AlertDescription>
-                      <strong>Drift Alert:</strong> {snapshot.drift.percent.toFixed(2)}% 
-                      (tolerance: ±{snapshot.drift.tolerance}%)
+                      <strong>Drift Alert:</strong>{" "}
+                      {snapshot.drift.percent.toFixed(2)}% (tolerance: ±
+                      {snapshot.drift.tolerance}%)
                     </AlertDescription>
                   </Alert>
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">Live Total</div>
-                    <div className="text-lg font-bold text-green-600">{formatCurrency(snapshot.live.total)}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Live Total
+                    </div>
+                    <div className="text-lg font-bold text-green-600">
+                      {formatCurrency(snapshot.live.total)}
+                    </div>
                   </div>
                   <div className="p-3 border rounded-lg">
-                    <div className="text-sm text-muted-foreground">Stored Total</div>
-                    <div className="text-lg font-bold text-blue-600">{formatCurrency(snapshot.stored.total)}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Stored Total
+                    </div>
+                    <div className="text-lg font-bold text-blue-600">
+                      {formatCurrency(snapshot.stored.total)}
+                    </div>
                   </div>
                   <div className="p-3 border rounded-lg">
                     <div className="text-sm text-muted-foreground">Hedged</div>
-                    <div className="text-lg font-bold text-purple-600">{formatUSDT(snapshot.hedged)}</div>
+                    <div className="text-lg font-bold text-purple-600">
+                      {formatUSDT(snapshot.hedged)}
+                    </div>
                   </div>
                   <div className="p-3 border rounded-lg">
                     <div className="text-sm text-muted-foreground">Drift</div>
-                    <div className={`text-lg font-bold ${
-                      snapshot.drift.percent >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {snapshot.drift.percent >= 0 ? '+' : ''}{snapshot.drift.percent.toFixed(2)}%
+                    <div
+                      className={`text-lg font-bold ${
+                        snapshot.drift.percent >= 0
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {snapshot.drift.percent >= 0 ? "+" : ""}
+                      {snapshot.drift.percent.toFixed(2)}%
                     </div>
                   </div>
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  Last updated: {new Date(snapshot.lastUpdated).toLocaleString()}
+                  Last updated:{" "}
+                  {new Date(snapshot.lastUpdated).toLocaleString()}
                 </div>
               </div>
             ) : (
@@ -1072,14 +1313,14 @@ export default function WalletHedge() {
       {/* 5. Hedge Controls */}
       <Card>
         <CardHeader className="flex items-start justify-between">
-        <div>
-          <CardTitle>Hedge Controls</CardTitle>
-          <CardDescription>
-            Configure hedge percentage and auto-adjustment settings
-          </CardDescription>
-        </div>
-        <HelpTip content="Adjust target hedge percent or enable auto-adjust. Saving updates your preferences." />
-      </CardHeader>
+          <div>
+            <CardTitle>Hedge Controls</CardTitle>
+            <CardDescription>
+              Configure hedge percentage and auto-adjustment settings
+            </CardDescription>
+          </div>
+          <HelpTip content="Adjust target hedge percent or enable auto-adjust. Saving updates your preferences." />
+        </CardHeader>
         <CardContent className="space-y-6">
           {errors.settings && (
             <Alert variant="destructive">
@@ -1095,12 +1336,19 @@ export default function WalletHedge() {
               {/* Recent Hedge History (inline) */}
               {hedgeData?.hedges?.length ? (
                 <div className="mb-4">
-                  <div className="text-sm font-medium mb-2">Recent Hedge Activity</div>
+                  <div className="text-sm font-medium mb-2">
+                    Recent Hedge Activity
+                  </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
-                    {hedgeData.hedges.slice(0,3).map(h=> (
+                    {hedgeData.hedges.slice(0, 3).map((h) => (
                       <div key={h.id} className="p-2 border rounded">
-                        <div className="flex items-center justify-between"><span>{h.id}</span>{getTypeBadge(h.type)}</div>
-                        <div className="text-muted-foreground">{new Date(h.timestamp).toLocaleString()}</div>
+                        <div className="flex items-center justify-between">
+                          <span>{h.id}</span>
+                          {getTypeBadge(h.type)}
+                        </div>
+                        <div className="text-muted-foreground">
+                          {new Date(h.timestamp).toLocaleString()}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1110,9 +1358,13 @@ export default function WalletHedge() {
               {/* Auto-Adjust Toggle */}
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="space-y-1">
-                  <div className="font-medium inline-flex items-center gap-2">Auto-Adjust Hedge <HelpTip content="Automatically tune hedge percent based on market conditions." /></div>
+                  <div className="font-medium inline-flex items-center gap-2">
+                    Auto-Adjust Hedge{" "}
+                    <HelpTip content="Automatically tune hedge percent based on market conditions." />
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    Enable to automatically adjust hedge percentage based on market conditions
+                    Enable to automatically adjust hedge percentage based on
+                    market conditions
                   </div>
                 </div>
                 <Switch
@@ -1124,11 +1376,15 @@ export default function WalletHedge() {
               {/* Hedge Percent Input */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="hedgePercent" className="text-sm font-medium inline-flex items-center gap-2">
+                  <Label
+                    htmlFor="hedgePercent"
+                    className="text-sm font-medium inline-flex items-center gap-2"
+                  >
                     Hedge Percent: {hedgePercent.toFixed(1)}%
                     {autoAdjustEnabled && hedgeSettings?.effectivePercent && (
                       <span className="ml-2 text-sm text-muted-foreground">
-                        (Effective: {(hedgeSettings.effectivePercent * 100).toFixed(1)}%)
+                        (Effective:{" "}
+                        {(hedgeSettings.effectivePercent * 100).toFixed(1)}%)
                       </span>
                     )}
                     <HelpTip content="Target percentage of portfolio hedged into USDT. Adjust to control risk exposure." />
@@ -1140,7 +1396,9 @@ export default function WalletHedge() {
                     max="100"
                     step="0.1"
                     value={hedgePercent}
-                    onChange={(e) => setHedgePercent(parseFloat(e.target.value) || 0)}
+                    onChange={(e) =>
+                      setHedgePercent(parseFloat(e.target.value) || 0)
+                    }
                     disabled={autoAdjustEnabled}
                     className="mt-2"
                   />
@@ -1157,9 +1415,18 @@ export default function WalletHedge() {
                       <div className="space-y-1">
                         <div className="font-medium">Market Conditions</div>
                         <div className="text-sm">
-                          Volatility: {(hedgeSettings.marketConditions.volatility * 100).toFixed(1)}% | 
-                          Risk: {hedgeSettings.marketConditions.riskLevel.toUpperCase()} | 
-                          Recommended: {(hedgeSettings.marketConditions.recommendedHedgePercent * 100).toFixed(1)}%
+                          Volatility:{" "}
+                          {(
+                            hedgeSettings.marketConditions.volatility * 100
+                          ).toFixed(1)}
+                          % | Risk:{" "}
+                          {hedgeSettings.marketConditions.riskLevel.toUpperCase()}{" "}
+                          | Recommended:{" "}
+                          {(
+                            hedgeSettings.marketConditions
+                              .recommendedHedgePercent * 100
+                          ).toFixed(1)}
+                          %
                         </div>
                       </div>
                     </AlertDescription>
@@ -1167,8 +1434,8 @@ export default function WalletHedge() {
                 )}
 
                 {/* Save Button */}
-                <Button 
-                  onClick={saveHedgeSettings} 
+                <Button
+                  onClick={saveHedgeSettings}
                   disabled={loading.saveSettings}
                   className="w-full"
                 >
@@ -1193,25 +1460,58 @@ export default function WalletHedge() {
       {/* 6. Exchange API Status (managed in Profile) */}
       <Card>
         <CardHeader className="flex items-start justify-between">
-        <div>
-          <CardTitle>Exchange API Status</CardTitle>
-          <CardDescription>Keys are managed in your Profile. This panel is read-only.</CardDescription>
-        </div>
-        <HelpTip content="Shows presence, validity, and expiry of your exchange API keys." />
-      </CardHeader>
+          <div>
+            <CardTitle>Exchange API Status</CardTitle>
+            <CardDescription>
+              Keys are managed in your Profile. This panel is read-only.
+            </CardDescription>
+          </div>
+          <HelpTip content="Shows presence, validity, and expiry of your exchange API keys." />
+        </CardHeader>
         <CardContent className="space-y-3">
           {apiStatus ? (
             <div className="space-y-2 text-sm">
-              <div>Presence: <Badge variant={apiStatus.present ? 'default':'destructive'}>{apiStatus.present ? 'Present' : 'Missing'}</Badge></div>
-              <div>Validity: <Badge variant={apiStatus.valid ? 'default':'destructive'}>{apiStatus.valid ? 'Valid' : 'Invalid'}</Badge></div>
-              <div>Expiry: {apiStatus.expires_at ? new Date(apiStatus.expires_at).toLocaleString() : 'N/A'} {apiStatus.expiring_soon && (<Badge variant="destructive" className="ml-2">Expiring Soon</Badge>)}</div>
-              {apiStatus.key_masked && <div className="text-muted-foreground">Key: {apiStatus.key_masked}</div>}
+              <div>
+                Presence:{" "}
+                <Badge variant={apiStatus.present ? "default" : "destructive"}>
+                  {apiStatus.present ? "Present" : "Missing"}
+                </Badge>
+              </div>
+              <div>
+                Validity:{" "}
+                <Badge variant={apiStatus.valid ? "default" : "destructive"}>
+                  {apiStatus.valid ? "Valid" : "Invalid"}
+                </Badge>
+              </div>
+              <div>
+                Expiry:{" "}
+                {apiStatus.expires_at
+                  ? new Date(apiStatus.expires_at).toLocaleString()
+                  : "N/A"}{" "}
+                {apiStatus.expiring_soon && (
+                  <Badge variant="destructive" className="ml-2">
+                    Expiring Soon
+                  </Badge>
+                )}
+              </div>
+              {apiStatus.key_masked && (
+                <div className="text-muted-foreground">
+                  Key: {apiStatus.key_masked}
+                </div>
+              )}
             </div>
           ) : (
-            <div className="text-muted-foreground text-sm">Status unavailable</div>
+            <div className="text-muted-foreground text-sm">
+              Status unavailable
+            </div>
           )}
           <div>
-            <a href="/profile" className="inline-flex items-center px-3 py-2 border rounded-md text-sm">Manage in Profile</a>
+            <a
+              href="/profile"
+              className="inline-flex items-center px-3 py-2 border rounded-md text-sm"
+            >
+              Manage in Profile
+            </a>
           </div>
         </CardContent>
       </Card>
@@ -1219,78 +1519,207 @@ export default function WalletHedge() {
       {/* 7. Risk Oversight & Personal Overrides */}
       <Card>
         <CardHeader className="flex items-start justify-between">
-        <div>
-          <CardTitle>Risk Oversight</CardTitle>
-          <CardDescription>System defaults and personal overrides</CardDescription>
-        </div>
-        <HelpTip content="Review system risk defaults and set personal multipliers and options." />
-      </CardHeader>
+          <div>
+            <CardTitle>Risk Oversight</CardTitle>
+            <CardDescription>
+              System defaults and personal overrides
+            </CardDescription>
+          </div>
+          <HelpTip content="Review system risk defaults and set personal multipliers and options." />
+        </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-3 border rounded">
-              <div className="text-xs text-muted-foreground">Daily Loss Cap</div>
-              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `${runtimeConfig['trading.risk_limit_percent']}%` : '—'}</div>
+              <div className="text-xs text-muted-foreground">
+                Daily Loss Cap
+              </div>
+              <div className="text-lg font-bold">
+                {!loading.runtime && runtimeConfig
+                  ? `${runtimeConfig["trading.risk_limit_percent"]}%`
+                  : "—"}
+              </div>
             </div>
             <div className="p-3 border rounded">
               <div className="text-xs text-muted-foreground">Position Cap</div>
-              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `$${runtimeConfig['trading.max_position_size']}` : '—'}</div>
+              <div className="text-lg font-bold">
+                {!loading.runtime && runtimeConfig
+                  ? `$${runtimeConfig["trading.max_position_size"]}`
+                  : "—"}
+              </div>
             </div>
             <div className="p-3 border rounded">
-              <div className="text-xs text-muted-foreground">Stop-loss Default</div>
-              <div className="text-lg font-bold">{!loading.runtime && runtimeConfig ? `${runtimeConfig['trading.stop_loss_percent']}%` : '—'}</div>
+              <div className="text-xs text-muted-foreground">
+                Stop-loss Default
+              </div>
+              <div className="text-lg font-bold">
+                {!loading.runtime && runtimeConfig
+                  ? `${runtimeConfig["trading.stop_loss_percent"]}%`
+                  : "—"}
+              </div>
             </div>
           </div>
-          <div className="text-sm">User Tier: <Badge variant="outline" className="ml-2">{!loading.profile && userProfile ? userProfile.risk_tier.toUpperCase() : '—'}</Badge></div>
+          <div className="text-sm">
+            User Tier:{" "}
+            <Badge variant="outline" className="ml-2">
+              {!loading.profile && userProfile
+                ? userProfile.risk_tier.toUpperCase()
+                : "—"}
+            </Badge>
+          </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label className="inline-flex items-center gap-2">Stop-loss Multiplier <HelpTip content="Multiplier applied to baseline stop-loss distance. Higher = wider stops." /></Label>
-              <Input type="number" step="0.05" value={overrideForm.sl_multiplier} onChange={e=> setOverrideForm(f=>({...f, sl_multiplier: parseFloat(e.target.value)||0}))} />
+              <Label className="inline-flex items-center gap-2">
+                Stop-loss Multiplier{" "}
+                <HelpTip content="Multiplier applied to baseline stop-loss distance. Higher = wider stops." />
+              </Label>
+              <Input
+                type="number"
+                step="0.05"
+                value={overrideForm.sl_multiplier}
+                onChange={(e) =>
+                  setOverrideForm((f) => ({
+                    ...f,
+                    sl_multiplier: parseFloat(e.target.value) || 0,
+                  }))
+                }
+              />
             </div>
             <div>
-              <Label className="inline-flex items-center gap-2">Take-profit Multiplier <HelpTip content="Multiplier applied to baseline take-profit. Higher = larger profit target." /></Label>
-              <Input type="number" step="0.1" value={overrideForm.tp_multiplier} onChange={e=> setOverrideForm(f=>({...f, tp_multiplier: parseFloat(e.target.value)||0}))} />
+              <Label className="inline-flex items-center gap-2">
+                Take-profit Multiplier{" "}
+                <HelpTip content="Multiplier applied to baseline take-profit. Higher = larger profit target." />
+              </Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={overrideForm.tp_multiplier}
+                onChange={(e) =>
+                  setOverrideForm((f) => ({
+                    ...f,
+                    tp_multiplier: parseFloat(e.target.value) || 0,
+                  }))
+                }
+              />
             </div>
             <div>
-              <Label className="inline-flex items-center gap-2">Trailing-stop (%) <HelpTip content="Percentage distance for trailing stop. Moves with price to lock in gains." /></Label>
-              <Input type="number" step="0.05" value={overrideForm.trailing_stop} onChange={e=> setOverrideForm(f=>({...f, trailing_stop: parseFloat(e.target.value)||0}))} />
+              <Label className="inline-flex items-center gap-2">
+                Trailing-stop (%){" "}
+                <HelpTip content="Percentage distance for trailing stop. Moves with price to lock in gains." />
+              </Label>
+              <Input
+                type="number"
+                step="0.05"
+                value={overrideForm.trailing_stop}
+                onChange={(e) =>
+                  setOverrideForm((f) => ({
+                    ...f,
+                    trailing_stop: parseFloat(e.target.value) || 0,
+                  }))
+                }
+              />
             </div>
             <div className="flex items-center gap-2">
-              <Switch checked={overrideForm.use_news_analysis} onCheckedChange={v=> setOverrideForm(f=>({...f, use_news_analysis: v}))} />
-              <span className="text-sm inline-flex items-center gap-2">News-aware trading <HelpTip content="Use news-derived analysis to influence decisions (experimental)." /></span>
+              <Switch
+                checked={overrideForm.use_news_analysis}
+                onCheckedChange={(v) =>
+                  setOverrideForm((f) => ({ ...f, use_news_analysis: v }))
+                }
+              />
+              <span className="text-sm inline-flex items-center gap-2">
+                News-aware trading{" "}
+                <HelpTip content="Use news-derived analysis to influence decisions (experimental)." />
+              </span>
             </div>
           </div>
 
           <div className="flex gap-2">
-            <Button variant="outline" onClick={()=>{ if(currentOverrides) setOverrideForm(currentOverrides); }}>Reset to Current</Button>
-            <Button onClick={()=> setConfirmOverridesOpen(true)}>Save Overrides</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (currentOverrides) setOverrideForm(currentOverrides);
+              }}
+            >
+              Reset to Current
+            </Button>
+            <Button onClick={() => setConfirmOverridesOpen(true)}>
+              Save Overrides
+            </Button>
           </div>
 
-          <Dialog open={confirmOverridesOpen} onOpenChange={setConfirmOverridesOpen}>
+          <Dialog
+            open={confirmOverridesOpen}
+            onOpenChange={setConfirmOverridesOpen}
+          >
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Confirm Changes</DialogTitle>
-                <DialogDescription>Review differences before saving</DialogDescription>
+                <DialogDescription>
+                  Review differences before saving
+                </DialogDescription>
               </DialogHeader>
               <div className="text-sm space-y-2">
-                {currentOverrides && Object.entries(overrideForm).map(([k,v])=> {
-                  const oldVal = (currentOverrides as any)[k];
-                  if (oldVal === v) return null;
-                  return <div key={k} className="flex justify-between"><span className="text-muted-foreground">{k}</span><span className="font-mono">{String(oldVal)} → {String(v)}</span></div>
-                })}
+                {currentOverrides &&
+                  Object.entries(overrideForm).map(([k, v]) => {
+                    const oldVal = (currentOverrides as any)[k];
+                    if (oldVal === v) return null;
+                    return (
+                      <div key={k} className="flex justify-between">
+                        <span className="text-muted-foreground">{k}</span>
+                        <span className="font-mono">
+                          {String(oldVal)} → {String(v)}
+                        </span>
+                      </div>
+                    );
+                  })}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={()=> setConfirmOverridesOpen(false)}>Cancel</Button>
-                <Button onClick={async()=>{
-                  setLoading(prev=>({...prev, overrides:true}));
-                  try{
-                    const body = { userId:'user_1', settings: overrideForm, actor:'self' };
-                    const r=await apiFetch('/api/config/user',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-                    if (!r.ok){ const j=await r.json().catch(()=>({error:'Failed'})); throw new Error(j.message||j.error||'Failed'); }
-                    const j=await r.json(); toast({ title:'Saved', description:'Overrides updated' }); setCurrentOverrides(overrideForm); setConfirmOverridesOpen(false);
-                  }catch(e:any){ toast({ title:'Save failed', description: e.message||'Failed', variant:'destructive' }); }
-                  finally{ setLoading(prev=>({...prev, overrides:false})); }
-                }}>Confirm</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setConfirmOverridesOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setLoading((prev) => ({ ...prev, overrides: true }));
+                    try {
+                      const body = {
+                        userId: "user_1",
+                        settings: overrideForm,
+                        actor: "self",
+                      };
+                      const r = await apiFetch("/api/config/user", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(body),
+                      });
+                      if (!r.ok) {
+                        const j = await r
+                          .json()
+                          .catch(() => ({ error: "Failed" }));
+                        throw new Error(j.message || j.error || "Failed");
+                      }
+                      const j = await r.json();
+                      toast({
+                        title: "Saved",
+                        description: "Overrides updated",
+                      });
+                      setCurrentOverrides(overrideForm);
+                      setConfirmOverridesOpen(false);
+                    } catch (e: any) {
+                      toast({
+                        title: "Save failed",
+                        description: e.message || "Failed",
+                        variant: "destructive",
+                      });
+                    } finally {
+                      setLoading((prev) => ({ ...prev, overrides: false }));
+                    }
+                  }}
+                >
+                  Confirm
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -1301,15 +1730,40 @@ export default function WalletHedge() {
             <div className="text-sm font-medium">Blocked-trade Diagnostics</div>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <Label className="inline-flex items-center gap-2">Trade ID <HelpTip content="Enter a trade ID to fetch diagnostics for that specific execution." /></Label>
-                <Input value={tradeDiagId} onChange={e=> setTradeDiagId(e.target.value)} placeholder="trade_002 or BTC_001_..." />
+                <Label className="inline-flex items-center gap-2">
+                  Trade ID{" "}
+                  <HelpTip content="Enter a trade ID to fetch diagnostics for that specific execution." />
+                </Label>
+                <Input
+                  value={tradeDiagId}
+                  onChange={(e) => setTradeDiagId(e.target.value)}
+                  placeholder="trade_002 or BTC_001_..."
+                />
               </div>
-              <Button onClick={async()=>{
-                setLoading(prev=>({...prev, tradeDiag:true}));
-                try{ const r=await apiFetch(`/api/trades/${encodeURIComponent(tradeDiagId)}`); if (!r.ok) throw new Error(`HTTP ${r.status}`); const j=await r.json(); setTradeDiag(j.data); }
-                catch{ setTradeDiag(null); toast({ title:'Not found', description:'Trade not found or unavailable', variant:'destructive' }); }
-                finally{ setLoading(prev=>({...prev, tradeDiag:false})); }
-              }}>Lookup</Button>
+              <Button
+                onClick={async () => {
+                  setLoading((prev) => ({ ...prev, tradeDiag: true }));
+                  try {
+                    const r = await apiFetch(
+                      `/api/trades/${encodeURIComponent(tradeDiagId)}`,
+                    );
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    const j = await r.json();
+                    setTradeDiag(j.data);
+                  } catch {
+                    setTradeDiag(null);
+                    toast({
+                      title: "Not found",
+                      description: "Trade not found or unavailable",
+                      variant: "destructive",
+                    });
+                  } finally {
+                    setLoading((prev) => ({ ...prev, tradeDiag: false }));
+                  }
+                }}
+              >
+                Lookup
+              </Button>
             </div>
             {tradeDiag?.rejection_reasons?.length ? (
               <Alert>
@@ -1317,7 +1771,9 @@ export default function WalletHedge() {
                 <AlertDescription>
                   <div className="text-sm">Rejection reasons:</div>
                   <ul className="list-disc ml-5 text-sm">
-                    {tradeDiag.rejection_reasons.map((r:string,i:number)=>(<li key={i}>{r}</li>))}
+                    {tradeDiag.rejection_reasons.map((r: string, i: number) => (
+                      <li key={i}>{r}</li>
+                    ))}
                   </ul>
                 </AlertDescription>
               </Alert>

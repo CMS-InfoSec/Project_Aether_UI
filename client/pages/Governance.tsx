@@ -1,13 +1,25 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import apiFetch from '@/lib/apiClient';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import apiFetch from "@/lib/apiClient";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -15,7 +27,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,13 +38,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { 
-  Vote, 
-  Plus, 
-  CheckCircle, 
-  Clock, 
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Vote,
+  Plus,
+  CheckCircle,
+  Clock,
   AlertCircle,
   Rocket,
   MessageSquare,
@@ -41,22 +53,22 @@ import {
   Eye,
   Users,
   Calendar,
-  TrendingUp
-} from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { toast } from '@/hooks/use-toast';
+  TrendingUp,
+} from "lucide-react";
+import { useState, useEffect } from "react";
+import { toast } from "@/hooks/use-toast";
 
 // Types
 interface Proposal {
   id: string;
   description: string;
-  status: 'pending' | 'voting' | 'approved' | 'rejected' | 'deployed';
+  status: "pending" | "voting" | "approved" | "rejected" | "deployed";
   votes: Vote[];
   requiredVotes: number;
   createdAt: string;
   createdBy: string;
   deployedAt?: string;
-  deploymentStatus?: 'success' | 'failed' | 'in_progress';
+  deploymentStatus?: "success" | "failed" | "in_progress";
   voteCount?: number;
   approvalCount?: number;
   canDeploy?: boolean;
@@ -83,61 +95,64 @@ interface FeedbackSummary {
 }
 
 export default function Governance() {
-  const [activeTab, setActiveTab] = useState('proposals');
+  const [activeTab, setActiveTab] = useState("proposals");
   const [proposals, setProposals] = useState<Proposal[]>([]);
-  const [feedbackSummary, setFeedbackSummary] = useState<FeedbackSummary | null>(null);
+  const [feedbackSummary, setFeedbackSummary] =
+    useState<FeedbackSummary | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Proposal creation state
-  const [newProposal, setNewProposal] = useState({ id: '', description: '' });
+  const [newProposal, setNewProposal] = useState({ id: "", description: "" });
   const [isCreatingProposal, setIsCreatingProposal] = useState(false);
-  
+
   // Voting state
-  const [selectedProposal, setSelectedProposal] = useState('');
-  const [voteData, setVoteData] = useState({ founderId: '', approve: false });
+  const [selectedProposal, setSelectedProposal] = useState("");
+  const [voteData, setVoteData] = useState({ founderId: "", approve: false });
   const [isCastingVote, setIsCastingVote] = useState(false);
-  
+
   // Deployment state
   const [isDeployDialogOpen, setIsDeployDialogOpen] = useState(false);
-  const [deployingProposal, setDeployingProposal] = useState<Proposal | null>(null);
+  const [deployingProposal, setDeployingProposal] = useState<Proposal | null>(
+    null,
+  );
   const [isDeploying, setIsDeploying] = useState(false);
-  
+
   // Feedback state
-  const [feedback, setFeedback] = useState('');
+  const [feedback, setFeedback] = useState("");
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
 
   // Available founders (in production, this would come from an API)
-  const founders = ['founder1', 'founder2', 'founder3', 'founder4', 'founder5'];
+  const founders = ["founder1", "founder2", "founder3", "founder4", "founder5"];
 
   // Fetch proposals
   const fetchProposals = async () => {
     try {
-      const response = await apiFetch('/api/admin/proposals');
+      const response = await apiFetch("/api/admin/proposals");
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setProposals(data.data);
       } else {
-        console.error('Failed to fetch proposals:', data.error);
+        console.error("Failed to fetch proposals:", data.error);
       }
     } catch (error) {
-      console.error('Failed to fetch proposals:', error);
+      console.error("Failed to fetch proposals:", error);
     }
   };
 
   // Fetch feedback summary
   const fetchFeedbackSummary = async () => {
     try {
-      const response = await apiFetch('/api/admin/feedback');
+      const response = await apiFetch("/api/admin/feedback");
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         setFeedbackSummary(data.data);
       } else {
-        console.error('Failed to fetch feedback:', data.error);
+        console.error("Failed to fetch feedback:", data.error);
       }
     } catch (error) {
-      console.error('Failed to fetch feedback:', error);
+      console.error("Failed to fetch feedback:", error);
     }
   };
 
@@ -157,43 +172,47 @@ export default function Governance() {
       toast({
         title: "Validation Error",
         description: "Both Proposal ID and Description are required.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsCreatingProposal(true);
     try {
-      const response = await apiFetch(`/api/admin/proposals/${newProposal.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await apiFetch(
+        `/api/admin/proposals/${newProposal.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            proposalId: newProposal.id,
+            description: newProposal.description,
+          }),
         },
-        body: JSON.stringify({
-          proposalId: newProposal.id,
-          description: newProposal.description
-        }),
-      });
+      );
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         toast({
           title: "Proposal Created",
           description: `Proposal ${newProposal.id} created successfully.`,
         });
-        
+
         // Reset form and refresh proposals
-        setNewProposal({ id: '', description: '' });
+        setNewProposal({ id: "", description: "" });
         await fetchProposals();
       } else {
-        throw new Error(data.error || 'Failed to create proposal');
+        throw new Error(data.error || "Failed to create proposal");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create proposal.",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to create proposal.",
+        variant: "destructive",
       });
     } finally {
       setIsCreatingProposal(false);
@@ -206,41 +225,45 @@ export default function Governance() {
       toast({
         title: "Validation Error",
         description: "Please select a proposal and enter founder ID.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsCastingVote(true);
     try {
-      const response = await apiFetch(`/api/admin/proposals/${selectedProposal}/vote`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await apiFetch(
+        `/api/admin/proposals/${selectedProposal}/vote`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(voteData),
         },
-        body: JSON.stringify(voteData),
-      });
+      );
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         toast({
           title: "Vote Cast",
-          description: `Vote ${voteData.approve ? 'approved' : 'rejected'} for proposal ${selectedProposal}.`,
+          description: `Vote ${voteData.approve ? "approved" : "rejected"} for proposal ${selectedProposal}.`,
         });
-        
+
         // Reset form and refresh proposals
-        setSelectedProposal('');
-        setVoteData({ founderId: '', approve: false });
+        setSelectedProposal("");
+        setVoteData({ founderId: "", approve: false });
         await fetchProposals();
       } else {
-        throw new Error(data.error || 'Failed to cast vote');
+        throw new Error(data.error || "Failed to cast vote");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to cast vote.",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to cast vote.",
+        variant: "destructive",
       });
     } finally {
       setIsCastingVote(false);
@@ -253,33 +276,37 @@ export default function Governance() {
 
     setIsDeploying(true);
     try {
-      const response = await apiFetch(`/api/admin/deploy/${deployingProposal.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await apiFetch(
+        `/api/admin/deploy/${deployingProposal.id}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         toast({
           title: "Deployment Successful",
           description: `Proposal ${deployingProposal.id} deployed at ${new Date(data.data.deployedAt).toLocaleString()}.`,
         });
-        
+
         // Close dialog and refresh proposals
         setIsDeployDialogOpen(false);
         setDeployingProposal(null);
         await fetchProposals();
       } else {
-        throw new Error(data.error || 'Failed to deploy proposal');
+        throw new Error(data.error || "Failed to deploy proposal");
       }
     } catch (error) {
       toast({
         title: "Deployment Failed",
-        description: error instanceof Error ? error.message : "Failed to deploy proposal.",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to deploy proposal.",
+        variant: "destructive",
       });
     } finally {
       setIsDeploying(false);
@@ -292,7 +319,7 @@ export default function Governance() {
       toast({
         title: "Validation Error",
         description: "Please enter feedback comment.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -301,40 +328,41 @@ export default function Governance() {
       toast({
         title: "Validation Error",
         description: "Feedback must be at least 10 characters long.",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsSubmittingFeedback(true);
     try {
-      const response = await apiFetch('/api/feedback', {
-        method: 'POST',
+      const response = await apiFetch("/api/feedback", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ comment: feedback }),
       });
 
       const data = await response.json();
 
-      if (data.status === 'success') {
+      if (data.status === "success") {
         toast({
           title: "Feedback Submitted",
           description: "Your feedback has been submitted for review.",
         });
-        
+
         // Clear form and refresh feedback summary
-        setFeedback('');
+        setFeedback("");
         await fetchFeedbackSummary();
       } else {
-        throw new Error(data.error || 'Failed to submit feedback');
+        throw new Error(data.error || "Failed to submit feedback");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to submit feedback.",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to submit feedback.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmittingFeedback(false);
@@ -344,26 +372,52 @@ export default function Governance() {
   // Utility functions
   const getStatusBadge = (status: string) => {
     const variants = {
-      'approved': { variant: 'default' as const, color: 'bg-green-100 text-green-800 border-green-200', icon: CheckCircle },
-      'pending': { variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800 border-yellow-200', icon: Clock },
-      'voting': { variant: 'outline' as const, color: 'bg-blue-100 text-blue-800 border-blue-200', icon: Vote },
-      'rejected': { variant: 'destructive' as const, color: 'bg-red-100 text-red-800 border-red-200', icon: AlertCircle },
-      'deployed': { variant: 'default' as const, color: 'bg-purple-100 text-purple-800 border-purple-200', icon: Rocket }
+      approved: {
+        variant: "default" as const,
+        color: "bg-green-100 text-green-800 border-green-200",
+        icon: CheckCircle,
+      },
+      pending: {
+        variant: "secondary" as const,
+        color: "bg-yellow-100 text-yellow-800 border-yellow-200",
+        icon: Clock,
+      },
+      voting: {
+        variant: "outline" as const,
+        color: "bg-blue-100 text-blue-800 border-blue-200",
+        icon: Vote,
+      },
+      rejected: {
+        variant: "destructive" as const,
+        color: "bg-red-100 text-red-800 border-red-200",
+        icon: AlertCircle,
+      },
+      deployed: {
+        variant: "default" as const,
+        color: "bg-purple-100 text-purple-800 border-purple-200",
+        icon: Rocket,
+      },
     };
 
-    const config = variants[status as keyof typeof variants] || variants.pending;
+    const config =
+      variants[status as keyof typeof variants] || variants.pending;
     const Icon = config.icon;
 
     return (
-      <Badge variant={config.variant} className={`flex items-center space-x-1 ${config.color}`}>
+      <Badge
+        variant={config.variant}
+        className={`flex items-center space-x-1 ${config.color}`}
+      >
         <Icon className="h-3 w-3" />
         <span className="capitalize">{status}</span>
       </Badge>
     );
   };
 
-  const getVotingProposals = () => proposals.filter(p => p.status === 'voting' || p.status === 'pending');
-  const getApprovedProposals = () => proposals.filter(p => p.status === 'approved');
+  const getVotingProposals = () =>
+    proposals.filter((p) => p.status === "voting" || p.status === "pending");
+  const getApprovedProposals = () =>
+    proposals.filter((p) => p.status === "approved");
 
   if (isLoading) {
     return (
@@ -379,24 +433,38 @@ export default function Governance() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Governance & Feedback</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Governance & Feedback
+          </h1>
           <p className="text-muted-foreground">
             Manage proposals, voting, deployment, and feedback collection
           </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+          <Badge
+            variant="outline"
+            className="bg-primary/10 text-primary border-primary/20"
+          >
             <Vote className="h-3 w-3 mr-1" />
             Admin Access
           </Badge>
-          <Button variant="outline" onClick={() => Promise.all([fetchProposals(), fetchFeedbackSummary()])}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              Promise.all([fetchProposals(), fetchFeedbackSummary()])
+            }
+          >
             <RefreshCw className="h-4 w-4 mr-2" />
             Refresh
           </Button>
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-6"
+      >
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
           <TabsTrigger value="voting">Voting</TabsTrigger>
@@ -424,7 +492,12 @@ export default function Governance() {
                     id="proposalId"
                     placeholder="PROP-004"
                     value={newProposal.id}
-                    onChange={(e) => setNewProposal(prev => ({ ...prev, id: e.target.value }))}
+                    onChange={(e) =>
+                      setNewProposal((prev) => ({
+                        ...prev,
+                        id: e.target.value,
+                      }))
+                    }
                   />
                 </div>
                 <div className="space-y-2">
@@ -433,14 +506,23 @@ export default function Governance() {
                     id="description"
                     placeholder="Describe the proposal details..."
                     value={newProposal.description}
-                    onChange={(e) => setNewProposal(prev => ({ ...prev, description: e.target.value }))}
+                    onChange={(e) =>
+                      setNewProposal((prev) => ({
+                        ...prev,
+                        description: e.target.value,
+                      }))
+                    }
                     rows={4}
                   />
                 </div>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleCreateProposal}
-                  disabled={isCreatingProposal || !newProposal.id.trim() || !newProposal.description.trim()}
+                  disabled={
+                    isCreatingProposal ||
+                    !newProposal.id.trim() ||
+                    !newProposal.description.trim()
+                  }
                 >
                   {isCreatingProposal ? (
                     <>
@@ -469,7 +551,10 @@ export default function Governance() {
                 <div className="space-y-4">
                   {proposals.length > 0 ? (
                     proposals.map((proposal) => (
-                      <div key={proposal.id} className="p-4 border rounded-lg space-y-3">
+                      <div
+                        key={proposal.id}
+                        className="p-4 border rounded-lg space-y-3"
+                      >
                         <div className="flex items-center justify-between">
                           <div className="font-medium">{proposal.id}</div>
                           {getStatusBadge(proposal.status)}
@@ -478,16 +563,25 @@ export default function Governance() {
                           {proposal.description}
                         </p>
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
-                          <span>{proposal.votes.length}/{proposal.requiredVotes} votes ({proposal.votes.filter(v => v.approve).length} approvals)</span>
+                          <span>
+                            {proposal.votes.length}/{proposal.requiredVotes}{" "}
+                            votes (
+                            {proposal.votes.filter((v) => v.approve).length}{" "}
+                            approvals)
+                          </span>
                           <div className="w-16 bg-muted rounded-full h-1">
-                            <div 
-                              className="bg-primary h-1 rounded-full transition-all" 
-                              style={{ width: `${(proposal.votes.filter(v => v.approve).length / proposal.requiredVotes) * 100}%` }}
+                            <div
+                              className="bg-primary h-1 rounded-full transition-all"
+                              style={{
+                                width: `${(proposal.votes.filter((v) => v.approve).length / proposal.requiredVotes) * 100}%`,
+                              }}
                             />
                           </div>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          Created: {new Date(proposal.createdAt).toLocaleDateString()} by {proposal.createdBy}
+                          Created:{" "}
+                          {new Date(proposal.createdAt).toLocaleDateString()} by{" "}
+                          {proposal.createdBy}
                         </div>
                       </div>
                     ))
@@ -517,7 +611,10 @@ export default function Governance() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label>Proposal</Label>
-                <Select value={selectedProposal} onValueChange={setSelectedProposal}>
+                <Select
+                  value={selectedProposal}
+                  onValueChange={setSelectedProposal}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select a proposal to vote on" />
                   </SelectTrigger>
@@ -532,13 +629,20 @@ export default function Governance() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="founderId">Founder ID</Label>
-                <Select value={voteData.founderId} onValueChange={(value) => setVoteData(prev => ({ ...prev, founderId: value }))}>
+                <Select
+                  value={voteData.founderId}
+                  onValueChange={(value) =>
+                    setVoteData((prev) => ({ ...prev, founderId: value }))
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select founder ID" />
                   </SelectTrigger>
                   <SelectContent>
                     {founders.map((founder) => (
-                      <SelectItem key={founder} value={founder}>{founder}</SelectItem>
+                      <SelectItem key={founder} value={founder}>
+                        {founder}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -547,7 +651,9 @@ export default function Governance() {
                 <Checkbox
                   id="approve"
                   checked={voteData.approve}
-                  onCheckedChange={(checked) => setVoteData(prev => ({ ...prev, approve: !!checked }))}
+                  onCheckedChange={(checked) =>
+                    setVoteData((prev) => ({ ...prev, approve: !!checked }))
+                  }
                 />
                 <Label htmlFor="approve">Approve this proposal</Label>
               </div>
@@ -561,10 +667,12 @@ export default function Governance() {
                 </Alert>
               )}
 
-              <Button 
-                className="w-full" 
+              <Button
+                className="w-full"
                 onClick={handleCastVote}
-                disabled={!selectedProposal || !voteData.founderId || isCastingVote}
+                disabled={
+                  !selectedProposal || !voteData.founderId || isCastingVote
+                }
               >
                 {isCastingVote ? (
                   <>
@@ -600,12 +708,15 @@ export default function Governance() {
                     <div className="flex items-center justify-between">
                       <div>
                         <div className="font-medium">{proposal.id}</div>
-                        <p className="text-sm text-muted-foreground">{proposal.description}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {proposal.description}
+                        </p>
                         <div className="flex items-center space-x-4 mt-2">
                           {getStatusBadge(proposal.status)}
                           <Badge variant="outline">
                             <CheckCircle className="h-3 w-3 mr-1" />
-                            {proposal.votes.filter(v => v.approve).length}/{proposal.requiredVotes} approvals
+                            {proposal.votes.filter((v) => v.approve).length}/
+                            {proposal.requiredVotes} approvals
                           </Badge>
                         </div>
                       </div>
@@ -614,15 +725,16 @@ export default function Governance() {
                           setDeployingProposal(proposal);
                           setIsDeployDialogOpen(true);
                         }}
-                        disabled={proposal.status === 'deployed'}
+                        disabled={proposal.status === "deployed"}
                       >
                         <Rocket className="h-4 w-4 mr-2" />
-                        {proposal.status === 'deployed' ? 'Deployed' : 'Deploy'}
+                        {proposal.status === "deployed" ? "Deployed" : "Deploy"}
                       </Button>
                     </div>
                     {proposal.deployedAt && (
                       <div className="text-xs text-muted-foreground mt-2">
-                        Deployed: {new Date(proposal.deployedAt).toLocaleString()}
+                        Deployed:{" "}
+                        {new Date(proposal.deployedAt).toLocaleString()}
                       </div>
                     )}
                   </div>
@@ -665,10 +777,14 @@ export default function Governance() {
                     Minimum 10 characters required
                   </div>
                 </div>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleSubmitFeedback}
-                  disabled={!feedback.trim() || feedback.trim().length < 10 || isSubmittingFeedback}
+                  disabled={
+                    !feedback.trim() ||
+                    feedback.trim().length < 10 ||
+                    isSubmittingFeedback
+                  }
                 >
                   {isSubmittingFeedback ? (
                     <>
@@ -698,20 +814,36 @@ export default function Governance() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-primary">{feedbackSummary.totalSubmissions}</div>
-                        <div className="text-sm text-muted-foreground">Total Submissions</div>
+                        <div className="text-2xl font-bold text-primary">
+                          {feedbackSummary.totalSubmissions}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Submissions
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-accent">{feedbackSummary.reviewed}</div>
-                        <div className="text-sm text-muted-foreground">Reviewed</div>
+                        <div className="text-2xl font-bold text-accent">
+                          {feedbackSummary.reviewed}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Reviewed
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-warning">{feedbackSummary.pending}</div>
-                        <div className="text-sm text-muted-foreground">Pending</div>
+                        <div className="text-2xl font-bold text-warning">
+                          {feedbackSummary.pending}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Pending
+                        </div>
                       </div>
                       <div className="text-center p-4 bg-muted/50 rounded-lg">
-                        <div className="text-2xl font-bold text-destructive">{feedbackSummary.highPriority}</div>
-                        <div className="text-sm text-muted-foreground">High Priority</div>
+                        <div className="text-2xl font-bold text-destructive">
+                          {feedbackSummary.highPriority}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          High Priority
+                        </div>
                       </div>
                     </div>
 
@@ -720,11 +852,22 @@ export default function Governance() {
                       <div className="font-medium text-sm">Recent Entries</div>
                       <div className="space-y-2 max-h-48 overflow-y-auto">
                         {feedbackSummary.recentEntries.map((entry) => (
-                          <div key={entry.id} className="p-2 border rounded text-xs">
-                            <div className="font-medium">{entry.submittedBy}</div>
-                            <div className="text-muted-foreground truncate">{entry.comment}</div>
+                          <div
+                            key={entry.id}
+                            className="p-2 border rounded text-xs"
+                          >
+                            <div className="font-medium">
+                              {entry.submittedBy}
+                            </div>
+                            <div className="text-muted-foreground truncate">
+                              {entry.comment}
+                            </div>
                             <div className="flex items-center justify-between mt-1">
-                              <span className="text-muted-foreground">{new Date(entry.submittedAt).toLocaleDateString()}</span>
+                              <span className="text-muted-foreground">
+                                {new Date(
+                                  entry.submittedAt,
+                                ).toLocaleDateString()}
+                              </span>
                               <Badge variant="outline" className="text-xs">
                                 {entry.status}
                               </Badge>
@@ -747,19 +890,34 @@ export default function Governance() {
       </Tabs>
 
       {/* Deployment Confirmation Dialog */}
-      <AlertDialog open={isDeployDialogOpen} onOpenChange={setIsDeployDialogOpen}>
+      <AlertDialog
+        open={isDeployDialogOpen}
+        onOpenChange={setIsDeployDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirm Deployment</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to deploy proposal "{deployingProposal?.id}"? This action cannot be undone.
+              Are you sure you want to deploy proposal "{deployingProposal?.id}
+              "? This action cannot be undone.
             </AlertDialogDescription>
             <div className="mt-4 p-3 bg-muted rounded-lg">
               <div className="text-sm">
-                <div><strong>Proposal:</strong> {deployingProposal?.id}</div>
-                <div><strong>Description:</strong> {deployingProposal?.description}</div>
-                <div><strong>Approvals:</strong> {deployingProposal?.votes.filter(v => v.approve).length}/{deployingProposal?.requiredVotes}</div>
-                <div><strong>Deployment Time:</strong> {new Date().toLocaleString()}</div>
+                <div>
+                  <strong>Proposal:</strong> {deployingProposal?.id}
+                </div>
+                <div>
+                  <strong>Description:</strong> {deployingProposal?.description}
+                </div>
+                <div>
+                  <strong>Approvals:</strong>{" "}
+                  {deployingProposal?.votes.filter((v) => v.approve).length}/
+                  {deployingProposal?.requiredVotes}
+                </div>
+                <div>
+                  <strong>Deployment Time:</strong>{" "}
+                  {new Date().toLocaleString()}
+                </div>
               </div>
             </div>
           </AlertDialogHeader>
@@ -767,14 +925,17 @@ export default function Governance() {
             <AlertDialogCancel onClick={() => setDeployingProposal(null)}>
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={handleDeployProposal} disabled={isDeploying}>
+            <AlertDialogAction
+              onClick={handleDeployProposal}
+              disabled={isDeploying}
+            >
               {isDeploying ? (
                 <>
                   <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                   Deploying...
                 </>
               ) : (
-                'Confirm Deploy'
+                "Confirm Deploy"
               )}
             </AlertDialogAction>
           </AlertDialogFooter>

@@ -1,11 +1,11 @@
-import { useAuth } from '@/contexts/AuthContext';
-import apiFetch from '@/lib/apiClient';
-import HelpTip from '@/components/ui/help-tip';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
+import { useAuth } from "@/contexts/AuthContext";
+import apiFetch from "@/lib/apiClient";
+import HelpTip from "@/components/ui/help-tip";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   Users,
@@ -30,157 +30,234 @@ import {
   Bot,
   Activity,
   FileText,
-  Cog
-} from 'lucide-react';
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Link, Navigate, Outlet, useLocation as rrUseLocation } from 'react-router-dom';
+  Cog,
+} from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  Link,
+  Navigate,
+  Outlet,
+  useLocation as rrUseLocation,
+} from "react-router-dom";
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // User navigation items (accessible to both USER and ADMIN roles)
 const userNavigationItems = [
-  { title: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, badge: null },
-  { title: 'Trades & Positions', href: '/trades', icon: CandlestickChart, badge: null },
-  { title: 'Wallet & Hedge', href: '/wallet', icon: Wallet, badge: null },
-  { title: 'AI Assistant', href: '/assistant', icon: Bot, badge: null },
-  { title: 'Strategies & Signals', href: '/strategies', icon: TrendingUp, badge: null },
-  { title: 'Observability & Health', href: '/observability', icon: Activity, badge: null },
-  { title: 'Audit & Logs', href: '/audit', icon: FileText, badge: null },
-  { title: 'Profile & Settings', href: '/profile', icon: User, badge: null },
-  { title: 'Notifications', href: '/notifications', icon: Bell, badge: null },
-  { title: 'Reports & Analytics', href: '/reports', icon: BarChart3, badge: null }
+  {
+    title: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    badge: null,
+  },
+  {
+    title: "Trades & Positions",
+    href: "/trades",
+    icon: CandlestickChart,
+    badge: null,
+  },
+  { title: "Wallet & Hedge", href: "/wallet", icon: Wallet, badge: null },
+  { title: "AI Assistant", href: "/assistant", icon: Bot, badge: null },
+  {
+    title: "Strategies & Signals",
+    href: "/strategies",
+    icon: TrendingUp,
+    badge: null,
+  },
+  {
+    title: "Observability & Health",
+    href: "/observability",
+    icon: Activity,
+    badge: null,
+  },
+  { title: "Audit & Logs", href: "/audit", icon: FileText, badge: null },
+  { title: "Profile & Settings", href: "/profile", icon: User, badge: null },
+  { title: "Notifications", href: "/notifications", icon: Bell, badge: null },
+  {
+    title: "Reports & Analytics",
+    href: "/reports",
+    icon: BarChart3,
+    badge: null,
+  },
 ];
 
 // Admin-only navigation items
 const adminNavigationItems = [
   {
-    title: 'Admin Dashboard',
-    href: '/admin/dashboard',
+    title: "Admin Dashboard",
+    href: "/admin/dashboard",
     icon: Shield,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Governance',
-    href: '/admin/governance',
+    title: "Governance",
+    href: "/admin/governance",
     icon: Vote,
-    badge: null
+    badge: null,
   },
   {
-    title: 'User Management',
-    href: '/admin/users',
+    title: "User Management",
+    href: "/admin/users",
     icon: Users,
-    badge: '3'
+    badge: "3",
   },
   {
-    title: 'Portfolio Management',
-    href: '/admin/portfolio',
+    title: "Portfolio Management",
+    href: "/admin/portfolio",
     icon: Briefcase,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Market Eligibility',
-    href: '/admin/markets',
+    title: "Market Eligibility",
+    href: "/admin/markets",
     icon: TrendingUp,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Model Management',
-    href: '/admin/models',
+    title: "Model Management",
+    href: "/admin/models",
     icon: Brain,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Adaptive Strategy Controller',
-    href: '/admin/asc',
+    title: "Adaptive Strategy Controller",
+    href: "/admin/asc",
     icon: Settings,
-    badge: null
+    badge: null,
   },
   {
-    title: 'System Config',
-    href: '/admin/system/config',
+    title: "System Config",
+    href: "/admin/system/config",
     icon: Settings,
-    badge: null
+    badge: null,
   },
   {
-    title: 'System Control',
-    href: '/admin/system/control',
+    title: "System Control",
+    href: "/admin/system/control",
     icon: PlayCircle,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Backtest Report',
-    href: '/admin/backtest',
+    title: "Backtest Report",
+    href: "/admin/backtest",
     icon: Download,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Strategy Review',
-    href: '/admin/strategy-review',
+    title: "Strategy Review",
+    href: "/admin/strategy-review",
     icon: Vote,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Plugins',
-    href: '/admin/plugins',
+    title: "Plugins",
+    href: "/admin/plugins",
     icon: Brain,
-    badge: null
+    badge: null,
   },
   {
-    title: 'Automation Social',
-    href: '/admin/automation-social',
+    title: "Automation Social",
+    href: "/admin/automation-social",
     icon: Activity,
-    badge: null
+    badge: null,
   },
   {
-    title: 'System Tasks',
-    href: '/admin/system/tasks',
+    title: "System Tasks",
+    href: "/admin/system/tasks",
     icon: Settings,
-    badge: null
-  }
+    badge: null,
+  },
 ];
 
 export default function AppLayout() {
   const { user, logout, isLoading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   // Safe location hook: falls back to window.location when not rendered inside a Router
-  function useSafeLocation(){
-    try { return rrUseLocation(); }
-    catch (e) { return { pathname: typeof window !== 'undefined' ? window.location.pathname : '/', search: '', hash: '', state: null, key: 'no-router' } as any; }
+  function useSafeLocation() {
+    try {
+      return rrUseLocation();
+    } catch (e) {
+      return {
+        pathname:
+          typeof window !== "undefined" ? window.location.pathname : "/",
+        search: "",
+        hash: "",
+        state: null,
+        key: "no-router",
+      } as any;
+    }
   }
   const location = useSafeLocation();
   const { toast } = useToast();
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
   // Top bar status polling
-  const API_KEY = 'aether-admin-key-2024';
-  const backendUrl = useMemo(() => localStorage.getItem('aether-backend-url') || window.location.origin, []);
-  const [mode, setMode] = useState<string>('live');
+  const API_KEY = "aether-admin-key-2024";
+  const backendUrl = useMemo(
+    () => localStorage.getItem("aether-backend-url") || window.location.origin,
+    [],
+  );
+  const [mode, setMode] = useState<string>("live");
   const [killSwitch, setKillSwitch] = useState<boolean>(false);
-  const [statusText, setStatusText] = useState<string>('Active');
-  const apiRequest = useCallback(async (path: string) => {
-    const url = path.startsWith('http') ? path : `${backendUrl.replace(/\/+$/, '')}${path}`;
-    return apiFetch(url, { headers: { 'X-API-Key': API_KEY }, admin: true });
-  }, [backendUrl]);
+  const [statusText, setStatusText] = useState<string>("Active");
+  const apiRequest = useCallback(
+    async (path: string) => {
+      const url = path.startsWith("http")
+        ? path
+        : `${backendUrl.replace(/\/+$/, "")}${path}`;
+      return apiFetch(url, { headers: { "X-API-Key": API_KEY }, admin: true });
+    },
+    [backendUrl],
+  );
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
-        const m = await apiRequest('/api/system/mode');
-        if (m.ok) { const d = await m.json(); if (!cancelled) setMode(d.data.mode); }
-        const s = await apiRequest('/api/system/status');
-        if (s.ok) { const j = await s.json(); if (!cancelled) { setKillSwitch(!!j.data.killSwitchEnabled); setStatusText(j.data.isPaused ? 'Paused' : 'Active'); } }
-        const h = await apiRequest('/api/health/live');
+        const m = await apiRequest("/api/system/mode");
+        if (m.ok) {
+          const d = await m.json();
+          if (!cancelled) setMode(d.data.mode);
+        }
+        const s = await apiRequest("/api/system/status");
+        if (s.ok) {
+          const j = await s.json();
+          if (!cancelled) {
+            setKillSwitch(!!j.data.killSwitchEnabled);
+            setStatusText(j.data.isPaused ? "Paused" : "Active");
+          }
+        }
+        const h = await apiRequest("/api/health/live");
         if (!cancelled) setApiHealthy(h.ok);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     };
     load();
     const id = setInterval(load, 15000);
-    return () => { cancelled = true; clearInterval(id); };
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
   }, [apiRequest]);
 
   if (isLoading) {
@@ -196,43 +273,49 @@ export default function AppLayout() {
   }
 
   // Determine which navigation items to show based on user role
-  const navigationItems = user.role === 'admin' 
-    ? [...userNavigationItems, ...adminNavigationItems]
-    : userNavigationItems;
+  const navigationItems =
+    user.role === "admin"
+      ? [...userNavigationItems, ...adminNavigationItems]
+      : userNavigationItems;
 
   const isActiveRoute = (href: string) => {
-    if (href === '/dashboard' && location.pathname === '/') return true;
+    if (href === "/dashboard" && location.pathname === "/") return true;
     return location.pathname.startsWith(href);
   };
 
   const getUserRoleBadge = () => {
-    return user.role === 'admin' ? 'Admin' : 'User';
+    return user.role === "admin" ? "Admin" : "User";
   };
 
   const getUserRoleColor = () => {
-    return user.role === 'admin' 
-      ? 'bg-destructive/10 text-destructive border-destructive/20'
-      : 'bg-primary/10 text-primary border-primary/20';
+    return user.role === "admin"
+      ? "bg-destructive/10 text-destructive border-destructive/20"
+      : "bg-primary/10 text-primary border-primary/20";
   };
 
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile sidebar backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <aside className={cn(
-        "fixed top-0 left-0 z-50 h-full w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
-        sidebarOpen ? "translate-x-0" : "-translate-x-full"
-      )}>
+      <aside
+        className={cn(
+          "fixed top-0 left-0 z-50 h-full w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-200 ease-in-out lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full",
+        )}
+      >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border" style={{ backgroundColor: '#10141D' }}>
+          <div
+            className="flex items-center justify-between h-16 px-6 border-b border-sidebar-border"
+            style={{ backgroundColor: "#10141D" }}
+          >
             <div className="flex items-center space-x-3">
               <img
                 src="https://cdn.builder.io/api/v1/image/assets%2Fd9af307b1ff14040a7ba27bfc11d5227%2Ffd066184d3bd44f2ab4e38cf3625b126?format=webp&width=800"
@@ -257,7 +340,7 @@ export default function AppLayout() {
           {/* Navigation */}
           <ScrollArea className="flex-1 px-3 py-4">
             <nav className="space-y-1">
-              {user.role === 'admin' && (
+              {user.role === "admin" && (
                 <>
                   {/* User Section */}
                   <div className="px-3 py-2">
@@ -268,23 +351,26 @@ export default function AppLayout() {
                   {userNavigationItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = isActiveRoute(item.href);
-                    
+
                     return (
                       <Link key={item.href} to={item.href}>
                         <Button
                           variant={isActive ? "default" : "ghost"}
                           className={cn(
                             "w-full justify-start h-10 px-3",
-                            isActive 
-                              ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" 
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           )}
                           onClick={() => setSidebarOpen(false)}
                         >
                           <Icon className="h-4 w-4 mr-3" />
                           <span className="flex-1 text-left">{item.title}</span>
                           {item.badge && (
-                            <Badge variant="secondary" className="ml-auto bg-accent text-accent-foreground">
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto bg-accent text-accent-foreground"
+                            >
                               {item.badge}
                             </Badge>
                           )}
@@ -304,23 +390,26 @@ export default function AppLayout() {
                   {adminNavigationItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = isActiveRoute(item.href);
-                    
+
                     return (
                       <Link key={item.href} to={item.href}>
                         <Button
                           variant={isActive ? "default" : "ghost"}
                           className={cn(
                             "w-full justify-start h-10 px-3",
-                            isActive 
-                              ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" 
-                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                            isActive
+                              ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                              : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                           )}
                           onClick={() => setSidebarOpen(false)}
                         >
                           <Icon className="h-4 w-4 mr-3" />
                           <span className="flex-1 text-left">{item.title}</span>
                           {item.badge && (
-                            <Badge variant="secondary" className="ml-auto bg-accent text-accent-foreground">
+                            <Badge
+                              variant="secondary"
+                              className="ml-auto bg-accent text-accent-foreground"
+                            >
                               {item.badge}
                             </Badge>
                           )}
@@ -332,33 +421,37 @@ export default function AppLayout() {
               )}
 
               {/* Regular User Navigation */}
-              {user.role === 'user' && navigationItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = isActiveRoute(item.href);
-                
-                return (
-                  <Link key={item.href} to={item.href}>
-                    <Button
-                      variant={isActive ? "default" : "ghost"}
-                      className={cn(
-                        "w-full justify-start h-10 px-3",
-                        isActive 
-                          ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" 
-                          : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                      )}
-                      onClick={() => setSidebarOpen(false)}
-                    >
-                      <Icon className="h-4 w-4 mr-3" />
-                      <span className="flex-1 text-left">{item.title}</span>
-                      {item.badge && (
-                        <Badge variant="secondary" className="ml-auto bg-accent text-accent-foreground">
-                          {item.badge}
-                        </Badge>
-                      )}
-                    </Button>
-                  </Link>
-                );
-              })}
+              {user.role === "user" &&
+                navigationItems.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = isActiveRoute(item.href);
+
+                  return (
+                    <Link key={item.href} to={item.href}>
+                      <Button
+                        variant={isActive ? "default" : "ghost"}
+                        className={cn(
+                          "w-full justify-start h-10 px-3",
+                          isActive
+                            ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+                            : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        )}
+                        onClick={() => setSidebarOpen(false)}
+                      >
+                        <Icon className="h-4 w-4 mr-3" />
+                        <span className="flex-1 text-left">{item.title}</span>
+                        {item.badge && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-auto bg-accent text-accent-foreground"
+                          >
+                            {item.badge}
+                          </Badge>
+                        )}
+                      </Button>
+                    </Link>
+                  );
+                })}
             </nav>
           </ScrollArea>
 
@@ -381,8 +474,8 @@ export default function AppLayout() {
                 </div>
               </div>
             </div>
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
               onClick={logout}
             >
@@ -396,7 +489,10 @@ export default function AppLayout() {
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Top bar */}
-        <header className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-6" style={{ backgroundColor: '#10141D' }}>
+        <header
+          className="h-16 border-b border-border flex items-center justify-between px-4 lg:px-6"
+          style={{ backgroundColor: "#10141D" }}
+        >
           <Button
             variant="ghost"
             size="sm"
@@ -407,27 +503,45 @@ export default function AppLayout() {
           </Button>
 
           <div className="flex items-center space-x-3 ml-auto">
-            <Badge variant={killSwitch ? 'destructive' : 'outline'} className="text-white border-accent/30">
-              {killSwitch ? 'Kill Switch Enabled' : `System Status: ${statusText}`}
+            <Badge
+              variant={killSwitch ? "destructive" : "outline"}
+              className="text-white border-accent/30"
+            >
+              {killSwitch
+                ? "Kill Switch Enabled"
+                : `System Status: ${statusText}`}
             </Badge>
             <div className="flex items-center space-x-2 text-sm text-white/90">
-              <div className={`w-2 h-2 rounded-full ${mode?.toLowerCase() === 'live' ? 'bg-green-500' : mode?.toLowerCase() === 'dry-run' ? 'bg-yellow-400' : 'bg-blue-400'}`}></div>
+              <div
+                className={`w-2 h-2 rounded-full ${mode?.toLowerCase() === "live" ? "bg-green-500" : mode?.toLowerCase() === "dry-run" ? "bg-yellow-400" : "bg-blue-400"}`}
+              ></div>
               <span className="capitalize">{mode} Mode</span>
             </div>
-            <Link to="/notifications" className="text-white/90 hover:text-white" aria-label="Open Alert Center">
+            <Link
+              to="/notifications"
+              className="text-white/90 hover:text-white"
+              aria-label="Open Alert Center"
+            >
               <Bell className="h-5 w-5" />
             </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-white hover:bg-white/10 flex items-center space-x-2">
+                <Button
+                  variant="ghost"
+                  className="text-white hover:bg-white/10 flex items-center space-x-2"
+                >
                   <User className="h-4 w-4" />
                   <span className="hidden sm:inline">{user.email}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Account</DropdownMenuLabel>
-                <DropdownMenuItem asChild><Link to="/profile">Profile</Link></DropdownMenuItem>
-                <DropdownMenuItem disabled>{user.role === 'admin' ? 'Admin' : 'User'}</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled>
+                  {user.role === "admin" ? "Admin" : "User"}
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <Dialog>
                   <DialogTrigger asChild>
@@ -438,22 +552,67 @@ export default function AppLayout() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Submit Feedback</DialogTitle>
-                      <DialogDescription>We value your input.</DialogDescription>
+                      <DialogDescription>
+                        We value your input.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2">
                       <Label htmlFor="feedback">Feedback</Label>
-                      <Textarea id="feedback" placeholder="Share details" onChange={(e)=> (window as any)._fb = e.target.value} />
+                      <Textarea
+                        id="feedback"
+                        placeholder="Share details"
+                        onChange={(e) => ((window as any)._fb = e.target.value)}
+                      />
                     </div>
                     <DialogFooter>
-                      <Button onClick={async ()=>{
-                        const msg = (window as any)._fb || '';
-                        if (!msg || String(msg).trim().length === 0) { toast({ title:'Validation', description:'Feedback is required', variant:'destructive' }); return; }
-                        try {
-                          const r = await apiFetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: msg }) });
-                          if (r.ok) { toast({ title:'Thanks!', description:'Feedback submitted.' }); (document.querySelector('[data-radix-dialog-close]') as HTMLElement)?.click(); }
-                          else { const j = await r.json().catch(()=>({detail:'Failed'})); toast({ title:'Error', description:j.detail || 'Failed', variant:'destructive' }); }
-                        } catch { toast({ title:'Error', description:'Network error', variant:'destructive' }); }
-                      }}>Submit</Button>
+                      <Button
+                        onClick={async () => {
+                          const msg = (window as any)._fb || "";
+                          if (!msg || String(msg).trim().length === 0) {
+                            toast({
+                              title: "Validation",
+                              description: "Feedback is required",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          try {
+                            const r = await apiFetch("/api/feedback", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ message: msg }),
+                            });
+                            if (r.ok) {
+                              toast({
+                                title: "Thanks!",
+                                description: "Feedback submitted.",
+                              });
+                              (
+                                document.querySelector(
+                                  "[data-radix-dialog-close]",
+                                ) as HTMLElement
+                              )?.click();
+                            } else {
+                              const j = await r
+                                .json()
+                                .catch(() => ({ detail: "Failed" }));
+                              toast({
+                                title: "Error",
+                                description: j.detail || "Failed",
+                                variant: "destructive",
+                              });
+                            }
+                          } catch {
+                            toast({
+                              title: "Error",
+                              description: "Network error",
+                              variant: "destructive",
+                            });
+                          }
+                        }}
+                      >
+                        Submit
+                      </Button>
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
@@ -466,46 +625,124 @@ export default function AppLayout() {
                   <DialogContent>
                     <DialogHeader>
                       <DialogTitle>Global Settings</DialogTitle>
-                      <DialogDescription>Saved settings load on boot from localStorage.</DialogDescription>
+                      <DialogDescription>
+                        Saved settings load on boot from localStorage.
+                      </DialogDescription>
                     </DialogHeader>
                     <div className="space-y-3">
                       <div>
-                        <div className="flex items-center gap-2"><Label htmlFor="apiBaseUrl">API Base URL</Label><HelpTip content="Base HTTP URL for the backend API. Override to point the UI at a different server." /></div>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="apiBaseUrl">API Base URL</Label>
+                          <HelpTip content="Base HTTP URL for the backend API. Override to point the UI at a different server." />
+                        </div>
                         <Input id="apiBaseUrl" defaultValue={backendUrl} />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2"><Label htmlFor="wsUrl">WebSocket URL (optional)</Label><HelpTip content="Optional WS endpoint for live streams. If empty, the app derives ws(s):// from the API host." /></div>
-                        <Input id="wsUrl" defaultValue={localStorage.getItem('aether-ws-url') || ''} />
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="wsUrl">
+                            WebSocket URL (optional)
+                          </Label>
+                          <HelpTip content="Optional WS endpoint for live streams. If empty, the app derives ws(s):// from the API host." />
+                        </div>
+                        <Input
+                          id="wsUrl"
+                          defaultValue={
+                            localStorage.getItem("aether-ws-url") || ""
+                          }
+                        />
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" onClick={async ()=>{
-                          const base = (document.getElementById('apiBaseUrl') as HTMLInputElement)?.value?.trim();
-                          if (!base) { toast({ title:'Validation', description:'API Base URL is required', variant:'destructive' }); return; }
-                          try {
-                            const url = base.replace(/\/+$/, '') + '/api/health/live';
-                            const s = performance.now();
-                            const r = await fetch(url);
-                            const latency = Math.round(performance.now() - s);
-                            toast({ title: r.ok ? 'Connection OK' : 'Connection Failed', description: r.ok ? `Latency ~${latency} ms` : `${r.status} ${r.statusText}`, variant: r.ok ? 'default' : 'destructive' });
-                          } catch { toast({ title:'Connection Failed', description:'Network error', variant:'destructive' }); }
-                        }}>Test Connection</Button>
-                        <Button onClick={()=>{
-                          const base = (document.getElementById('apiBaseUrl') as HTMLInputElement)?.value?.trim();
-                          const ws = (document.getElementById('wsUrl') as HTMLInputElement)?.value?.trim();
-                          if (!base) { toast({ title:'Validation', description:'API Base URL is required', variant:'destructive' }); return; }
-                          localStorage.setItem('aether-backend-url', base.replace(/\/+$/, ''));
-                          if (ws) localStorage.setItem('aether-ws-url', ws); else localStorage.removeItem('aether-ws-url');
-                          toast({ title:'Saved', description:'Settings saved. Reinitializing…' });
-                          (document.querySelector('[data-radix-dialog-close]') as HTMLElement)?.click();
-                          window.location.reload();
-                        }}>Save</Button>
+                        <Button
+                          variant="outline"
+                          onClick={async () => {
+                            const base = (
+                              document.getElementById(
+                                "apiBaseUrl",
+                              ) as HTMLInputElement
+                            )?.value?.trim();
+                            if (!base) {
+                              toast({
+                                title: "Validation",
+                                description: "API Base URL is required",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            try {
+                              const url =
+                                base.replace(/\/+$/, "") + "/api/health/live";
+                              const s = performance.now();
+                              const r = await fetch(url);
+                              const latency = Math.round(performance.now() - s);
+                              toast({
+                                title: r.ok
+                                  ? "Connection OK"
+                                  : "Connection Failed",
+                                description: r.ok
+                                  ? `Latency ~${latency} ms`
+                                  : `${r.status} ${r.statusText}`,
+                                variant: r.ok ? "default" : "destructive",
+                              });
+                            } catch {
+                              toast({
+                                title: "Connection Failed",
+                                description: "Network error",
+                                variant: "destructive",
+                              });
+                            }
+                          }}
+                        >
+                          Test Connection
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            const base = (
+                              document.getElementById(
+                                "apiBaseUrl",
+                              ) as HTMLInputElement
+                            )?.value?.trim();
+                            const ws = (
+                              document.getElementById(
+                                "wsUrl",
+                              ) as HTMLInputElement
+                            )?.value?.trim();
+                            if (!base) {
+                              toast({
+                                title: "Validation",
+                                description: "API Base URL is required",
+                                variant: "destructive",
+                              });
+                              return;
+                            }
+                            localStorage.setItem(
+                              "aether-backend-url",
+                              base.replace(/\/+$/, ""),
+                            );
+                            if (ws) localStorage.setItem("aether-ws-url", ws);
+                            else localStorage.removeItem("aether-ws-url");
+                            toast({
+                              title: "Saved",
+                              description: "Settings saved. Reinitializing…",
+                            });
+                            (
+                              document.querySelector(
+                                "[data-radix-dialog-close]",
+                              ) as HTMLElement
+                            )?.click();
+                            window.location.reload();
+                          }}
+                        >
+                          Save
+                        </Button>
                       </div>
                     </div>
                   </DialogContent>
                 </Dialog>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <a href="/docs" target="_blank" rel="noreferrer">API Documentation</a>
+                  <a href="/docs" target="_blank" rel="noreferrer">
+                    API Documentation
+                  </a>
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={logout} className="text-red-600">
                   <LogOut className="h-4 w-4 mr-2" /> Logout
@@ -521,12 +758,34 @@ export default function AppLayout() {
         </main>
         <footer className="border-t border-border px-4 py-2 text-xs text-muted-foreground flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className={`inline-block w-2 h-2 rounded-full ${apiHealthy===null? 'bg-gray-400' : apiHealthy? 'bg-green-500' : 'bg-red-500'}`}></span>
-            <span>{apiHealthy===null? 'Checking API…' : apiHealthy? 'API Healthy' : 'API Unreachable'}</span>
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${apiHealthy === null ? "bg-gray-400" : apiHealthy ? "bg-green-500" : "bg-red-500"}`}
+            ></span>
+            <span>
+              {apiHealthy === null
+                ? "Checking API…"
+                : apiHealthy
+                  ? "API Healthy"
+                  : "API Unreachable"}
+            </span>
           </div>
           <div className="space-x-3">
-            <a className="hover:underline" href="/docs" target="_blank" rel="noreferrer">Docs</a>
-            <a className="hover:underline" href="/api/openapi.json" target="_blank" rel="noreferrer">OpenAPI</a>
+            <a
+              className="hover:underline"
+              href="/docs"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Docs
+            </a>
+            <a
+              className="hover:underline"
+              href="/api/openapi.json"
+              target="_blank"
+              rel="noreferrer"
+            >
+              OpenAPI
+            </a>
           </div>
         </footer>
       </div>
