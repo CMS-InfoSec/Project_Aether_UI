@@ -297,6 +297,22 @@ export default function UserNotifications() {
     };
 
     try {
+      // If global fetch appears to be monkey-patched (e.g. FullStory), skip calling it and use XHR directly
+      const w = window as any;
+      const globalFetchPatched = typeof w.fetch === 'function' && !/\[native code\]/.test(String(w.fetch));
+      if (globalFetchPatched) {
+        try {
+          const url = typeof input === 'string' ? input : (input as Request).url;
+          const xhrResp = await xhrFetch(url, finalInit);
+          clearTimeout(id);
+          return xhrResp;
+        } catch (xhrErr) {
+          clearTimeout(id);
+          if ((xhrErr as any)?.name === 'AbortError') throw xhrErr;
+          throw new Error((xhrErr && (xhrErr as any).message) || 'Network request failed');
+        }
+      }
+
       // Primary: try to use the unpatched/native fetch obtained from iframe (if needed)
       const nativeFetch = await getNativeFetch();
       try {
