@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import {
   CandlestickChart,
   TrendingUp,
@@ -283,15 +284,8 @@ export default function TradesPositions() {
   };
 
   const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied",
-        description: "Text copied to clipboard",
-      });
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
+    const ok = await copy(text);
+    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Text copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
   };
 
   const handleRefresh = () => {
