@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -173,7 +174,7 @@ export default function ProfileSettings() {
   const loadUserProfile = async () => {
     try {
       const response = await handleApiRequest(
-        () => fetch('/api/user/profile'),
+        () => apiFetch('/api/user/profile'),
         'loadProfile'
       );
       const data = await response.json();
@@ -195,7 +196,7 @@ export default function ProfileSettings() {
   const loadTradingSettings = async () => {
     try {
       const response = await handleApiRequest(
-        () => fetch('/api/user/trading-settings'),
+        () => apiFetch('/api/user/trading-settings'),
         'loadSettings'
       );
       const data = await response.json();
@@ -216,7 +217,7 @@ export default function ProfileSettings() {
   const loadApiKeys = async () => {
     try {
       const response = await handleApiRequest(
-        () => fetch('/api/user/api-keys'),
+        () => apiFetch('/api/user/api-keys'),
         'loadApiKeys'
       );
       const data = await response.json();
@@ -286,7 +287,7 @@ export default function ProfileSettings() {
     
     try {
       const response = await handleApiRequest(
-        () => fetch('/api/user/profile', {
+        () => apiFetch('/api/user/profile', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ risk_tier: selectedRiskTier })
@@ -324,7 +325,7 @@ export default function ProfileSettings() {
 
     try {
       const response = await handleApiRequest(
-        () => fetch('/api/users/settings', {
+        () => apiFetch('/api/users/settings', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ settings: tradingSettings })
@@ -384,7 +385,7 @@ export default function ProfileSettings() {
       const expirationISO = new Date(binanceCredentials.expiration + 'T00:00:00Z').toISOString();
 
       const response = await handleApiRequest(
-        () => fetch('/api/users/settings', {
+        () => apiFetch('/api/users/settings', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -436,7 +437,7 @@ export default function ProfileSettings() {
       console.log('Sending delete API keys request to dedicated endpoint...');
 
       const response = await handleApiRequest(
-        () => fetch('/api/user/api-keys', {
+        () => apiFetch('/api/user/api-keys', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' }
         }),
@@ -853,7 +854,7 @@ export default function ProfileSettings() {
                   if (!ok) return;
                   await handleSaveTradingSettings();
                   try {
-                    await fetch('/api/config/user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: user?.id || 'user_1', settings: { trading: { ...after } } }) });
+                    await apiFetch('/api/config/user', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ userId: user?.id || 'user_1', settings: { trading: { ...after } } }) });
                   } catch {}
                 }}
                 disabled={!tradingSettingsValid || isLoading.saveSettings}
