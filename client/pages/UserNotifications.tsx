@@ -287,10 +287,16 @@ export default function UserNotifications() {
       try {
         response = await safeFetch(`/api/notifications?${params}`);
       } catch (networkErr) {
-        console.error('Network error fetching notifications', networkErr);
-        setDegraded(true);
-        toast({ title: 'Network error', description: 'Unable to reach notifications backend. Showing cached data if available.', variant: 'destructive' });
-        return;
+        console.warn('Network error fetching notifications, retrying once', networkErr);
+        try {
+          await new Promise((res) => setTimeout(res, 700));
+          response = await safeFetch(`/api/notifications?${params}`);
+        } catch (networkErr2) {
+          console.error('Network error fetching notifications', networkErr2);
+          setDegraded(true);
+          toast({ title: 'Network error', description: 'Unable to reach notifications backend. Showing cached data if available.', variant: 'destructive' });
+          return;
+        }
       }
 
       if (response.status === 503) {
