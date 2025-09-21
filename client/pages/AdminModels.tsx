@@ -108,8 +108,12 @@ import {
   Calendar,
   User,
   Bot,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 // Enhanced Types for AI Training Workflow
 interface TrainingJob {
@@ -345,6 +349,29 @@ export default function AdminModels() {
   const [isTrainingDialogOpen, setIsTrainingDialogOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("training");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+
+  // Ask Aether assistant
+  type AetherMsg = { role: "user" | "assistant"; text: string; ts: number };
+  const [aetherOpen, setAetherOpen] = useState(false);
+  const [aetherMsgs, setAetherMsgs] = useState<AetherMsg[]>([]);
+  const [includeSignals, setIncludeSignals] = useState(true);
+  const [includeTrades, setIncludeTrades] = useState(true);
+  const [includeSentiment, setIncludeSentiment] = useState(false);
+  const [includeRegime, setIncludeRegime] = useState(false);
+  const [aetherInput, setAetherInput] = useState("");
+  const [aetherLoading, setAetherLoading] = useState(false);
+  const [aetherError, setAetherError] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("aether_convo");
+      if (raw) setAetherMsgs(JSON.parse(raw));
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem("aether_convo", JSON.stringify(aetherMsgs.slice(-20)));
+    } catch {}
+  }, [aetherMsgs]);
 
   // Enhanced training form state
   const [trainingForm, setTrainingForm] = useState({
@@ -1064,6 +1091,9 @@ export default function AdminModels() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh All
             </Button>
+            <Button className="rounded-full" variant="outline" onClick={() => setAetherOpen(true)}>
+              <Sparkles className="h-4 w-4 mr-2" /> Ask Aether
+            </Button>
             <Dialog
               open={isTrainingDialogOpen}
               onOpenChange={setIsTrainingDialogOpen}
@@ -1466,6 +1496,86 @@ export default function AdminModels() {
             </Dialog>
           </div>
         </div>
+
+        <Sheet open={aetherOpen} onOpenChange={setAetherOpen}>
+          <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col">
+            <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-background z-10">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <div className="font-medium">Ask Aether</div>
+              </div>
+              <div className="text-xs text-muted-foreground">Assistant can recommend training and deployment steps</div>
+            </div>
+            {aetherError && (
+              <div className="p-3 bg-destructive/10 text-destructive text-xs border-b">{aetherError}</div>
+            )}
+            <div className="p-3 border-b grid grid-cols-2 gap-2 text-xs">
+              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeSignals} onChange={e=>setIncludeSignals(e.target.checked)} /> Latest signals</label>
+              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeTrades} onChange={e=>setIncludeTrades(e.target.checked)} /> Recent trades</label>
+              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeSentiment} onChange={e=>setIncludeSentiment(e.target.checked)} /> Sentiment snapshot</label>
+              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeRegime} onChange={e=>setIncludeRegime(e.target.checked)} /> Market regime</label>
+            </div>
+            <div className="p-2 border-b flex items-center justify-end">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">Export</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={()=>{ const blob = new Blob([JSON.stringify(aetherMsgs, null, 2)], { type:'application/json' }); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aether_transcript.json'; a.click(); }}>Download JSON</DropdownMenuItem>
+                  <DropdownMenuItem onClick={()=>{ const rows=["ts,role,text", ...aetherMsgs.map(m=>`${new Date(m.ts).toISOString()},${m.role},"${m.text.replace(/\"/g,'\"\"')}"`)]; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})); a.download='aether_transcript.csv'; a.click(); }}>Download CSV</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <ScrollArea className="flex-1">
+              <div className="p-4 space-y-3">
+                {aetherMsgs.length===0 && (<div className="text-xs text-muted-foreground">Ask for training guidance, tuning suggestions, or deployment next steps.</div>)}
+                {aetherMsgs.map((m, i)=> (
+                  <div key={i} className={`flex ${m.role==='user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role==='user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                      <div className="opacity-70 text-[10px] mb-1">{new Date(m.ts).toLocaleString()}</div>
+                      <div>{m.text}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ScrollArea>
+            <div className="p-3 border-t sticky bottom-0 bg-background">
+              <div className="space-y-2">
+                <textarea rows={3} className="w-full border rounded-md p-2 text-sm resize-y min-h-[72px]" placeholder="Type your question for Aether" value={aetherInput} onChange={e=>setAetherInput(e.target.value)} />
+                <div className="flex justify-end">
+                  <Button onClick={async()=>{
+                    if (!aetherInput.trim()) return;
+                    setAetherError(null);
+                    const userMsg = { role: 'user' as const, text: aetherInput.trim(), ts: Date.now() };
+                    setAetherMsgs(prev=> [...prev, userMsg].slice(-20));
+                    setAetherInput('');
+                    setAetherLoading(true);
+                    try {
+                      const r = await apiFetch('/api/v1/llm/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: userMsg.text, includeSignals, includeTrades, includeSentiment, includeRegime }) });
+                      const status = r.status;
+                      const txt = await r.text();
+                      let answer = '';
+                      try { const j = JSON.parse(txt); answer = j.answer || j.output || j.message || j.content || txt; } catch { answer = txt; }
+                      if (!r.ok) {
+                        if (status===413) setAetherError('Request too large (token limit). Reduce context or shorten your question.');
+                        else if (status===500) setAetherError('Server error: missing key or misconfiguration.');
+                        else if (status===502) setAetherError('Upstream failure. Please retry.');
+                        else setAetherError(`Error ${status}`);
+                      } else {
+                        const botMsg = { role: 'assistant' as const, text: answer || 'No response', ts: Date.now() };
+                        setAetherMsgs(prev=> [...prev, botMsg].slice(-20));
+                      }
+                    } catch (e:any) {
+                      setAetherError(e?.message || 'Network error');
+                    } finally { setAetherLoading(false); }
+                  }} disabled={aetherLoading}>
+                    {aetherLoading ? (<><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Send</>) : 'Send'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="grid w-full grid-cols-6">
