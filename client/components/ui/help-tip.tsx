@@ -4,7 +4,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Button } from "@/components/ui/button";
 import React from "react";
 
 interface HelpTipProps {
@@ -15,22 +14,22 @@ interface HelpTipProps {
 
 export function HelpTip({ content, side = "top", className }: HelpTipProps) {
   const title = typeof content === "string" ? content : undefined;
+
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
+        <span
+          role="button"
+          tabIndex={0}
           title={title}
           aria-label={title || "Help"}
           className={[
-            "h-5 w-5 p-0 text-foreground/80 hover:text-foreground rounded-full border border-border",
+            "inline-flex items-center justify-center h-5 w-5 p-0 text-foreground/80 hover:text-foreground rounded-full border border-border",
             className || "",
           ].join(" ")}
         >
           <HelpCircle className="h-3.5 w-3.5" />
-        </Button>
+        </span>
       </TooltipTrigger>
       <TooltipContent side={side} className="max-w-xs text-xs leading-relaxed">
         {typeof content === "string" ? <span>{content}</span> : content}
