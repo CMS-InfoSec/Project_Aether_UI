@@ -1,5 +1,6 @@
 import { useAuth } from '@/contexts/AuthContext';
 import apiFetch from '@/lib/apiClient';
+import HelpTip from '@/components/ui/help-tip';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -469,11 +470,11 @@ export default function AppLayout() {
                     </DialogHeader>
                     <div className="space-y-3">
                       <div>
-                        <Label htmlFor="apiBaseUrl">API Base URL</Label>
+                        <div className="flex items-center gap-2"><Label htmlFor="apiBaseUrl">API Base URL</Label><HelpTip content="Base HTTP URL for the backend API. Override to point the UI at a different server." /></div>
                         <Input id="apiBaseUrl" defaultValue={backendUrl} />
                       </div>
                       <div>
-                        <Label htmlFor="wsUrl">WebSocket URL (optional)</Label>
+                        <div className="flex items-center gap-2"><Label htmlFor="wsUrl">WebSocket URL (optional)</Label><HelpTip content="Optional WS endpoint for live streams. If empty, the app derives ws(s):// from the API host." /></div>
                         <Input id="wsUrl" defaultValue={localStorage.getItem('aether-ws-url') || ''} />
                       </div>
                       <div className="flex items-center space-x-2">
