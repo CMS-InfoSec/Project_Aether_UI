@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import apiFetch from '@/lib/apiClient';
 
 interface CreateFounderFormProps {
   onSubmit: (data: { email: string; password: string; name: string }) => Promise<boolean>;
@@ -109,7 +110,7 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
 
     setIsResetting(true);
     try {
-      const response = await fetch('/api/founders/reset', {
+      const response = await apiFetch('/api/founders/reset', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
