@@ -583,6 +583,7 @@ export default function ProfileSettings() {
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            <HelpTip content="Reset all fields on this page to the most recently saved values." />
             <Button variant="outline" onClick={handleResetToLastSaved}>
               <RotateCcw className="h-4 w-4 mr-1" />
               Reset
@@ -618,14 +619,17 @@ export default function ProfileSettings() {
 
         {/* Risk Profile Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <User className="h-5 w-5" />
-              <span>Risk Profile</span>
-            </CardTitle>
-            <CardDescription>
-              Set your trading risk tolerance level. This affects position sizing and risk management.
-            </CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <User className="h-5 w-5" />
+                <span>Risk Profile</span>
+              </CardTitle>
+              <CardDescription>
+                Set your trading risk tolerance level. This affects position sizing and risk management.
+              </CardDescription>
+            </div>
+            <HelpTip content="Choose a preset risk tier; it influences defaults for sizing and stops." />
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
@@ -687,14 +691,17 @@ export default function ProfileSettings() {
 
         {/* Trading Preferences Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Settings className="h-5 w-5" />
-              <span>Trading Preferences</span>
-            </CardTitle>
-            <CardDescription>
-              Configure your trading parameters and risk management settings
-            </CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Trading Preferences</span>
+              </CardTitle>
+              <CardDescription>
+                Configure your trading parameters and risk management settings
+              </CardDescription>
+            </div>
+            <HelpTip content="Adjust multipliers and options used by your trading rules." />
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2">
@@ -885,14 +892,17 @@ export default function ProfileSettings() {
 
         {/* Binance API Credentials Section */}
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Key className="h-5 w-5" />
-              <span>Binance API Credentials</span>
-            </CardTitle>
-            <CardDescription>
-              Connect your Binance account for live trading. Keys are encrypted at rest and must not have withdrawal permissions.
-            </CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center space-x-2">
+                <Key className="h-5 w-5" />
+                <span>Binance API Credentials</span>
+              </CardTitle>
+              <CardDescription>
+                Connect your Binance account for live trading. Keys are encrypted at rest and must not have withdrawal permissions.
+              </CardDescription>
+            </div>
+            <HelpTip content="Enter your Binance API key/secret; avoid withdrawal scopes. Rotate periodically." />
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Existing API Keys Display */}
@@ -1075,9 +1085,12 @@ export default function ProfileSettings() {
 
         {/* Current Settings Summary */}
         <Card>
-          <CardHeader>
-            <CardTitle>Current Settings Summary</CardTitle>
-            <CardDescription>Review your current configuration</CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle>Current Settings Summary</CardTitle>
+              <CardDescription>Review your current configuration</CardDescription>
+            </div>
+            <HelpTip content="Snapshot of your active profile, preferences, and API connection." />
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 md:grid-cols-3">
