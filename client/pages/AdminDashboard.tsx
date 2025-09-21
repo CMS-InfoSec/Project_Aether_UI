@@ -541,7 +541,10 @@ export default function AdminDashboard() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <HelpTip content="Admin home for controls, governance, reporting, and alerts. Use tabs to navigate tools." />
+          </div>
           <p className="text-muted-foreground">
             Controls, governance, reports, and operational tooling
           </p>
@@ -955,32 +958,32 @@ export default function AdminDashboard() {
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Total Return
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Total Return <HelpTip content="Absolute profit/loss in currency over the selected period." />
                               </p>
                               <p className="text-lg font-semibold text-accent">
                                 {formatCurrency(dailyReport.totalReturn)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Performance
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Performance <HelpTip content="Percentage return over the selected period." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {formatPercentage(dailyReport.avgPerformance)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Sharpe Ratio
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Sharpe Ratio <HelpTip content="Risk-adjusted return: (return − risk‑free rate) ÷ volatility. Values >1 are generally good." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {dailyReport.riskMetrics.sharpeRatio.toFixed(2)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Max Drawdown
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Max Drawdown <HelpTip content="Largest peak‑to‑trough decline over the period. Lower magnitude indicates better capital preservation." />
                               </p>
                               <p className="text-lg font-semibold text-destructive">
                                 {formatPercentage(
@@ -1059,32 +1062,32 @@ export default function AdminDashboard() {
                         <div className="space-y-4">
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Weekly Return
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Weekly Return <HelpTip content="Total P/L in currency over the last 7 days." />
                               </p>
                               <p className="text-lg font-semibold text-accent">
                                 {formatCurrency(weeklyReport.weeklyReturn)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Win Rate
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Win Rate <HelpTip content="Portion of trades that were profitable (wins ÷ total trades)." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {formatPercentage(weeklyReport.winRate * 100)}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Total Trades
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Total Trades <HelpTip content="Number of executed trades during the week." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {weeklyReport.totalTrades}
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-muted-foreground">
-                                Avg Hold Time
+                              <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
+                                Avg Hold Time <HelpTip content="Average time positions were held before closing." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {weeklyReport.avgHoldTime.toFixed(1)}h
@@ -1093,8 +1096,8 @@ export default function AdminDashboard() {
                           </div>
                           <div className="pt-2 border-t space-y-1">
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Information Ratio:
+                              <span className="text-muted-foreground inline-flex items-center gap-1">
+                                Information Ratio <HelpTip content="Excess return vs benchmark per unit of tracking error (std. dev. of active returns)." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.informationRatio.toFixed(
@@ -1103,8 +1106,8 @@ export default function AdminDashboard() {
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Calmar Ratio:
+                              <span className="text-muted-foreground inline-flex items-center gap-1">
+                                Calmar Ratio <HelpTip content="Return divided by maximum drawdown; higher indicates better drawdown-adjusted performance." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.calmarRatio.toFixed(
@@ -1113,8 +1116,8 @@ export default function AdminDashboard() {
                               </span>
                             </div>
                             <div className="flex items-center justify-between text-sm">
-                              <span className="text-muted-foreground">
-                                Sortino Ratio:
+                              <span className="text-muted-foreground inline-flex items-center gap-1">
+                                Sortino Ratio <HelpTip content="Like Sharpe but only penalizes downside (bad) volatility." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.sortinoRatio.toFixed(
@@ -1333,15 +1336,15 @@ export default function AdminDashboard() {
                           <table className="w-full">
                             <thead>
                               <tr className="border-b">
-                                <th className="text-left p-2">Asset</th>
-                                <th className="text-right p-2">Price</th>
-                                <th className="text-right p-2">Daily %</th>
-                                <th className="text-right p-2">Weekly %</th>
-                                <th className="text-right p-2">Monthly %</th>
-                                <th className="text-right p-2">Allocation</th>
-                                <th className="text-right p-2">Volatility</th>
-                                <th className="text-right p-2">Sharpe</th>
-                                <th className="text-right p-2">Trades</th>
+                                <th className="text-left p-2"><div className="inline-flex items-center gap-1">Asset <HelpTip content="Ticker and asset name." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Price <HelpTip content="Latest traded price." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Daily % <HelpTip content="Price percent change since yesterday." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Weekly % <HelpTip content="Price percent change over the last 7 days." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Monthly % <HelpTip content="Return percent over the past month." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Allocation <HelpTip content="Percent of portfolio invested in the asset." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Volatility <HelpTip content="Return variability; higher means more risk." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Sharpe <HelpTip content="Risk-adjusted return: (return − risk‑free) ÷ volatility." /></div></th>
+                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Trades <HelpTip content="Number of trades used to compute these metrics." /></div></th>
                               </tr>
                             </thead>
                             <tbody>
