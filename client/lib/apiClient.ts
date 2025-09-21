@@ -83,11 +83,89 @@ export async function apiFetch(
     headers.set("X-API-Key", "aether-admin-key-2024");
   }
 
-  const doFetch = async (): Promise<Response> => {
-    return fetch(urlStr, { ...init, headers });
+  const xhrFetch = (url: string, init?: ApiFetchInit): Promise<Response> => {
+    return new Promise((resolve, reject) => {
+      try {
+        const xhr = new XMLHttpRequest();
+        const method = (init && init.method) || "GET";
+        xhr.open(method, url, true);
+
+        // Set timeout (15s)
+        xhr.timeout = 15000;
+
+        // Set headers
+        const hdrs = new Headers(init?.headers as HeadersInit || headers);
+        hdrs.forEach((value, key) => xhr.setRequestHeader(key, value));
+
+        if (init && init.credentials === "include") {
+          xhr.withCredentials = true;
+        }
+
+        xhr.responseType = "blob";
+
+        xhr.onload = () => {
+          const status = xhr.status === 1223 ? 204 : xhr.status; // IE quirk
+          const statusText = xhr.statusText || "";
+          const responseHeaders = xhr.getAllResponseHeaders();
+
+          // Convert header string to Headers
+          const headerPairs = responseHeaders.trim().split(/\r?\n/);
+          const resHeaders = new Headers();
+          headerPairs.forEach((line) => {
+            const parts = line.split(": ");
+            const key = parts.shift();
+            const value = parts.join(": ");
+            if (key) resHeaders.append(key, value);
+          });
+
+          const body = xhr.response instanceof Blob ? xhr.response : new Blob([xhr.response]);
+          const response = new Response(body, {
+            status,
+            statusText,
+            headers: resHeaders,
+          });
+          resolve(response);
+        };
+
+        xhr.onerror = () => reject(new TypeError("Network request failed"));
+        xhr.ontimeout = () => reject(new TypeError("Network request timed out"));
+
+        // Send body
+        if (init && init.body) {
+          // If body is a string or blob or FormData, send directly
+          xhr.send(init.body as any);
+        } else {
+          xhr.send();
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
   };
 
-  let res = await doFetch();
+  const doFetch = async (): Promise<Response> => {
+    // First try native fetch; if it throws or rejects, fallback to XHR
+    try {
+      const f = (typeof window !== "undefined" && (window as any).fetch) || fetch;
+      return await f(urlStr, { ...init, headers });
+    } catch (err) {
+      // Fallback to XHR for environments where fetch is patched or unreliable
+      return await xhrFetch(urlStr, init);
+    }
+  };
+
+  let res: Response;
+  try {
+    res = await doFetch();
+  } catch (err) {
+    // Last-ditch attempt using XHR directly if fetch and first fallback failed
+    try {
+      res = await xhrFetch(urlStr, init);
+    } catch (err2) {
+      // Re-throw original error with more context
+      throw err2;
+    }
+  }
 
   // Attempt refresh on 401/419 once
   if ((res.status === 401 || res.status === 419) && !init?._retried) {
