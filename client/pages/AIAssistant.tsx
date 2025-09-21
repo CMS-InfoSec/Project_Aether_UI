@@ -4,6 +4,7 @@ import apiFetch from '@/lib/apiClient';
 import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import HelpTip from '@/components/ui/help-tip';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -377,14 +378,17 @@ export default function AIAssistant() {
         <div className="lg:col-span-2 space-y-6">
           {/* Question Input */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <MessageSquare className="h-5 w-5 mr-2" />
-                Ask a Question
-              </CardTitle>
-              <CardDescription>
-                Ask about your trades, portfolio, market conditions, or strategies (max {MAX_CHARS} characters)
-              </CardDescription>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="flex items-center">
+                  <MessageSquare className="h-5 w-5 mr-2" />
+                  Ask a Question
+                </CardTitle>
+                <CardDescription>
+                  Ask about your trades, portfolio, market conditions, or strategies (max {MAX_CHARS} characters)
+                </CardDescription>
+              </div>
+              <HelpTip content="Type your question to the AI. Supports Enter to send, Shift+Enter for a new line." />
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Rate limit warning */}
@@ -406,7 +410,7 @@ export default function AIAssistant() {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="question">Your Question</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="question">Your Question</Label><HelpTip content="Be specific. For example: 'Analyze my BTC trades last week'." /></div>
                 <Textarea
                   ref={questionInputRef}
                   id="question"
@@ -419,10 +423,10 @@ export default function AIAssistant() {
                   aria-describedby="char-count"
                 />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.signals} onChange={e=> setIncludeOptions(o=>({...o, signals: e.target.checked}))} /> Signals</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.trades} onChange={e=> setIncludeOptions(o=>({...o, trades: e.target.checked}))} /> Trades</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.sentiment} onChange={e=> setIncludeOptions(o=>({...o, sentiment: e.target.checked}))} /> Sentiment</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.regime} onChange={e=> setIncludeOptions(o=>({...o, regime: e.target.checked}))} /> Market Regime</label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.signals} onChange={e=> setIncludeOptions(o=>({...o, signals: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Signals <HelpTip content="Include trading signals and indicators." /></span></label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.trades} onChange={e=> setIncludeOptions(o=>({...o, trades: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Trades <HelpTip content="Include your recent trades as context." /></span></label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.sentiment} onChange={e=> setIncludeOptions(o=>({...o, sentiment: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Sentiment <HelpTip content="Include news/social sentiment if available." /></span></label>
+                  <label className="flex items-center gap-2"><input type="checkbox" checked={includeOptions.regime} onChange={e=> setIncludeOptions(o=>({...o, regime: e.target.checked}))} /> <span className="inline-flex items-center gap-2">Market Regime <HelpTip content="Include current market regime classification." /></span></label>
                 </div>
                 <div className="flex items-center justify-between">
                   <div 
@@ -471,14 +475,17 @@ export default function AIAssistant() {
                     AI Response
                   </CardTitle>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => copyToClipboard(response.answer)}
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copy
-                </Button>
+                <div className="flex items-center gap-2">
+                  <HelpTip content="The assistant's answer. Use Copy to save it to your clipboard." />
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(response.answer)}
+                  >
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copy
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="prose prose-sm max-w-none">
@@ -493,8 +500,9 @@ export default function AIAssistant() {
                       checked={showContext}
                       onCheckedChange={setShowContext}
                     />
-                    <Label htmlFor="show-context" className="text-sm">
-                      Show context (trades, strategy, sentiment)
+                    <Label htmlFor="show-context" className="text-sm inline-flex items-center gap-2">
+                      <span>Show context (trades, strategy, sentiment)</span>
+                      <HelpTip content="Toggle to view the data used to generate this answer." />
                     </Label>
                   </div>
 
@@ -649,6 +657,8 @@ export default function AIAssistant() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg">Question History</CardTitle>
+              <div className="flex items-center gap-2">
+                <HelpTip content="Click an entry to reload its question and answer. Use the bin to clear history." />
               {history.length > 0 && (
                 <Dialog>
                   <DialogTrigger asChild>
@@ -670,6 +680,7 @@ export default function AIAssistant() {
                   </DialogContent>
                 </Dialog>
               )}
+              </div>
             </CardHeader>
             <CardContent>
               {history.length > 0 ? (
@@ -716,11 +727,12 @@ export default function AIAssistant() {
 
           {/* Tips Card */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex items-start justify-between">
               <CardTitle className="text-lg flex items-center">
                 <Info className="h-5 w-5 mr-2" />
                 Tips
               </CardTitle>
+              <HelpTip content="Examples and shortcuts to get better answers." />
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="text-sm">
