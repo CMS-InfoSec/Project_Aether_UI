@@ -578,9 +578,12 @@ export default function TradesPositions() {
           <TabsContent value="console">
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
-                <CardHeader>
-                  <CardTitle>Decision Request</CardTitle>
-                  <CardDescription>Request a trading decision with optional context.</CardDescription>
+                <CardHeader className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Decision Request</CardTitle>
+                    <CardDescription>Request a trading decision with optional context.</CardDescription>
+                  </div>
+                  <HelpTip content="Request a model decision for a symbol and size; optionally include strategies, risk, sentiment, and exposure context." />
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
@@ -600,10 +603,10 @@ export default function TradesPositions() {
                     <Input type="number" step="0.01" value={size} onChange={(e)=> setSize(parseFloat(e.target.value))} />
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-sm">
-                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.strategies} onChange={e=> setIncludeContext(s=>({...s,strategies:e.target.checked}))} /><span>Active strategies</span></label>
-                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.risk} onChange={e=> setIncludeContext(s=>({...s,risk:e.target.checked}))} /><span>Risk limits</span></label>
-                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.sentiment} onChange={e=> setIncludeContext(s=>({...s,sentiment:e.target.checked}))} /><span>Sentiment</span></label>
-                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.exposure} onChange={e=> setIncludeContext(s=>({...s,exposure:e.target.checked}))} /><span>Exposure</span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.strategies} onChange={e=> setIncludeContext(s=>({...s,strategies:e.target.checked}))} /><span className="inline-flex items-center gap-2">Active strategies <HelpTip content="Include active strategy context for the symbol." /></span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.risk} onChange={e=> setIncludeContext(s=>({...s,risk:e.target.checked}))} /><span className="inline-flex items-center gap-2">Risk limits <HelpTip content="Include account/system risk limits and constraints." /></span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.sentiment} onChange={e=> setIncludeContext(s=>({...s,sentiment:e.target.checked}))} /><span className="inline-flex items-center gap-2">Sentiment <HelpTip content="Include news or social sentiment signals." /></span></label>
+                    <label className="flex items-center space-x-2"><input type="checkbox" checked={includeContext.exposure} onChange={e=> setIncludeContext(s=>({...s,exposure:e.target.checked}))} /><span className="inline-flex items-center gap-2">Exposure <HelpTip content="Include current exposure metrics across assets." /></span></label>
                   </div>
                   <Button disabled={consoleLoading || !symbol || size <= 0} onClick={async ()=>{
                     const sym = (symbol || '').trim().toUpperCase();
@@ -643,9 +646,12 @@ export default function TradesPositions() {
               </Card>
 
               <Card>
-                <CardHeader>
-                  <CardTitle>Execution</CardTitle>
-                  <CardDescription>Execute using the latest decision.</CardDescription>
+                <CardHeader className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Execution</CardTitle>
+                    <CardDescription>Execute using the latest decision.</CardDescription>
+                  </div>
+                  <HelpTip content="Populate from the latest decision and set side/size before sending an order." />
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div>
@@ -729,7 +735,10 @@ export default function TradesPositions() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <HelpTip content="Total profit/loss for this view." />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className={`text-2xl font-bold ${getPnLColor(totalPnL)}`}>
@@ -755,14 +764,10 @@ export default function TradesPositions() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Fee Threshold</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Maximum acceptable fee cost per trade</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <div className="flex items-center gap-1">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <HelpTip content="Maximum acceptable fee cost per trade." />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -788,7 +793,10 @@ export default function TradesPositions() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Total P&L</CardTitle>
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex items-center gap-1">
+                      <DollarSign className="h-4 w-4 text-muted-foreground" />
+                      <HelpTip content="Total profit/loss for this view." />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className={`text-2xl font-bold ${getPnLColor(totalPnL)}`}>
@@ -801,14 +809,10 @@ export default function TradesPositions() {
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-sm font-medium">Fee Threshold</CardTitle>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Position fee limit indicator</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <div className="flex items-center gap-1">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                      <HelpTip content="Position fee limit indicator." />
+                    </div>
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
@@ -843,10 +847,13 @@ export default function TradesPositions() {
                     <CardTitle>Cumulative P&L</CardTitle>
                     <CardDescription>Performance over time</CardDescription>
                   </div>
-                  <Button variant="outline" size="sm">
-                    <LineChart className="h-4 w-4 mr-1" />
-                    Export Chart
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <HelpTip content="Cumulative net profit over time for recent trades." />
+                    <Button variant="outline" size="sm">
+                      <LineChart className="h-4 w-4 mr-1" />
+                      Export Chart
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   <div className="h-64">
@@ -887,6 +894,7 @@ export default function TradesPositions() {
                     <CardDescription>Your trading history and performance</CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <HelpTip content="Use the search to filter. Type a symbol or trade/position ID." />
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -1055,6 +1063,7 @@ export default function TradesPositions() {
                     <CardDescription>Your current market positions</CardDescription>
                   </div>
                   <div className="flex items-center space-x-2">
+                    <HelpTip content="Use the search to filter. Type a symbol or trade/position ID." />
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -1205,14 +1214,17 @@ export default function TradesPositions() {
 
         <Dialog open={vetoOpen} onOpenChange={setVetoOpen}>
           <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Founder Veto</DialogTitle>
-              <DialogDescription>Provide rationale and confirm veto for this trade.</DialogDescription>
+            <DialogHeader className="flex items-start justify-between">
+              <div>
+                <DialogTitle>Founder Veto</DialogTitle>
+                <DialogDescription>Provide rationale and confirm veto for this trade.</DialogDescription>
+              </div>
+              <HelpTip content="Founder/admin override to block a trade before execution. Provide a rationale for audit." />
             </DialogHeader>
             <div className="space-y-3 text-sm">
               <div><span className="text-muted-foreground">Trade:</span> {vetoContext?.tradeId} • {vetoContext?.symbol}</div>
               <div>
-                <Label>Rationale</Label>
+                <div className="flex items-center gap-2"><Label>Rationale</Label><HelpTip content="Short reason explaining why this trade is being vetoed." /></div>
                 <Input value={vetoRationale} onChange={(e)=> setVetoRationale(e.target.value)} placeholder="Reason for veto" />
               </div>
             </div>
