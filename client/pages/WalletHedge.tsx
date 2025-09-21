@@ -613,7 +613,10 @@ export default function WalletHedge() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Hedged</CardTitle>
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              <HelpTip content="Total USDT value currently hedged across your account." />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
@@ -632,7 +635,10 @@ export default function WalletHedge() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Hedge Drift</CardTitle>
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+              <HelpTip content="Difference between target and actual hedge. Positive = over-hedged; negative = under-hedged." />
+            </div>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${snapshot?.drift.exceeded ? 'text-red-600' : 'text-green-600'}`}>{snapshot ? `${snapshot.drift.percent>=0?'+':''}${snapshot.drift.percent.toFixed(2)}%` : '--'}</div>
@@ -643,7 +649,10 @@ export default function WalletHedge() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Available to Withdraw</CardTitle>
-            <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
+              <HelpTip content="Amount of USDT you can safely withdraw without impacting hedges." />
+            </div>
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${
@@ -667,7 +676,10 @@ export default function WalletHedge() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Max Safe Withdrawal</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <div className="flex items-center gap-1">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <HelpTip content="Upper bound you can withdraw after safety buffers." />
+            </div>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
@@ -703,15 +715,18 @@ export default function WalletHedge() {
                 Hedge positions with pagination and status tracking
               </CardDescription>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => fetchHedgeHistory(currentPage)}
-              disabled={loading.hedges}
-            >
-              <RefreshCw className={`h-4 w-4 mr-1 ${loading.hedges ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <HelpTip content="List of hedge transactions. Use Refresh to load the latest." />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fetchHedgeHistory(currentPage)}
+                disabled={loading.hedges}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${loading.hedges ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {errors.hedges && (
@@ -825,9 +840,12 @@ export default function WalletHedge() {
 
         {/* 2. Wallet Balances */}
         <Card>
-          <CardHeader>
-            <CardTitle>USDT Balance</CardTitle>
-            <CardDescription>Stable coin exposure</CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle>USDT Balance</CardTitle>
+              <CardDescription>Stable coin exposure</CardDescription>
+            </div>
+            <HelpTip content="Your total, available, and locked USDT balances." />
           </CardHeader>
           <CardContent>
             {errors.balances && (
@@ -863,9 +881,12 @@ export default function WalletHedge() {
 
         {/* Holdings Table/Chart */}
         <Card>
-          <CardHeader>
-            <CardTitle>Holdings</CardTitle>
-            <CardDescription>Non-USDT asset distribution</CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle>Holdings</CardTitle>
+              <CardDescription>Non-USDT asset distribution</CardDescription>
+            </div>
+            <HelpTip content="Top assets held and their USD values with a small distribution chart." />
           </CardHeader>
           <CardContent>
             {loading.balances ? (
@@ -926,9 +947,12 @@ export default function WalletHedge() {
 
         {/* 3. Withdrawable Funds */}
         <Card>
-          <CardHeader>
-            <CardTitle>Withdrawable Funds</CardTitle>
-            <CardDescription>Safe USDT amount not needed for hedges</CardDescription>
+          <CardHeader className="flex items-start justify-between">
+            <div>
+              <CardTitle>Withdrawable Funds</CardTitle>
+              <CardDescription>Safe USDT amount not needed for hedges</CardDescription>
+            </div>
+            <HelpTip content="Breakdown of totals contributing to your safe withdrawal amount." />
           </CardHeader>
           <CardContent>
             {errors.withdrawable && (
@@ -972,15 +996,18 @@ export default function WalletHedge() {
               <CardTitle>Live Snapshot</CardTitle>
               <CardDescription>Free, locked, hedged, drift</CardDescription>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={fetchLiveSnapshot}
-              disabled={loading.snapshot}
-            >
-              <RefreshCw className={`h-4 w-4 mr-1 ${loading.snapshot ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2">
+              <HelpTip content="On-demand check of live balances and hedge drift." />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchLiveSnapshot}
+                disabled={loading.snapshot}
+              >
+                <RefreshCw className={`h-4 w-4 mr-1 ${loading.snapshot ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             {errors.snapshot && (
@@ -1044,12 +1071,15 @@ export default function WalletHedge() {
 
       {/* 5. Hedge Controls */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-start justify-between">
+        <div>
           <CardTitle>Hedge Controls</CardTitle>
           <CardDescription>
             Configure hedge percentage and auto-adjustment settings
           </CardDescription>
-        </CardHeader>
+        </div>
+        <HelpTip content="Adjust target hedge percent or enable auto-adjust. Saving updates your preferences." />
+      </CardHeader>
         <CardContent className="space-y-6">
           {errors.settings && (
             <Alert variant="destructive">
@@ -1080,7 +1110,7 @@ export default function WalletHedge() {
               {/* Auto-Adjust Toggle */}
               <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div className="space-y-1">
-                  <div className="font-medium">Auto-Adjust Hedge</div>
+                  <div className="font-medium inline-flex items-center gap-2">Auto-Adjust Hedge <HelpTip content="Automatically tune hedge percent based on market conditions." /></div>
                   <div className="text-sm text-muted-foreground">
                     Enable to automatically adjust hedge percentage based on market conditions
                   </div>
@@ -1162,10 +1192,13 @@ export default function WalletHedge() {
 
       {/* 6. Exchange API Status (managed in Profile) */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-start justify-between">
+        <div>
           <CardTitle>Exchange API Status</CardTitle>
           <CardDescription>Keys are managed in your Profile. This panel is read-only.</CardDescription>
-        </CardHeader>
+        </div>
+        <HelpTip content="Shows presence, validity, and expiry of your exchange API keys." />
+      </CardHeader>
         <CardContent className="space-y-3">
           {apiStatus ? (
             <div className="space-y-2 text-sm">
@@ -1185,10 +1218,13 @@ export default function WalletHedge() {
 
       {/* 7. Risk Oversight & Personal Overrides */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex items-start justify-between">
+        <div>
           <CardTitle>Risk Oversight</CardTitle>
           <CardDescription>System defaults and personal overrides</CardDescription>
-        </CardHeader>
+        </div>
+        <HelpTip content="Review system risk defaults and set personal multipliers and options." />
+      </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-3 border rounded">
@@ -1221,7 +1257,7 @@ export default function WalletHedge() {
             </div>
             <div className="flex items-center gap-2">
               <Switch checked={overrideForm.use_news_analysis} onCheckedChange={v=> setOverrideForm(f=>({...f, use_news_analysis: v}))} />
-              <span className="text-sm">News-aware trading</span>
+              <span className="text-sm inline-flex items-center gap-2">News-aware trading <HelpTip content="Use news-derived analysis to influence decisions (experimental)." /></span>
             </div>
           </div>
 
