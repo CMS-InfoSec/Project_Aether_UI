@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -233,7 +234,7 @@ export default function AuditLogs() {
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <code className="text-xs">{t.request_id}</code>
-                        {t.request_id && <Button size="icon" variant="ghost" onClick={()=> navigator.clipboard.writeText(t.request_id!)}><Copy className="h-4 w-4"/></Button>}
+                        {t.request_id && <Button size="icon" variant="ghost" onClick={()=> copy(t.request_id!)}><Copy className="h-4 w-4"/></Button>}
                       </div>
                     </td>
                     <td className="p-2">
@@ -245,7 +246,7 @@ export default function AuditLogs() {
                           <div className="text-xs text-muted-foreground mb-1">Raw payload</div>
                           <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(t, null, 2)}</pre>
                           <div className="mt-2 flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={async ()=> navigator.clipboard.writeText(await sha256Hex(JSON.stringify(t)))}><Copy className="h-4 w-4 mr-2"/>Copy integrity hash (SHA-256)</Button>
+                            <Button size="sm" variant="outline" onClick={async ()=> { const v = await sha256Hex(JSON.stringify(t)); await copy(v); }}><Copy className="h-4 w-4 mr-2"/>Copy integrity hash (SHA-256)</Button>
                           </div>
                         </div>
                       )}
@@ -283,7 +284,7 @@ export default function AuditLogs() {
                     <td className="p-2">
                       <div className="flex items-center gap-2">
                         <code className="text-xs">{b.request_id}</code>
-                        {b.request_id && <Button size="icon" variant="ghost" onClick={()=> navigator.clipboard.writeText(b.request_id!)}><Copy className="h-4 w-4"/></Button>}
+                        {b.request_id && <Button size="icon" variant="ghost" onClick={()=> copy(b.request_id!)}><Copy className="h-4 w-4"/></Button>}
                       </div>
                     </td>
                     <td className="p-2">
@@ -295,7 +296,7 @@ export default function AuditLogs() {
                           <div className="text-xs text-muted-foreground mb-1">Raw payload</div>
                           <pre className="text-xs whitespace-pre-wrap">{JSON.stringify(b, null, 2)}</pre>
                           <div className="mt-2 flex items-center gap-2">
-                            <Button size="sm" variant="outline" onClick={async ()=> navigator.clipboard.writeText(await sha256Hex(JSON.stringify(b)))}><Copy className="h-4 w-4 mr-2"/>Copy integrity hash (SHA-256)</Button>
+                            <Button size="sm" variant="outline" onClick={async ()=> { const v = await sha256Hex(JSON.stringify(b)); await copy(v); }}><Copy className="h-4 w-4 mr-2"/>Copy integrity hash (SHA-256)</Button>
                           </div>
                         </div>
                       )}
