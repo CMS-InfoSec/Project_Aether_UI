@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
@@ -157,32 +158,13 @@ export default function AIAssistant() {
   };
 
   const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied",
-        description: "Text copied to clipboard",
-      });
-    } catch (error) {
-      console.error('Failed to copy:', error);
-      toast({
-        title: "Copy failed",
-        description: "Unable to copy to clipboard",
-        variant: "destructive"
-      });
-    }
+    const ok = await copy(text);
+    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Text copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
   };
 
   const copyCitation = async (citationId: string) => {
-    try {
-      await navigator.clipboard.writeText(citationId);
-      toast({
-        title: "Citation copied",
-        description: `Citation ID ${citationId} copied`,
-      });
-    } catch (error) {
-      console.error('Failed to copy citation:', error);
-    }
+    const ok = await copy(citationId);
+    toast({ title: ok ? 'Citation copied' : 'Copy Failed', description: ok ? `Citation ID ${citationId} copied` : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
   };
 
   // Handle keyboard shortcuts
