@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, Activity, Server, HeartPulse, Download, Copy, ExternalLink } from 'lucide-react';
+import copy from '@/lib/clipboard';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -174,7 +175,7 @@ export default function Observability() {
     if (!ts) return false; const t = new Date(ts).getTime(); return Date.now() - t > ms;
   };
 
-  const copyText = async (text: string) => { try { await navigator.clipboard.writeText(text); } catch {} };
+  const copyText = async (text: string) => { await copy(text); };
 
   return (
     <div className="space-y-6">
