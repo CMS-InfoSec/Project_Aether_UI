@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import HelpTip from '@/components/ui/help-tip';
 import apiFetch from '@/lib/apiClient';
 import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
@@ -1093,13 +1094,14 @@ export default function WalletHedge() {
               {/* Hedge Percent Input */}
               <div className="space-y-4">
                 <div>
-                  <Label htmlFor="hedgePercent" className="text-sm font-medium">
+                  <Label htmlFor="hedgePercent" className="text-sm font-medium inline-flex items-center gap-2">
                     Hedge Percent: {hedgePercent.toFixed(1)}%
                     {autoAdjustEnabled && hedgeSettings?.effectivePercent && (
                       <span className="ml-2 text-sm text-muted-foreground">
                         (Effective: {(hedgeSettings.effectivePercent * 100).toFixed(1)}%)
                       </span>
                     )}
+                    <HelpTip content="Target percentage of portfolio hedged into USDT. Adjust to control risk exposure." />
                   </Label>
                   <Input
                     id="hedgePercent"
@@ -1206,15 +1208,15 @@ export default function WalletHedge() {
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
-              <Label>Stop-loss Multiplier</Label>
+              <Label className="inline-flex items-center gap-2">Stop-loss Multiplier <HelpTip content="Multiplier applied to baseline stop-loss distance. Higher = wider stops." /></Label>
               <Input type="number" step="0.05" value={overrideForm.sl_multiplier} onChange={e=> setOverrideForm(f=>({...f, sl_multiplier: parseFloat(e.target.value)||0}))} />
             </div>
             <div>
-              <Label>Take-profit Multiplier</Label>
+              <Label className="inline-flex items-center gap-2">Take-profit Multiplier <HelpTip content="Multiplier applied to baseline take-profit. Higher = larger profit target." /></Label>
               <Input type="number" step="0.1" value={overrideForm.tp_multiplier} onChange={e=> setOverrideForm(f=>({...f, tp_multiplier: parseFloat(e.target.value)||0}))} />
             </div>
             <div>
-              <Label>Trailing-stop (%)</Label>
+              <Label className="inline-flex items-center gap-2">Trailing-stop (%) <HelpTip content="Percentage distance for trailing stop. Moves with price to lock in gains." /></Label>
               <Input type="number" step="0.05" value={overrideForm.trailing_stop} onChange={e=> setOverrideForm(f=>({...f, trailing_stop: parseFloat(e.target.value)||0}))} />
             </div>
             <div className="flex items-center gap-2">
@@ -1263,7 +1265,7 @@ export default function WalletHedge() {
             <div className="text-sm font-medium">Blocked-trade Diagnostics</div>
             <div className="flex gap-2 items-end">
               <div className="flex-1">
-                <Label>Trade ID</Label>
+                <Label className="inline-flex items-center gap-2">Trade ID <HelpTip content="Enter a trade ID to fetch diagnostics for that specific execution." /></Label>
                 <Input value={tradeDiagId} onChange={e=> setTradeDiagId(e.target.value)} placeholder="trade_002 or BTC_001_..." />
               </div>
               <Button onClick={async()=>{
