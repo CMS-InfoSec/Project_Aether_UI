@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import apiFetch from '@/lib/apiClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
