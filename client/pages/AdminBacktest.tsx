@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -279,12 +280,9 @@ export default function AdminBacktest() {
   };
 
   // Copy value to clipboard
-  const copyToClipboard = (value: string) => {
-    navigator.clipboard.writeText(value);
-    toast({
-      title: "Copied",
-      description: "Value copied to clipboard"
-    });
+  const copyToClipboard = async (value: string) => {
+    const ok = await copy(value);
+    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Value copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
   };
 
   // Sort trade history
