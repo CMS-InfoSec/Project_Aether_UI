@@ -159,30 +159,61 @@ export default function UserNotifications() {
   const getNativeFetch = async (): Promise<typeof fetch> => {
     const w = window as any;
     if (w.__nativeFetch) return w.__nativeFetch;
+    // If we previously created a persistent iframe, try to use it
+    if (w.__nativeFetchIframe) {
+      try {
+        w.__nativeFetch = (w.__nativeFetchIframe.contentWindow as any).fetch.bind(w.__nativeFetchIframe.contentWindow);
+        return w.__nativeFetch;
+      } catch {}
+    }
     const isPatched = typeof w.fetch === 'function' && !/\[native code\]/.test(String(w.fetch));
     if (!isPatched) {
       w.__nativeFetch = w.fetch.bind(w);
       return w.__nativeFetch;
     }
-    // Create hidden iframe on same origin to obtain an unpatched fetch
+
+    // Create a persistent hidden iframe on same origin to obtain an unpatched fetch
     return await new Promise((resolve) => {
       const iframe = document.createElement('iframe');
       iframe.style.display = 'none';
+      iframe.setAttribute('aria-hidden', 'true');
       iframe.src = window.location.origin;
-      const cleanup = () => { try { document.body.removeChild(iframe); } catch {} };
-      iframe.onload = () => {
+
+      const onLoad = () => {
         try {
-          const nf = (iframe.contentWindow as any).fetch.bind(iframe.contentWindow);
-          (window as any).__nativeFetch = nf;
-          cleanup();
-          resolve(nf);
+          const contentWindow = iframe.contentWindow as any;
+          if (!contentWindow || typeof contentWindow.fetch !== 'function') {
+            w.__nativeFetch = w.fetch.bind(w);
+            w.__nativeFetchIframe = iframe;
+            resolve(w.__nativeFetch);
+            return;
+          }
+          w.__nativeFetch = contentWindow.fetch.bind(contentWindow);
+          w.__nativeFetchIframe = iframe;
+          resolve(w.__nativeFetch);
         } catch {
-          cleanup();
-          resolve(window.fetch.bind(window));
+          w.__nativeFetch = w.fetch.bind(w);
+          w.__nativeFetchIframe = iframe;
+          resolve(w.__nativeFetch);
         }
       };
+
+      iframe.onload = onLoad;
       document.body.appendChild(iframe);
-      window.setTimeout(() => { cleanup(); resolve(window.fetch.bind(window)); }, 3000);
+
+      // Fallback: if iframe doesn't load in time, use window.fetch but keep iframe in DOM for later
+      const to = window.setTimeout(() => {
+        if (!w.__nativeFetch) {
+          try { w.__nativeFetch = w.fetch.bind(w); w.__nativeFetchIframe = iframe; } catch {}
+          resolve(w.__nativeFetch);
+        }
+        clearTimeout(to);
+      }, 3000);
+
+      // Ensure iframe is removed on unload to avoid leaks
+      window.addEventListener('unload', () => {
+        try { document.body.removeChild(iframe); } catch {}
+      }, { once: true });
     });
   };
 
