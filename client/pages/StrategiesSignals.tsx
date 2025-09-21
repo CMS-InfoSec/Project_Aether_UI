@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from '@/hooks/use-toast';
 import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
+import apiFetch from '@/lib/apiClient';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StrategyFlag { name: string; weight: number; enabled: boolean; last_run: string }
@@ -568,11 +569,14 @@ export default function StrategiesSignals() {
                       try{
                         const parsed = JSON.parse(shapInput);
                         if (!Array.isArray(parsed) && typeof parsed !== 'object') throw new Error('Input must be array or object');
-                        const r = await fetch(`/api/shap/${encodeURIComponent(modelId)}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ input: parsed }) });
-                        const j = await r.json();
-                        if (!r.ok) throw new Error(j.detail || 'Failed');
-                        setShapResult(j.data || j);
-                        toast({ title:'SHAP ready', description:`Request ${ (j.data?.request_id || j.request_id || '').toString() }` });
+                        const r = await apiFetch(`/api/shap/${encodeURIComponent(modelId)}`, { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ input: parsed }) });
+                        const text = await r.text();
+                        let j: any = {};
+                        if (text && text.trim().length) { try { j = JSON.parse(text); } catch { /* ignore parse error */ } }
+                        if (!r.ok) throw new Error(j.detail || `HTTP ${r.status}`);
+                        const data = j.data || j;
+                        setShapResult(data);
+                        toast({ title:'SHAP ready', description:`Request ${ (data?.request_id || '').toString() }` });
                       }catch(e:any){ toast({ title:'Error', description: e.message || 'Failed', variant:'destructive' }); }
                     }}>Run SHAP</Button>
                     {shapResult && (
