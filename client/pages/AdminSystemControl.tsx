@@ -50,6 +50,7 @@ import {
   Save
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import HelpTip from '@/components/ui/help-tip';
 
 // Types
 interface SystemState {
@@ -624,7 +625,10 @@ export default function AdminSystemControl() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">System Control</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">System Control</h1>
+            <HelpTip content="Admin controls to pause/resume trading, switch trading modes, and trigger emergency stop (kill switch)." />
+          </div>
           <p className="text-muted-foreground">
             Pause/resume trading, change global trading mode, and manage emergency controls
           </p>
@@ -638,10 +642,13 @@ export default function AdminSystemControl() {
       {/* Backend Connection Configuration */}
       <Card className="border-l-4 border-l-orange-500">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Server className="h-5 w-5" />
-            <span>Backend Server Connection</span>
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Server className="h-5 w-5" />
+              <span>Backend Server Connection</span>
+            </CardTitle>
+            <HelpTip content="Set which backend server this dashboard controls. Use Test Connection to verify reachability." />
+          </div>
           <CardDescription>
             Configure the backend server URL for system operations
           </CardDescription>
@@ -650,7 +657,7 @@ export default function AdminSystemControl() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2 space-y-3">
               <div>
-                <Label htmlFor="backendUrl">Backend Server URL</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="backendUrl">Backend Server URL</Label><HelpTip content="Full base URL of your control API, e.g., https://api.example.com" /></div>
                 <Input
                   id="backendUrl"
                   placeholder="http://localhost:3001 or https://api.yourserver.com"
@@ -708,16 +715,19 @@ export default function AdminSystemControl() {
       {/* System Status Banner */}
       <Card className="border-l-4 border-l-blue-500">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Activity className="h-5 w-5" />
-            <span>System Status</span>
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Activity className="h-5 w-5" />
+              <span>System Status</span>
+            </CardTitle>
+            <HelpTip content="Live status of trading mode, pause state, and emergency kill switch." />
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Mode</div>
+                <div className="font-medium inline-flex items-center gap-1">Mode <HelpTip content="Trading mode: Simulation (paper), Dry-Run (no orders), or Live (real orders)." /></div>
                 <div className="text-sm text-muted-foreground">Current trading mode</div>
               </div>
               {getModeBadge(systemState.mode)}
@@ -725,7 +735,7 @@ export default function AdminSystemControl() {
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Status</div>
+                <div className="font-medium inline-flex items-center gap-1">Status <HelpTip content="Paused stops strategy execution; Active means trading logic can run." /></div>
                 <div className="text-sm text-muted-foreground">
                   {systemState.isPaused ? 'System paused' : 'System active'}
                 </div>
@@ -735,7 +745,7 @@ export default function AdminSystemControl() {
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium">Kill Switch</div>
+                <div className="font-medium inline-flex items-center gap-1">Kill Switch <HelpTip content="Emergency stop that immediately disables all trading. Requires justification to enable." /></div>
                 <div className="text-sm text-muted-foreground">Emergency control status</div>
               </div>
               {getKillSwitchBadge()}
@@ -800,10 +810,13 @@ export default function AdminSystemControl() {
         {/* Pause/Resume Trading */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Shield className="h-5 w-5" />
-              <span>Pause/Resume Trading</span>
-            </CardTitle>
+            <div className="flex items-start justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <Shield className="h-5 w-5" />
+                <span>Pause/Resume Trading</span>
+              </CardTitle>
+              <HelpTip content="Temporarily stop or resume all strategy execution. Changes are recorded to the audit log." />
+            </div>
             <CardDescription>
               Control system operations with audit trail
             </CardDescription>
@@ -812,7 +825,7 @@ export default function AdminSystemControl() {
             {systemState.isPaused ? (
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="resumeActor">Actor (optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="resumeActor">Actor (optional)</Label><HelpTip content="Who is performing this action (for audit trail)." /></div>
                   <Input
                     id="resumeActor"
                     placeholder="Your email or identifier"
@@ -822,7 +835,7 @@ export default function AdminSystemControl() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="resumeReason">Reason (optional, max 200 chars)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="resumeReason">Reason (optional, max 200 chars)</Label><HelpTip content="Context for resuming trading helps reviewers understand why." /></div>
                   <Textarea
                     id="resumeReason"
                     placeholder="Reason for resuming the system"
@@ -856,7 +869,7 @@ export default function AdminSystemControl() {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="pauseActor">Actor (optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="pauseActor">Actor (optional)</Label><HelpTip content="Who is pausing the system (for audit trail)." /></div>
                   <Input
                     id="pauseActor"
                     placeholder="Your email or identifier"
@@ -866,7 +879,7 @@ export default function AdminSystemControl() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="pauseReason">Reason (optional, max 200 chars)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="pauseReason">Reason (optional, max 200 chars)</Label><HelpTip content="Why the system is being paused; add details for future review." /></div>
                   <Textarea
                     id="pauseReason"
                     placeholder="Reason for pausing the system"
@@ -914,17 +927,20 @@ export default function AdminSystemControl() {
         {/* Trading Mode Control */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Settings className="h-5 w-5" />
-              <span>Trading Mode Control</span>
-            </CardTitle>
+            <div className="flex items-start justify-between">
+              <CardTitle className="flex items-center space-x-2">
+                <Settings className="h-5 w-5" />
+                <span>Trading Mode Control</span>
+              </CardTitle>
+              <HelpTip content="Switch between Simulation (paper), Dry-Run (no orders), and Live (real orders). Live requires a reason." />
+            </div>
             <CardDescription>
               Change the global trading mode
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="modeSelect">Mode Selector</Label>
+              <div className="flex items-center gap-2"><Label htmlFor="modeSelect">Mode Selector</Label><HelpTip content="Choose the environment in which strategies operate." /></div>
               <Select
                 value={selectedMode}
                 onValueChange={setSelectedMode}
@@ -942,7 +958,7 @@ export default function AdminSystemControl() {
             </div>
 
             <div>
-              <Label htmlFor="modeActor">Actor (optional)</Label>
+              <div className="flex items-center gap-2"><Label htmlFor="modeActor">Actor (optional)</Label><HelpTip content="Who is changing the mode (captured in audit)." /></div>
               <Input
                 id="modeActor"
                 placeholder="Your email or identifier"
@@ -953,9 +969,10 @@ export default function AdminSystemControl() {
             </div>
 
             <div>
-              <Label htmlFor="modeReason">
-                Reason {selectedMode.toLowerCase() === 'live' && '(required for live mode)'}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="modeReason">Reason {selectedMode.toLowerCase() === 'live' && '(required for live mode)'}</Label>
+                <HelpTip content="Document why the mode is changing; mandatory when switching to Live to ensure accountability." />
+              </div>
               <Textarea
                 id="modeReason"
                 placeholder="Reason for changing trading mode"
@@ -1027,10 +1044,13 @@ export default function AdminSystemControl() {
       {/* Emergency Kill Switch */}
       <Card className="border-l-4 border-l-red-500">
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <Skull className="h-5 w-5" />
-            <span>Emergency Kill Switch</span>
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <Skull className="h-5 w-5" />
+              <span>Emergency Kill Switch</span>
+            </CardTitle>
+            <HelpTip content="Emergency stop that blocks all trading instantly. Enabling requires an actor and a sufficiently detailed reason." />
+          </div>
           <CardDescription>
             Immediately halt all trading operations. Use only in emergency situations.
           </CardDescription>
@@ -1038,7 +1058,7 @@ export default function AdminSystemControl() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
             <div>
-              <div className="font-medium">Kill Switch Status</div>
+              <div className="font-medium inline-flex items-center gap-1">Kill Switch Status <HelpTip content="Shows whether the emergency stop is currently active." /></div>
               <div className="text-sm text-muted-foreground">
                 {systemState.killSwitchEnabled ? 'All trading disabled' : 'Trading allowed'}
               </div>
@@ -1053,7 +1073,7 @@ export default function AdminSystemControl() {
           {!systemState.killSwitchEnabled && (
             <div className="space-y-3">
               <div>
-                <Label htmlFor="killSwitchActor">Actor (required for enabling)</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="killSwitchActor">Actor (required for enabling)</Label><HelpTip content="Who is enabling the kill switch (mandatory for audit)." /></div>
                 <Input
                   id="killSwitchActor"
                   placeholder="Your email or identifier"
@@ -1063,7 +1083,7 @@ export default function AdminSystemControl() {
                 />
               </div>
               <div>
-                <Label htmlFor="killSwitchReason">Reason (mandatory when enabling, min 10 chars)</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="killSwitchReason">Reason (mandatory when enabling, min 10 chars)</Label><HelpTip content="Explain the emergency clearly; minimum 10 characters to avoid vague entries." /></div>
                 <Textarea
                   id="killSwitchReason"
                   placeholder="Emergency reason for activating kill switch"
@@ -1092,10 +1112,13 @@ export default function AdminSystemControl() {
       {/* Audit Log Summary */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <FileText className="h-5 w-5" />
-            <span>Recent Actions</span>
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Recent Actions</span>
+            </CardTitle>
+            <HelpTip content="Audit log of control operations (who, what, when). Use it for reviews and compliance." />
+          </div>
           <CardDescription>
             Recent system control actions and changes
           </CardDescription>
