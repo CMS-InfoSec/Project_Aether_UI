@@ -636,6 +636,32 @@ export default function UserReports() {
                 </CardContent>
               </Card>
 
+              {/* Risk-adjusted metrics */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <CardTitle className="text-lg">Risk-adjusted Metrics</CardTitle>
+                    <HelpTip content="Complementary measures that relate returns to risk taken." side="left" />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">Information Ratio <HelpTip content="Excess return vs benchmark per unit of tracking error (std. dev. of active returns)." side="top" /></p>
+                      <p className="text-2xl font-bold">{weeklyReport.performanceMetrics.informationRatio.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">Calmar Ratio <HelpTip content="Return divided by maximum drawdown; higher = better drawdown-adjusted returns." side="top" /></p>
+                      <p className="text-2xl font-bold">{weeklyReport.performanceMetrics.calmarRatio.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground flex items-center gap-1">Sortino Ratio <HelpTip content="Like Sharpe but only penalizes downside volatility (bad volatility)." side="top" /></p>
+                      <p className="text-2xl font-bold">{weeklyReport.performanceMetrics.sortinoRatio.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Asset Data Table */}
               <Card className="lg:col-span-2">
                 <CardHeader>
