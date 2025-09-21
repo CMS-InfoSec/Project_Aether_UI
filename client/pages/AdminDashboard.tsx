@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from '@/hooks/use-toast';
+import HelpTip from '@/components/ui/help-tip';
 
 // Integrations of existing admin feature pages
 import AdminSystemControl from './AdminSystemControl';
@@ -525,10 +526,10 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between space-x-4">
                 <div className="flex items-center space-x-2">
                   <Switch id="auto-refresh" checked={autoRefreshEnabled} onCheckedChange={setAutoRefreshEnabled} />
-                  <Label htmlFor="auto-refresh">Auto-refresh</Label>
+                  <Label htmlFor="auto-refresh" className="inline-flex items-center gap-2">Auto-refresh <HelpTip content="Automatically refresh dashboard data at the configured interval." /></Label>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="refresh-interval">Interval:</Label>
+                  <Label htmlFor="refresh-interval" className="inline-flex items-center gap-2">Interval <HelpTip content="How often to refresh dashboard widgets when auto-refresh is enabled." /></Label>
                   <Select value={refreshInterval.toString()} onValueChange={(value) => setRefreshInterval(parseInt(value))} disabled={!autoRefreshEnabled}>
                     <SelectTrigger className="w-32">
                       <SelectValue />
@@ -983,9 +984,11 @@ export default function AdminDashboard() {
                     <div className="flex items-center space-x-4 mb-4 pb-4 border-b">
                       <div className="flex items-center space-x-2">
                         <Switch id="unread-only" checked={showUnreadOnly} onCheckedChange={setShowUnreadOnly} />
-                        <Label htmlFor="unread-only">Show unread only</Label>
+                        <Label htmlFor="unread-only" className="inline-flex items-center gap-2">Show unread only <HelpTip content="Only display notifications that have not been marked read." /></Label>
                       </div>
-                      <Select value={notificationFilter} onValueChange={setNotificationFilter}>
+                      <div className="flex items-center space-x-2">
+                        <div className="inline-flex items-center gap-2 text-sm"><span>Severity</span><HelpTip content="Filter notifications by severity level." /></div>
+                        <Select value={notificationFilter} onValueChange={setNotificationFilter}>
                         <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="all">All Severity</SelectItem>
@@ -995,6 +998,7 @@ export default function AdminDashboard() {
                           <SelectItem value="success">Success</SelectItem>
                         </SelectContent>
                       </Select>
+                        </div>
                     </div>
 
                     {notificationData && (
