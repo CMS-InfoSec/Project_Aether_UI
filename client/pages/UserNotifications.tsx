@@ -229,6 +229,73 @@ export default function UserNotifications() {
 
     const finalInit: RequestInit = { signal: controller.signal, credentials: 'same-origin', cache: 'no-store', ...(init || {}) } as RequestInit;
 
+    const xhrFetch = (url: string, opts: RequestInit) => {
+      return new Promise<any>((resolve, reject) => {
+        try {
+          const xhr = new XMLHttpRequest();
+          const method = (opts.method || 'GET').toUpperCase();
+          xhr.open(method, url, true);
+          xhr.responseType = 'text';
+
+          // Credentials handling: for same-origin or include, set withCredentials
+          if (opts.credentials === 'include' || opts.credentials === 'same-origin') xhr.withCredentials = true;
+
+          // Timeout handling
+          xhr.timeout = timeout;
+
+          // Headers
+          const headers = (opts.headers || {}) as Record<string, string>;
+          Object.entries(headers).forEach(([k, v]) => {
+            try { xhr.setRequestHeader(k, v); } catch {}
+          });
+
+          // Abort support
+          const signal = opts.signal as AbortSignal | undefined;
+          const onAbort = () => {
+            try { xhr.abort(); } catch {}
+            reject(new DOMException('Aborted', 'AbortError'));
+          };
+          if (signal) {
+            if (signal.aborted) return onAbort();
+            signal.addEventListener('abort', onAbort, { once: true });
+          }
+
+          xhr.onload = () => {
+            const headersStr = xhr.getAllResponseHeaders() || '';
+            const headersObj: Record<string, string> = {};
+            headersStr.trim().split(/\r?\n/).forEach(line => {
+              const idx = line.indexOf(':');
+              if (idx > -1) {
+                const name = line.slice(0, idx).trim();
+                const value = line.slice(idx + 1).trim();
+                headersObj[name] = value;
+              }
+            });
+
+            const res = {
+              ok: xhr.status >= 200 && xhr.status < 300,
+              status: xhr.status,
+              statusText: xhr.statusText,
+              headers: {
+                get: (k: string) => headersObj[k] ?? null
+              },
+              text: async () => xhr.responseText,
+              json: async () => {
+                try { return JSON.parse(xhr.responseText); } catch { return Promise.reject(new Error('Invalid JSON')); }
+              }
+            };
+            resolve(res);
+          };
+
+          xhr.onerror = () => reject(new Error('Network request failed'));
+          xhr.ontimeout = () => reject(new Error('Request timed out'));
+
+          // Send body for non-GET methods
+          if (method === 'GET' || method === 'HEAD') xhr.send(); else xhr.send(opts.body as any);
+        } catch (e) { reject(e); }
+      });
+    };
+
     try {
       // Primary: try to use the unpatched/native fetch obtained from iframe (if needed)
       const nativeFetch = await getNativeFetch();
@@ -248,10 +315,18 @@ export default function UserNotifications() {
         return response;
       } catch (winErr) {
         console.warn('window.fetch failed as fallback', winErr);
-        clearTimeout(id);
-        // Differentiate abort vs network errors
-        if ((winErr as any)?.name === 'AbortError') throw winErr;
-        throw new Error((winErr && (winErr as any).message) || 'Network request failed');
+        // Try XHR fallback, which bypasses any fetch wrappers
+        try {
+          const url = typeof input === 'string' ? input : (input as Request).url;
+          const xhrResp = await xhrFetch(url, finalInit);
+          clearTimeout(id);
+          return xhrResp;
+        } catch (xhrErr) {
+          clearTimeout(id);
+          // Differentiate abort vs network errors
+          if ((xhrErr as any)?.name === 'AbortError') throw xhrErr;
+          throw new Error((xhrErr && (xhrErr as any).message) || 'Network request failed');
+        }
       }
     } catch (err) {
       clearTimeout(id);
