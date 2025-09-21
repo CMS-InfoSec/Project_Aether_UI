@@ -882,17 +882,17 @@ export default function UserReports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Asset</TableHead>
-                        <TableHead>Current Price</TableHead>
-                        <TableHead>Daily Change</TableHead>
-                        <TableHead>Weekly Change</TableHead>
-                        <TableHead>Monthly Return</TableHead>
-                        <TableHead>Total Return</TableHead>
-                        <TableHead>Allocation</TableHead>
-                        <TableHead>Volatility</TableHead>
-                        <TableHead>Sharpe</TableHead>
-                        <TableHead>Trades</TableHead>
-                        <TableHead>Avg Hold</TableHead>
+                        <TableHead><div className="flex items-center gap-1">Asset <HelpTip content="Ticker and asset name." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Current Price <HelpTip content="Latest traded price for the asset." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Daily Change <HelpTip content="Price change since yesterday (percent)." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Weekly Change <HelpTip content="Price change over the past week (percent)." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Monthly Return <HelpTip content="Return percent over the past month." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Total Return <HelpTip content="Cumulative profit/loss in currency." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Allocation <HelpTip content="Percentage of portfolio invested in the asset." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Volatility <HelpTip content="Return variability; higher means more risk." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Sharpe <HelpTip content="Risk-adjusted return: (return − risk‑free) ÷ volatility. Higher is better." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Trades <HelpTip content="Trade count used for the metrics." side="top" /></div></TableHead>
+                        <TableHead><div className="flex items-center gap-1">Avg Hold <HelpTip content="Average time positions were held (hours)." side="top" /></div></TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
