@@ -110,22 +110,10 @@ const adminNavigationItems = [
     badge: null,
   },
   {
-    title: "Governance",
-    href: "/admin/governance",
-    icon: Vote,
-    badge: null,
-  },
-  {
     title: "User Management",
     href: "/admin/users",
     icon: Users,
     badge: "3",
-  },
-  {
-    title: "Portfolio Management",
-    href: "/admin/portfolio",
-    icon: Briefcase,
-    badge: null,
   },
   {
     title: "Market Eligibility",
@@ -143,42 +131,6 @@ const adminNavigationItems = [
     title: "Adaptive Strategy Controller",
     href: "/admin/asc",
     icon: Settings,
-    badge: null,
-  },
-  {
-    title: "System Config",
-    href: "/admin/system/config",
-    icon: Settings,
-    badge: null,
-  },
-  {
-    title: "System Control",
-    href: "/admin/system/control",
-    icon: PlayCircle,
-    badge: null,
-  },
-  {
-    title: "Backtest Report",
-    href: "/admin/backtest",
-    icon: Download,
-    badge: null,
-  },
-  {
-    title: "Strategy Review",
-    href: "/admin/strategy-review",
-    icon: Vote,
-    badge: null,
-  },
-  {
-    title: "Plugins",
-    href: "/admin/plugins",
-    icon: Brain,
-    badge: null,
-  },
-  {
-    title: "Automation Social",
-    href: "/admin/automation-social",
-    icon: Activity,
     badge: null,
   },
   {
