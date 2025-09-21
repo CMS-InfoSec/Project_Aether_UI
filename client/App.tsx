@@ -1,6 +1,7 @@
 import "./global.css";
 
 import { Toaster } from "@/components/ui/toaster";
+import apiFetch from '@/lib/apiClient';
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -63,7 +64,7 @@ const AppRouter = () => {
 
   const checkBootstrapStatus = async () => {
     try {
-      const response = await fetch('/api/founders/bootstrap-status', {
+      const response = await apiFetch('/api/founders/bootstrap-status', {
         // Prevent caching issues
         cache: 'no-cache',
         headers: {
@@ -90,7 +91,7 @@ const AppRouter = () => {
 
   const handleBootstrap = async (formData: { email: string; password: string; name: string }): Promise<boolean> => {
     try {
-      const response = await fetch('/api/founders/bootstrap', {
+      const response = await apiFetch('/api/founders/bootstrap', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
