@@ -10,6 +10,7 @@ import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import HelpTip from '@/components/ui/help-tip';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   User, 
@@ -629,7 +630,7 @@ export default function ProfileSettings() {
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="riskTier">Risk Tier</Label>
+                <div className="flex items-center gap-2"><Label htmlFor="riskTier">Risk Tier</Label><HelpTip content="Preset profile controlling default risk limits for your account." /></div>
                 <Select 
                   value={selectedRiskTier} 
                   onValueChange={(value: 'aggressive' | 'balanced' | 'conservative') => setSelectedRiskTier(value)}
@@ -699,8 +700,8 @@ export default function ProfileSettings() {
             <div className="grid gap-6 md:grid-cols-2">
               {/* Stop-Loss Multiplier */}
               <div className="space-y-2">
-                <Label htmlFor="slMultiplier" className="flex items-center space-x-1">
-                  <span>Stop-Loss Multiplier</span>
+                <Label htmlFor="slMultiplier" className="flex items-center gap-2">
+                  <span>Stop-Loss Multiplier</span><HelpTip content="Multiplier applied to baseline stop-loss distance. Higher widens stops." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
@@ -733,8 +734,8 @@ export default function ProfileSettings() {
 
               {/* Take-Profit Multiplier */}
               <div className="space-y-2">
-                <Label htmlFor="tpMultiplier" className="flex items-center space-x-1">
-                  <span>Take-Profit Multiplier</span>
+                <Label htmlFor="tpMultiplier" className="flex items-center gap-2">
+                  <span>Take-Profit Multiplier</span><HelpTip content="Multiplier applied to baseline take-profit. Higher enlarges target." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
@@ -766,8 +767,8 @@ export default function ProfileSettings() {
 
               {/* Trailing Stop */}
               <div className="space-y-2">
-                <Label htmlFor="trailingStop" className="flex items-center space-x-1">
-                  <span>Trailing Stop</span>
+                <Label htmlFor="trailingStop" className="flex items-center gap-2">
+                  <span>Trailing Stop</span><HelpTip content="Percentage trail that follows price to protect gains." />
                   <Tooltip>
                     <TooltipTrigger>
                       <Info className="h-3 w-3 text-muted-foreground" />
@@ -801,8 +802,8 @@ export default function ProfileSettings() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="flex items-center space-x-1">
-                      <span>Use News Analysis</span>
+                    <Label className="flex items-center gap-2">
+                      <span>Use News Analysis</span><HelpTip content="Include news-derived sentiment in decision making." />
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-3 w-3 text-muted-foreground" />
@@ -957,7 +958,7 @@ export default function ProfileSettings() {
               <div className="space-y-4">
                 {/* Binance API Key */}
                 <div className="space-y-2">
-                  <Label htmlFor="apiKey">Binance API Key</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="apiKey">Binance API Key</Label><HelpTip content="Your Binance API key used for authenticated requests. Stored securely on the server." /></div>
                   <Input
                     id="apiKey"
                     type="text"
@@ -979,7 +980,7 @@ export default function ProfileSettings() {
 
                 {/* Binance API Secret */}
                 <div className="space-y-2">
-                  <Label htmlFor="apiSecret">Binance API Secret</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="apiSecret">Binance API Secret</Label><HelpTip content="Your Binance API secret. Keep private. Required to place orders and fetch balances." /></div>
                   <div className="relative">
                     <Input
                       id="apiSecret"
@@ -1012,7 +1013,7 @@ export default function ProfileSettings() {
 
                 {/* Expiration Date */}
                 <div className="space-y-2">
-                  <Label htmlFor="expiration">Expiration Date (Optional)</Label>
+                  <div className="flex items-center gap-2"><Label htmlFor="expiration">Expiration Date (Optional)</Label><HelpTip content="Optional expiry for rotating API credentials. Leave empty for no expiry." /></div>
                   <Input
                     id="expiration"
                     type="date"
