@@ -573,7 +573,7 @@ export default function AdminDashboard() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Daily Returns</CardTitle>
+                      <CardTitle className="text-sm font-medium inline-flex items-center gap-1">Daily Returns <HelpTip content="Net returns generated today across all portfolios." /></CardTitle>
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -587,7 +587,7 @@ export default function AdminDashboard() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Active Portfolios</CardTitle>
+                      <CardTitle className="text-sm font-medium inline-flex items-center gap-1">Active Portfolios <HelpTip content="Number of portfolios currently managed by the system." /></CardTitle>
                       <Activity className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -598,7 +598,7 @@ export default function AdminDashboard() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Avg Performance</CardTitle>
+                      <CardTitle className="text-sm font-medium inline-flex items-center gap-1">Avg Performance <HelpTip content="Average performance relative to benchmark for today." /></CardTitle>
                       <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -609,7 +609,7 @@ export default function AdminDashboard() {
 
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                      <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+                      <CardTitle className="text-sm font-medium inline-flex items-center gap-1">Top Performer <HelpTip content="Best-performing asset for the selected period." /></CardTitle>
                       <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
@@ -628,7 +628,7 @@ export default function AdminDashboard() {
                         <div>
                           <CardTitle className="flex items-center space-x-2">
                             <LineChartIcon className="h-5 w-5" />
-                            <span>Daily Returns Trend</span>
+                            <span>Daily Returns Trend</span><HelpTip content="Line chart of daily returns vs benchmark over the last 7 days." />
                           </CardTitle>
                           <CardDescription>7-day performance vs benchmark</CardDescription>
                         </div>
@@ -666,7 +666,7 @@ export default function AdminDashboard() {
                         <div>
                           <CardTitle className="flex items-center space-x-2">
                             <BarChart3 className="h-5 w-5" />
-                            <span>Asset Performance</span>
+                            <span>Asset Performance</span><HelpTip content="Weekly returns per asset to compare relative performance." />
                           </CardTitle>
                           <CardDescription>Weekly returns by asset</CardDescription>
                         </div>
@@ -705,7 +705,7 @@ export default function AdminDashboard() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle>Daily Report</CardTitle>
+                          <CardTitle className="inline-flex items-center gap-2">Daily Report <HelpTip content="Summary of today's performance metrics and risk figures." /></CardTitle>
                           <CardDescription>Today's performance summary</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={loadDailyReport} disabled={isRefreshing.daily}>
@@ -760,7 +760,7 @@ export default function AdminDashboard() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <div>
-                          <CardTitle>Weekly Report</CardTitle>
+                          <CardTitle className="inline-flex items-center gap-2">Weekly Report <HelpTip content="Aggregated performance over the past 7 days, with trade and risk stats." /></CardTitle>
                           <CardDescription>7-day performance analysis</CardDescription>
                         </div>
                         <Button variant="outline" size="sm" onClick={loadWeeklyReport} disabled={isRefreshing.weekly}>
@@ -811,7 +811,7 @@ export default function AdminDashboard() {
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <Download className="h-5 w-5" />
-                      <span>Export & Download</span>
+                      <span>Export & Download</span><HelpTip content="Export CSVs for reports and download the latest backtest output." />
                     </CardTitle>
                     <CardDescription>Export report data and download backtest results</CardDescription>
                   </CardHeader>
@@ -848,7 +848,7 @@ export default function AdminDashboard() {
             <TabsContent value="per-asset" className="space-y-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-semibold">Per-Asset Analysis</h2>
+                  <div className="flex items-center gap-2"><h2 className="text-2xl font-semibold">Per-Asset Analysis</h2><HelpTip content="Breakdown of metrics per asset to identify outliers and rebalance needs." /></div>
                   <p className="text-muted-foreground">Detailed performance breakdown by asset</p>
                 </div>
                 <Button variant="outline" onClick={loadPerAssetReport} disabled={isRefreshing.perAsset}>
@@ -872,7 +872,7 @@ export default function AdminDashboard() {
                       </Card>
                       <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                          <CardTitle className="text-sm font-medium">Top Performer</CardTitle>
+                          <CardTitle className="text-sm font-medium inline-flex items-center gap-1">Top Performer <HelpTip content="Best-performing asset for the selected period." /></CardTitle>
                           <TrendingUp className="h-4 w-4 text-accent" />
                         </CardHeader>
                         <CardContent>
@@ -905,7 +905,7 @@ export default function AdminDashboard() {
                   <WidgetErrorBoundary widgetName="Asset Performance">
                     <Card>
                       <CardHeader>
-                        <CardTitle>Asset Performance Summary</CardTitle>
+                        <CardTitle className="inline-flex items-center gap-2">Asset Performance Summary <HelpTip content="Detailed KPIs across all tracked assets (returns, allocation, volatility)." /></CardTitle>
                         <CardDescription>Performance metrics for all tracked assets</CardDescription>
                       </CardHeader>
                       <CardContent>
@@ -965,7 +965,7 @@ export default function AdminDashboard() {
                       <div>
                         <CardTitle className="flex items-center space-x-2">
                           <Bell className="h-5 w-5" />
-                          <span>System Notifications</span>
+                          <span>System Notifications</span><HelpTip content="Alerts and messages from trading, system, and security components." />
                           {notificationData?.summary.unread > 0 && (
                             <Badge variant="destructive">{notificationData.summary.unread} unread</Badge>
                           )}
