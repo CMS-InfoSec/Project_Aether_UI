@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import apiFetch from '@/lib/apiClient';
+import copy from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -734,15 +735,8 @@ export default function AdminModels() {
   };
 
   const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Copied",
-        description: "Text copied to clipboard",
-      });
-    } catch (error) {
-      console.error('Failed to copy:', error);
-    }
+    const ok = await copy(text);
+    toast({ title: ok ? 'Copied' : 'Copy Failed', description: ok ? 'Text copied to clipboard' : 'Failed to copy to clipboard', variant: ok ? 'default' : 'destructive' });
   };
 
   const getModelTypeIcon = (type: string) => {
