@@ -1163,6 +1163,7 @@ export default function AdminModels() {
                 fetchCurriculum();
                 fetchDatasets();
                 fetchSentimentPipelines();
+                fetchAudit();
               }}
             >
               <RefreshCw className="h-4 w-4 mr-2" />
