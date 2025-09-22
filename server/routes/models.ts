@@ -643,7 +643,7 @@ let datasets: DatasetInfo[] = [
 ];
 
 // Simple in-memory audit log for admin visibility
-const auditLog: any[] = [];
+export const auditLog: any[] = [];
 
 let sentimentPipelines: SentimentPipeline[] = [
   {
