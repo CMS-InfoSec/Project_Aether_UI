@@ -210,7 +210,7 @@ export default function TradesPositions() {
       try {
         const offset = (page - 1) * itemsPerPage;
         const response = await apiFetch(
-          `/api/trades/recent?limit=${itemsPerPage}&offset=${offset}`,
+          `/api/v1/trades/recent?limit=${itemsPerPage}&offset=${offset}`,
           {
             cache: "no-cache",
             headers: { "Cache-Control": "no-cache" },
