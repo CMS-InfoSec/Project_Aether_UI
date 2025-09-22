@@ -904,6 +904,8 @@ export default function AdminModels() {
   };
 
   const rollbackModel = async (fromModelId: string, toModelId: string) => {
+    if (!toModelId) return;
+    if (!window.confirm(`Rollback from ${fromModelId} to ${toModelId}?`)) return;
     if (!founderApproval) {
       toast({
         title: "Approval Required",
