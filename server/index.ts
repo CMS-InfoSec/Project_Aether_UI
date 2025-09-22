@@ -156,7 +156,7 @@ export function createServer() {
   app.post("/api/users/approve", handleApproveUser);
   app.delete("/api/users/pending/:userId", handleRejectUser);
   app.get("/api/users/settings", handleGetUserSettings);
-  app.patch("/api/users/settings", handleUpdateUserSettings);
+  app.patch("/api/users/settings/legacy", handleUpdateUserSettings);
   app.get("/api/users/stats", handleGetUserStats);
 
   // System control routes
