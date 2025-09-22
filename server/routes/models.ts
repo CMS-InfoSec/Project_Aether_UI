@@ -642,6 +642,9 @@ let datasets: DatasetInfo[] = [
   }
 ];
 
+// Simple in-memory audit log for admin visibility
+const auditLog: any[] = [];
+
 let sentimentPipelines: SentimentPipeline[] = [
   {
     id: 'twitter_pipeline',
@@ -733,26 +736,17 @@ export function handleStartTraining(req: Request, res: Response) {
     curriculumLevel = 'simple'
   } = req.body;
 
-  // Enhanced validation
-  if (!modelType || !coins || !lookbackDays || !algorithm) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Missing required fields: modelType, coins, lookbackDays, algorithm'
-    });
-  }
-
-  if (!Array.isArray(coins) || coins.length === 0) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Coins must be a non-empty array'
-    });
-  }
-
-  if (lookbackDays < 1 || lookbackDays > 365) {
-    return res.status(400).json({
-      status: 'error',
-      message: 'Lookback days must be between 1 and 365'
-    });
+  // Enhanced validation with field-specific errors
+  const fieldErrors: Record<string, string> = {};
+  if (!modelType) fieldErrors.modelType = 'Required';
+  if (!coins) fieldErrors.coins = 'Required';
+  if (!lookbackDays && lookbackDays !== 0) fieldErrors.lookbackDays = 'Required';
+  if (!algorithm) fieldErrors.algorithm = 'Required';
+  if (coins && !Array.isArray(coins)) fieldErrors.coins = 'Must be an array';
+  if (Array.isArray(coins) && coins.length === 0) fieldErrors.coins = 'Must include at least one symbol';
+  if (typeof lookbackDays === 'number' && (lookbackDays < 1 || lookbackDays > 365)) fieldErrors.lookbackDays = 'Must be between 1 and 365';
+  if (Object.keys(fieldErrors).length > 0) {
+    return res.status(422).json({ status: 'error', message: 'Validation failed', fields: fieldErrors });
   }
 
   // Check if a training job is already running (sequential gating)
@@ -773,6 +767,7 @@ export function handleStartTraining(req: Request, res: Response) {
     const parsedEnvironmentConfig = typeof environmentConfig === 'string' ? JSON.parse(environmentConfig) : environmentConfig;
 
     const jobId = `job_${Date.now()}`;
+    auditLog.unshift({ type: 'train:start', jobId, modelType, coins, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
     const newJob: TrainingJob = {
       jobId,
       modelType,
@@ -1256,6 +1251,7 @@ export function handleGetAllTrainingJobs(req: Request, res: Response) {
 
 // Cancel training job
 export function handleCancelTraining(req: Request, res: Response) {
+  auditLog.unshift({ type: 'train:cancel:attempt', jobId: req.params.jobId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { jobId } = req.params;
 
   const job = trainingJobs.find(j => j.jobId === jobId);
@@ -1294,6 +1290,7 @@ export function handleCancelTraining(req: Request, res: Response) {
 
 // Deploy model with enhanced checks
 export function handleDeployModel(req: Request, res: Response) {
+  auditLog.unshift({ type: 'model:deploy:attempt', modelId: req.params.modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { modelId } = req.params;
   const { founderApproval = false } = req.body;
 
@@ -1330,6 +1327,7 @@ export function handleDeployModel(req: Request, res: Response) {
   model.deployedAt = new Date().toISOString();
 
   console.log(`Model deployed: ${modelId} with founder approval`);
+  auditLog.unshift({ type: 'model:deployed', modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
 
   res.json({
     status: 'success',
@@ -1400,6 +1398,7 @@ export function handleGetSentimentPipelines(_req: Request, res: Response) {
 
 // Promote model with founder approval
 export function handlePromoteModel(req: Request, res: Response) {
+  auditLog.unshift({ type: 'model:promote:attempt', modelId: req.body?.modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { modelId, founderApproval } = req.body;
 
   if (!founderApproval) {
@@ -1428,6 +1427,7 @@ export function handlePromoteModel(req: Request, res: Response) {
   model.deployedAt = new Date().toISOString();
 
   console.log(`Model promoted: ${modelId} with founder approval`);
+  auditLog.unshift({ type: 'model:promoted', modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
 
   res.json({
     status: 'success',
@@ -1438,6 +1438,7 @@ export function handlePromoteModel(req: Request, res: Response) {
 
 // Start shadow testing
 export function handleStartShadow(req: Request, res: Response) {
+  auditLog.unshift({ type: 'model:shadow:start:attempt', modelId: req.body?.modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { modelId } = req.body;
 
   const model = models.find(m => m.modelId === modelId);
@@ -1459,6 +1460,7 @@ export function handleStartShadow(req: Request, res: Response) {
   model.shadowStart = new Date().toISOString();
 
   console.log(`Shadow testing started: ${modelId}`);
+  auditLog.unshift({ type: 'model:shadow:started', modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
 
   res.json({
     status: 'success',
@@ -1469,6 +1471,7 @@ export function handleStartShadow(req: Request, res: Response) {
 
 // Stop shadow testing
 export function handleStopShadow(req: Request, res: Response) {
+  auditLog.unshift({ type: 'model:shadow:stop:attempt', modelId: req.body?.modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { modelId } = req.body;
 
   const model = models.find(m => m.modelId === modelId);
@@ -1490,6 +1493,7 @@ export function handleStopShadow(req: Request, res: Response) {
   model.shadowEnd = new Date().toISOString();
 
   console.log(`Shadow testing stopped: ${modelId}`);
+  auditLog.unshift({ type: 'model:shadow:stopped', modelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
 
   res.json({
     status: 'success',
@@ -1500,6 +1504,7 @@ export function handleStopShadow(req: Request, res: Response) {
 
 // Rollback model
 export function handleRollbackModel(req: Request, res: Response) {
+  auditLog.unshift({ type: 'model:rollback:attempt', from: req.body?.fromModelId, to: req.body?.toModelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
   const { fromModelId, toModelId, founderApproval } = req.body;
 
   if (!founderApproval) {
@@ -1525,6 +1530,7 @@ export function handleRollbackModel(req: Request, res: Response) {
   toModel.deployedAt = new Date().toISOString();
 
   console.log(`Model rollback: ${fromModelId} -> ${toModelId}`);
+  auditLog.unshift({ type: 'model:rolled_back', from: fromModelId, to: toModelId, at: new Date().toISOString(), actor: (req as any).user?.id || 'admin' });
 
   res.json({
     status: 'success',
