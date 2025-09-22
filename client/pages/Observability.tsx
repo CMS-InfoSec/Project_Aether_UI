@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import copy from "@/lib/clipboard";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import apiFetch from "@/lib/apiClient";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import HelpTip from "@/components/ui/help-tip";
@@ -79,7 +80,7 @@ export default function Observability() {
   // Pollers
   const pollReadiness = useCallback(async () => {
     try {
-      const r = await fetch("/api/health/ready", { cache: "no-cache" });
+      const r = await apiFetch("/api/health/ready", { cache: "no-cache" });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       const j = await r.json();
       setReady(!!j.ready);
@@ -87,7 +88,7 @@ export default function Observability() {
       window.dispatchEvent(
         new CustomEvent("aether:readiness", { detail: { ready: !!j.ready } }),
       );
-      const d = await fetch("/api/health/ready/details", { cache: "no-cache" });
+      const d = await apiFetch("/api/health/ready/details", { cache: "no-cache" });
       setReadyDetails(await d.json());
       setReadyErr(null);
     } catch (e: any) {
@@ -99,7 +100,7 @@ export default function Observability() {
   const pollDependencies = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const d = await fetch("/api/health/dependencies", { cache: "no-cache" });
+      const d = await apiFetch("/api/health/dependencies", { cache: "no-cache" });
       const list: DependencyRow[] = await d.json();
       setDeps(list);
       setDepsErr(null);
@@ -111,7 +112,7 @@ export default function Observability() {
   const pollLiveness = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await fetch("/api/health/live/details", { cache: "no-cache" });
+      const r = await apiFetch("/api/health/live/details", { cache: "no-cache" });
       if (!r.ok) {
         if (r.status === 503) {
           setLiveErr("Service Unavailable");
@@ -129,7 +130,7 @@ export default function Observability() {
   const fetchMetrics = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await fetch("/api/metrics", { cache: "no-cache" });
+      const r = await apiFetch("/api/metrics", { cache: "no-cache" });
       if (r.status === 401 || r.status === 403) {
         setMetricsVisible(false);
         return;
@@ -206,7 +207,7 @@ export default function Observability() {
       if (!taskId || stopPolling) return;
       attempt += 1;
       try {
-        const r = await fetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
+        const r = await apiFetch(`/api/tasks/${encodeURIComponent(taskId)}`, {
           cache: "no-cache",
         });
         if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
@@ -587,7 +588,7 @@ export default function Observability() {
                 disabled={cooldownUser > 0}
                 onClick={async () => {
                   try {
-                    await fetch("/api/tasks/data-refresh", { method: "POST" });
+                    await apiFetch("/api/tasks/data-refresh", { method: "POST" });
                     setCooldownUser(30);
                   } catch {}
                 }}
@@ -604,7 +605,7 @@ export default function Observability() {
                 variant="outline"
                 onClick={async () => {
                   try {
-                    await fetch("/api/data/refresh", { method: "POST" });
+                    await apiFetch("/api/data/refresh", { method: "POST" });
                     setCooldownGlobal(60);
                   } catch {}
                 }}
@@ -634,7 +635,7 @@ export default function Observability() {
                 <Button
                   onClick={async () => {
                     try {
-                      const r = await fetch(
+                      const r = await apiFetch(
                         `/api/data/price-series?symbol=${encodeURIComponent(priceSymbol)}`,
                       );
                       const j = await r.json();
