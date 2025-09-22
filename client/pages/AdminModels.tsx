@@ -800,6 +800,7 @@ export default function AdminModels() {
       });
       return;
     }
+    if (!window.confirm(`Deploy model ${modelId}? This replaces current production.`)) return;
     try {
       const response = await apiFetch(`/api/models/deploy/${modelId}`, {
         method: "POST",
