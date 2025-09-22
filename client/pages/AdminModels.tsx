@@ -881,6 +881,7 @@ export default function AdminModels() {
   };
 
   const stopShadow = async (modelId: string) => {
+    if (!window.confirm(`Stop shadow for ${modelId}?`)) return;
     try {
       const r = await apiFetch("/api/models/shadow/stop", {
         method: "POST",
@@ -2974,7 +2975,7 @@ export default function AdminModels() {
                               {pipeline.type} Pipeline
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              Processing {pipeline.config.processingModel} ���{" "}
+                              Processing {pipeline.config.processingModel} •{" "}
                               {pipeline.config.updateFrequency} updates
                             </p>
                           </div>
