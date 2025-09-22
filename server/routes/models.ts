@@ -874,6 +874,53 @@ export function handleStartTraining(req: Request, res: Response) {
 }
 
 // Simulate realistic training workflow progress
+export function handleStartTrainingV1(req: Request, res: Response) {
+  try {
+    const q: any = (req as any).query || {};
+    const b: any = (req as any).body || {};
+
+    const modelType = b.model_type === 'rl' ? 'rl_agent'
+      : b.model_type === 'forecast' ? 'forecast'
+      : b.model_type === 'sentiment' ? 'sentiment'
+      : b.modelType;
+
+    const coins = Array.isArray(b.coin) ? b.coin
+      : Array.isArray(b.coins) ? b.coins : [];
+
+    const lookbackDays = b.lookback_days ?? b.lookbackDays;
+    const interval = b.interval || '1h';
+
+    let algorithm: any = b.algorithm;
+    if (!algorithm && (b.architecture === 'lstm' || b.architecture === 'transformer')) {
+      algorithm = String(b.architecture).toLowerCase() === 'lstm' ? 'LSTM' : 'Transformer';
+    }
+    if (typeof algorithm === 'string') {
+      const map: Record<string,string> = { ppo:'PPO', recurrent_ppo:'Recurrent PPO', sac:'SAC' };
+      algorithm = map[algorithm] || algorithm;
+    }
+
+    const tuneFlag = (String(q.tune || b.tune || '').toLowerCase() === 'true') || !!b.tuneFlag;
+    const callbackUrl = b.callback_url || b.callbackUrl;
+    const architecture = b.architecture;
+
+    (req as any).body = {
+      modelType,
+      coins,
+      lookbackDays,
+      interval,
+      algorithm,
+      architecture,
+      tuneFlag,
+      callbackUrl,
+    };
+
+    return handleStartTraining(req, res);
+  } catch (err) {
+    console.error('v1 training adapter error:', err);
+    return res.status(400).json({ status: 'error', message: 'Invalid request' });
+  }
+}
+
 function simulateTrainingProgress(jobId: string) {
   const job = trainingJobs.find(j => j.jobId === jobId);
   if (!job) return;
