@@ -1074,17 +1074,16 @@ export default function TradesPositions() {
                             setConsoleLoading(true);
                             try {
                               const res = await apiFetch(
-                                "/api/trades/execute",
+                                "/api/v1/trades/execute",
                                 {
                                   method: "POST",
                                   headers: {
                                     "Content-Type": "application/json",
                                   },
                                   body: JSON.stringify({
-                                    decision_id: decision?.decision_id,
-                                    symbol: decision?.symbol || symbol,
-                                    side: execSide,
-                                    size: execSize,
+                                    symbol: (decision?.symbol || symbol),
+                                    action: execSide,
+                                    amount: execSize,
                                   }),
                                 },
                               );
