@@ -567,6 +567,15 @@ export default function AdminModels() {
     }
   }, []);
 
+  const [audit, setAudit] = useState<any[]>([]);
+  const fetchAudit = useCallback(async () => {
+    try {
+      const r = await apiFetch('/api/models/audit');
+      const j = await r.json();
+      if (j.status === 'success') setAudit(j.data || []);
+    } catch {}
+  }, []);
+
   // Load all data on mount
   useEffect(() => {
     fetchTrainingJobs();
@@ -574,12 +583,14 @@ export default function AdminModels() {
     fetchCurriculum();
     fetchDatasets();
     fetchSentimentPipelines();
+    fetchAudit();
   }, [
     fetchTrainingJobs,
     fetchModels,
     fetchCurriculum,
     fetchDatasets,
     fetchSentimentPipelines,
+    fetchAudit,
   ]);
 
   // Auto-refresh training jobs every 10 seconds
