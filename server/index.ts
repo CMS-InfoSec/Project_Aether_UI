@@ -156,7 +156,7 @@ export function createServer() {
   app.post("/api/users/approve", handleApproveUser);
   app.delete("/api/users/pending/:userId", handleRejectUser);
   app.get("/api/users/settings", handleGetUserSettings);
-  app.patch("/api/users/settings/legacy", handleUpdateUserSettings);
+  app.patch("/api/users/settings", handleUpdateUserSettings);
   app.get("/api/users/stats", handleGetUserStats);
 
   // System control routes
@@ -282,14 +282,6 @@ export function createServer() {
   app.get("/api/user/trading-settings", handleGetTradingSettings);
   app.patch("/api/user/trading-settings", handleUpdateTradingSettings);
 
-  // Add request logging middleware for this specific route
-  app.patch("/api/users/settings", (req, res, next) => {
-    console.log('=== ROUTE HIT: /api/users/settings ===');
-    console.log('Method:', req.method);
-    console.log('Body:', req.body);
-    console.log('Headers:', req.headers);
-    next();
-  }, handleUpdateTradingSettings);
 
   app.get("/api/user/api-keys", handleGetApiKeys);
   app.delete("/api/user/api-keys", handleDeleteApiKeys);
