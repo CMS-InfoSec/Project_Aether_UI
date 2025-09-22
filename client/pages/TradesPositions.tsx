@@ -435,7 +435,7 @@ export default function TradesPositions() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await apiFetch("/api/markets/eligible?limit=100");
+        const r = await apiFetch("/api/v1/markets/eligible?limit=100");
         const j = await r.json();
         const syms = (j.items || []).map((m: any) => m.symbol);
         setEligibleSymbols(syms);
