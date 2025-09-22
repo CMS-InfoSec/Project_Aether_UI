@@ -223,7 +223,10 @@ export function handleAskLLM(req: Request, res: Response) {
       
       res.json({
         status: 'success',
-        data: response
+        data: response,
+        answer: response.answer,
+        message: response.answer,
+        content: response.answer
       });
       
     } catch (error) {
