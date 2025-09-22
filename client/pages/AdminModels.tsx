@@ -870,6 +870,7 @@ export default function AdminModels() {
       if (!r.ok) throw new Error(j.message || "Failed");
       toast({ title: "Shadow Started", description: modelId });
       fetchModels();
+      fetchAudit();
     } catch (e: any) {
       toast({
         title: "Shadow Failed",
@@ -2973,7 +2974,7 @@ export default function AdminModels() {
                               {pipeline.type} Pipeline
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                              Processing {pipeline.config.processingModel} •{" "}
+                              Processing {pipeline.config.processingModel} ���{" "}
                               {pipeline.config.updateFrequency} updates
                             </p>
                           </div>
