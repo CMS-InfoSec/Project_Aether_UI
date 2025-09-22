@@ -694,6 +694,12 @@ export function handleGetExecutionMetrics(_req: Request, res: Response){
   }
 }
 
+// Helper to push a new notification into the in-memory list
+export function pushNotification(newNotification: Notification) {
+  notifications.unshift(newNotification);
+  if (notifications.length > 100) notifications = notifications.slice(0, 100);
+}
+
 // Create new notification (for system use)
 export function handleCreateNotification(req: Request, res: Response) {
   try {
@@ -725,12 +731,7 @@ export function handleCreateNotification(req: Request, res: Response) {
       metadata
     };
 
-    notifications.unshift(newNotification);
-
-    // Keep only the latest 100 notifications
-    if (notifications.length > 100) {
-      notifications = notifications.slice(0, 100);
-    }
+    pushNotification(newNotification);
 
     res.status(201).json({
       status: 'success',
