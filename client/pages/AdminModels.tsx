@@ -462,11 +462,11 @@ export default function AdminModels() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await apiFetch("/api/models/history");
+      const response = await apiFetch("/api/models/history?limit=100&offset=0");
       const data = await response.json();
       if (data.status === "success") {
         // history items contain reduced fields; we will refetch full models for rich cards if needed
-        const fullResp = await apiFetch("/api/models");
+        const fullResp = await apiFetch("/api/models?limit=100&offset=0");
         const full = await fullResp
           .json()
           .catch(() => ({ status: "", data: [] }));
