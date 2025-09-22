@@ -826,6 +826,7 @@ export default function AdminModels() {
   };
 
   const promoteModel = async (modelId: string) => {
+    if (!window.confirm(`Promote model ${modelId} to production?`)) return;
     if (!founderApproval) {
       toast({
         title: "Approval Required",
