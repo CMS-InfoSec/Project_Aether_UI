@@ -609,6 +609,37 @@ export default function AdminModels() {
     fetchAudit,
   ]);
 
+  // Optional real-time updates via SSE (degrades to polling if unavailable)
+  useEffect(() => {
+    let es: EventSource | null = null;
+    try {
+      es = new EventSource("/api/models/jobs/stream");
+      es.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data || "{}");
+          const jobs = Array.isArray(msg) ? msg : (msg.jobs || msg.data || []);
+          if (Array.isArray(jobs)) {
+            setTrainingJobs(jobs);
+          } else if ((msg.job && msg.job.jobId) || msg.jobId) {
+            const up = (msg.job && msg.job.jobId) ? msg.job : msg;
+            setTrainingJobs((prev) => {
+              const idx = prev.findIndex((j) => j.jobId === up.jobId);
+              if (idx >= 0) {
+                const next = prev.slice();
+                next[idx] = { ...prev[idx], ...up } as any;
+                return next;
+              }
+              return [up as any, ...prev].slice(0, 100);
+            });
+          }
+        } catch {}
+      };
+    } catch {}
+    return () => {
+      try { es?.close(); } catch {}
+    };
+  }, []);
+
   // Auto-refresh training jobs every 10 seconds
   useEffect(() => {
     const interval = setInterval(() => {
