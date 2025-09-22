@@ -893,6 +893,7 @@ export default function AdminModels() {
       if (!r.ok) throw new Error(j.message || "Failed");
       toast({ title: "Shadow Stopped", description: modelId });
       fetchModels();
+      fetchAudit();
     } catch (e: any) {
       toast({
         title: "Shadow Stop Failed",
