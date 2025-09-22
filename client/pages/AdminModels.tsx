@@ -747,6 +747,12 @@ export default function AdminModels() {
         fetchTrainingJobs();
         fetchAudit();
       } else {
+        if (response.status === 400) {
+          const err = data;
+          const msg = err?.message || 'Failed to start training';
+          const running = err?.runningJob ? ` (running job: ${err.runningJob})` : '';
+          throw new Error(msg + running);
+        }
         throw new Error(data.message || "Failed to start training");
       }
     } catch (error) {
