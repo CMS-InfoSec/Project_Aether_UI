@@ -472,7 +472,12 @@ export default function AdminModels() {
       const data = await response.json();
       if (data.status === "success") {
         // history items contain reduced fields; we will refetch full models for rich cards if needed
-        const fullResp = await apiFetch("/api/models?limit=100&offset=0");
+        const fullQ = new URLSearchParams();
+        fullQ.set('limit','100');
+        fullQ.set('offset','0');
+        if (modelStatus) fullQ.set('status', modelStatus);
+        if (modelType) fullQ.set('type', modelType);
+        const fullResp = await apiFetch(`/api/models?${fullQ.toString()}`);
         const full = await fullResp
           .json()
           .catch(() => ({ status: "", data: [] }));
