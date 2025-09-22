@@ -462,7 +462,13 @@ export default function AdminModels() {
 
   const fetchModels = useCallback(async () => {
     try {
-      const response = await apiFetch("/api/models/history?limit=100&offset=0");
+      const params = new URLSearchParams();
+      params.set('limit','100');
+      params.set('offset','0');
+      if ((modelSearch || '').trim()) params.set('search', (modelSearch || '').trim());
+      if (modelStatus) params.set('status', modelStatus);
+      if (modelType) params.set('type', modelType);
+      const response = await apiFetch(`/api/models/history?${params.toString()}`);
       const data = await response.json();
       if (data.status === "success") {
         // history items contain reduced fields; we will refetch full models for rich cards if needed
