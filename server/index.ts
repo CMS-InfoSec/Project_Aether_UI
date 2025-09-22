@@ -135,6 +135,15 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Simple admin key check for sensitive model operations
+  function requireAdminKey(req: any, res: any, next: any) {
+    const key = req.get('X-API-Key');
+    if (key !== 'aether-admin-key-2024') {
+      return res.status(403).json({ status: 'error', message: 'Admin key required' });
+    }
+    next();
+  }
+
   // Authentication routes
   app.post("/api/auth/login", handleLogin);
   app.post("/api/auth/refresh", handleRefresh);
@@ -181,19 +190,19 @@ export function createServer() {
   app.post("/api/config/user", handleUpdateConfigUserSettings);
 
   // Models routes
-  app.post("/api/models/train", handleStartTraining);
+  app.post("/api/models/train", requireAdminKey, handleStartTraining);
   // v1 alias for compatibility with client
-  app.post("/api/v1/models/train", handleStartTrainingV1);
+  app.post("/api/v1/models/train", requireAdminKey, handleStartTrainingV1);
   app.get("/api/models/status/:jobId", handleGetTrainingStatus);
   app.get("/api/models/jobs", handleGetAllTrainingJobs);
-  app.delete("/api/models/train/:jobId", handleCancelTraining);
-  app.post("/api/models/deploy/:modelId", handleDeployModel);
+  app.delete("/api/models/train/:jobId", requireAdminKey, handleCancelTraining);
+  app.post("/api/models/deploy/:modelId", requireAdminKey, handleDeployModel);
   app.get("/api/models", handleGetAllModels);
   app.get("/api/models/history", (require('./routes/models').handleGetModelsHistory));
-  app.post("/api/models/promote", handlePromoteModel);
-  app.post("/api/models/shadow/start", handleStartShadow);
-  app.post("/api/models/shadow/stop", handleStopShadow);
-  app.post("/api/models/rollback", handleRollbackModel);
+  app.post("/api/models/promote", requireAdminKey, handlePromoteModel);
+  app.post("/api/models/shadow/start", requireAdminKey, handleStartShadow);
+  app.post("/api/models/shadow/stop", requireAdminKey, handleStopShadow);
+  app.post("/api/models/rollback", requireAdminKey, handleRollbackModel);
   app.get("/api/models/shadow", handleGetShadowTests);
   app.get("/api/models/curriculum", handleGetCurriculumStages);
   app.get("/api/models/datasets", handleGetDatasets);

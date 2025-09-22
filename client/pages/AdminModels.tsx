@@ -7,6 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import apiFetch from "@/lib/apiClient";
+import { useEffect, useState } from "react";
 import copy from "@/lib/clipboard";
 import HelpTip from "@/components/ui/help-tip";
 import { Button } from "@/components/ui/button";
@@ -695,6 +696,7 @@ export default function AdminModels() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(payload),
+        admin: true,
       });
 
       const data = await response.json();
@@ -744,6 +746,7 @@ export default function AdminModels() {
     try {
       const response = await apiFetch(`/api/models/train/${jobId}`, {
         method: "DELETE",
+        admin: true,
       });
 
       const data = await response.json();
@@ -782,6 +785,7 @@ export default function AdminModels() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ founderApproval }),
+        admin: true,
       });
       const data = await response.json();
       if (data.status === "success") {
@@ -815,6 +819,7 @@ export default function AdminModels() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId, founderApproval: true }),
+        admin: true,
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || "Failed");
@@ -836,6 +841,7 @@ export default function AdminModels() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId }),
+        admin: true,
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || "Failed");
@@ -856,6 +862,7 @@ export default function AdminModels() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId }),
+        admin: true,
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || "Failed");
@@ -884,6 +891,7 @@ export default function AdminModels() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fromModelId, toModelId, founderApproval: true }),
+        admin: true,
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j.message || "Failed");
@@ -901,6 +909,21 @@ export default function AdminModels() {
       });
     }
   };
+
+  // External tooling links
+  const [mlflowUrl, setMlflowUrl] = useState<string>("");
+  const [dvcUrl, setDvcUrl] = useState<string>("");
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await apiFetch('/api/config/runtime');
+        const j = await r.json();
+        const data = j?.data || {};
+        setMlflowUrl(String(data['mlflow.ui_url'] || ''));
+        setDvcUrl(String(data['dvc.registry_url'] || ''));
+      } catch {}
+    })();
+  }, []);
 
   // Explainability panels state
   const [diagModelId, setDiagModelId] = useState<string>("");
@@ -3072,11 +3095,11 @@ export default function AdminModels() {
                     with full reproducibility
                   </p>
                   <div className="flex justify-center space-x-4">
-                    <Button>
+                    <Button onClick={() => mlflowUrl && window.open(mlflowUrl, '_blank')} disabled={!mlflowUrl}>
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open MLflow UI
                     </Button>
-                    <Button variant="outline">
+                    <Button variant="outline" onClick={() => dvcUrl && window.open(dvcUrl, '_blank')} disabled={!dvcUrl}>
                       <GitBranch className="h-4 w-4 mr-2" />
                       DVC Registry
                     </Button>

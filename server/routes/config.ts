@@ -25,7 +25,10 @@ let runtimeConfig: RuntimeConfig = {
   'system.maintenance_mode': false,
   'logging.level': 'info',
   'monitoring.alert_threshold': 95,
-  'cache.ttl_seconds': 300
+  'cache.ttl_seconds': 300,
+  // External tooling endpoints
+  'mlflow.ui_url': '',
+  'dvc.registry_url': ''
 };
 
 let systemConfig: SystemConfig = {
