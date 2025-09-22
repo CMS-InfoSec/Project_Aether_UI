@@ -1098,7 +1098,7 @@ export default function TradesPositions() {
                               const j = await res.json();
                               toast({
                                 title: "Order accepted",
-                                description: `Exec ${j.data.execution_id} @ ${j.data.fill_price}`,
+                                description: j.id ? `Execution ${j.id}` : "Execution submitted",
                               });
                               fetchTrades(1);
                             } catch (e: any) {
