@@ -280,6 +280,7 @@ export function createServer() {
   app.get("/api/user/profile", handleGetUserProfile);
   app.patch("/api/user/profile", handleUpdateUserProfile);
   app.get("/api/user/trading-settings", handleGetTradingSettings);
+  app.patch("/api/user/trading-settings", handleUpdateTradingSettings);
 
   // Add request logging middleware for this specific route
   app.patch("/api/users/settings", (req, res, next) => {
