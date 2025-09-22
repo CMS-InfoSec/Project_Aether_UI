@@ -2115,6 +2115,37 @@ export default function AdminModels() {
                   Manage trained models with comprehensive performance metrics,
                   explainability, and deployment controls
                 </CardDescription>
+                <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
+                  <div className="md:col-span-2">
+                    <Input placeholder="Search by name or ID" value={modelSearch} onChange={(e)=> setModelSearch(e.target.value)} />
+                  </div>
+                  <div>
+                    <Select value={modelStatus} onValueChange={setModelStatus}>
+                      <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="trained">Trained</SelectItem>
+                        <SelectItem value="deployed">Deployed</SelectItem>
+                        <SelectItem value="shadow">Shadow</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Select value={modelType} onValueChange={setModelType}>
+                      <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="forecast">Forecast</SelectItem>
+                        <SelectItem value="rl_agent">RL Agent</SelectItem>
+                        <SelectItem value="sentiment">Sentiment</SelectItem>
+                        <SelectItem value="ensemble">Ensemble</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={()=>{ setModelSearch(""); setModelStatus(""); setModelType(""); }}>Clear</Button>
+                    <Button onClick={fetchModels}>Apply</Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="grid gap-6 lg:grid-cols-3">
