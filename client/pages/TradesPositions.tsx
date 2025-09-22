@@ -1034,7 +1034,7 @@ export default function TradesPositions() {
                     />
                   </div>
                   <Button
-                    disabled={consoleLoading || !decision?.decision_id}
+                    disabled={consoleLoading || !((decision?.symbol || symbol) && execSize > 0)}
                     onClick={() => setConfirmOpen(true)}
                   >
                     Execute Trade
