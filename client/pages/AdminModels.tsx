@@ -847,6 +847,7 @@ export default function AdminModels() {
       toast({ title: "Promoted", description: `Model ${modelId} promoted` });
       setFounderApproval(false);
       fetchModels();
+      fetchAudit();
     } catch (e: any) {
       toast({
         title: "Promotion Failed",
