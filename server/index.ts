@@ -208,7 +208,7 @@ export function createServer() {
   app.get("/api/models/datasets", handleGetDatasets);
   app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
   // Audit log endpoint
-  app.get('/api/models/audit', (_req, res) => {
+  app.get('/api/models/audit', requireAdminKey, (_req, res) => {
     try {
       const { auditLog } = require('./routes/models');
       const lim = 200;
