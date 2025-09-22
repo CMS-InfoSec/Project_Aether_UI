@@ -1,5 +1,3 @@
-import { Request, Response } from 'express';
-
 import type { Request, Response } from 'express';
 
 // Enhanced Types for AI Training Workflow
@@ -222,19 +220,6 @@ interface DatasetInfo {
     creator: string;
     tags: string[];
   };
-}
-
-export function handleExplainModel(req: Request, res: Response) {
-  const { modelId } = req.params as { modelId: string };
-  // Return a simple features list for any model id
-  const features = [
-    { name: 'volume', importance: 0.32 },
-    { name: 'momentum', importance: 0.27 },
-    { name: 'volatility', importance: 0.18 },
-    { name: 'sentiment', importance: 0.12 },
-    { name: 'liquidity', importance: 0.11 },
-  ];
-  res.json({ features, modelId });
 }
 
 interface SentimentPipeline {
@@ -1145,13 +1130,13 @@ function simulateTrainingProgress(jobId: string) {
       status: 'trained',
       accuracy: 0.7 + Math.random() * 0.2,
       performance: {
-        sharpeRatio: job.metrics.sharpeRatio,
-        maxDrawdown: job.metrics.maxDrawdown,
-        winRate: job.metrics.winRate,
+        sharpeRatio: job.metrics.sharpeRatio!,
+        maxDrawdown: job.metrics.maxDrawdown!,
+        winRate: job.metrics.winRate!,
         profitFactor: job.metrics.profitFactor || 1.8,
         sortino: job.metrics.sortino || 2.2,
         calmar: 2.5 + Math.random() * 1.0,
-        volatility: job.metrics.volatility,
+        volatility: job.metrics.volatility!,
         beta: 0.5 + Math.random() * 0.4,
         alpha: 0.05 + Math.random() * 0.1,
         informationRatio: 1.2 + Math.random() * 0.6
@@ -1247,6 +1232,28 @@ export function handleGetAllTrainingJobs(req: Request, res: Response) {
       offset: offsetNum
     }
   });
+}
+
+// Server-Sent Events stream for training jobs (lightweight real-time updates)
+export function handleStreamTrainingJobs(req: Request, res: Response) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  (res as any).flushHeaders?.();
+
+  const send = () => {
+    const payload = JSON.stringify({ type: 'jobs_snapshot', jobs: trainingJobs, ts: Date.now() });
+    res.write(`data: ${payload}\n\n`);
+  };
+
+  const interval = setInterval(send, 5000);
+  send();
+
+  const onClose = () => {
+    clearInterval(interval);
+    try { res.end(); } catch {}
+  };
+  (req as any).on('close', onClose);
 }
 
 // Cancel training job
