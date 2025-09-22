@@ -385,7 +385,7 @@ export default function AdminDashboard() {
           return prev + 10;
         });
       }, 200);
-      const response = await apiFetch("/api/reports/backtest");
+      const response = await apiFetch("/api/reports/backtest?format=daily");
       clearInterval(progressInterval);
       setBacktestProgress(100);
       if (response.ok) {
