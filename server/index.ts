@@ -195,6 +195,7 @@ export function createServer() {
   app.post("/api/v1/models/train", requireAdminKey, handleStartTrainingV1);
   app.get("/api/models/status/:jobId", handleGetTrainingStatus);
   app.get("/api/models/jobs", handleGetAllTrainingJobs);
+  app.get("/api/models/jobs/stream", (require('./routes/models').handleStreamTrainingJobs));
   app.delete("/api/models/train/:jobId", requireAdminKey, handleCancelTraining);
   app.post("/api/models/deploy/:modelId", requireAdminKey, handleDeployModel);
   app.get("/api/models", handleGetAllModels);
