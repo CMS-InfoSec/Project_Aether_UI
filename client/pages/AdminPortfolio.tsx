@@ -433,7 +433,7 @@ export default function AdminPortfolio() {
 
   const getModeBadge = (mode: string) => {
     const variants = {
-      live: { variant: "default" as const, color: "text-green-600" },
+      live: { variant: "default" as const, color: "text-white" },
       demo: { variant: "secondary" as const, color: "text-blue-600" },
       paper: { variant: "outline" as const, color: "text-gray-600" },
     };
