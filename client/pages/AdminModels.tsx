@@ -745,6 +745,7 @@ export default function AdminModels() {
 
         // Refresh training jobs
         fetchTrainingJobs();
+        fetchAudit();
       } else {
         throw new Error(data.message || "Failed to start training");
       }
