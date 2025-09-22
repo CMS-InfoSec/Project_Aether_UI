@@ -7,7 +7,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import apiFetch from "@/lib/apiClient";
-import { useEffect, useState } from "react";
 import copy from "@/lib/clipboard";
 import HelpTip from "@/components/ui/help-tip";
 import { Button } from "@/components/ui/button";
