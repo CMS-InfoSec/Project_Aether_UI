@@ -181,6 +181,8 @@ export function createServer() {
 
   // Models routes
   app.post("/api/models/train", handleStartTraining);
+  // v1 alias for compatibility with client
+  app.post("/api/v1/models/train", handleStartTraining);
   app.get("/api/models/status/:jobId", handleGetTrainingStatus);
   app.get("/api/models/jobs", handleGetAllTrainingJobs);
   app.delete("/api/models/train/:jobId", handleCancelTraining);
@@ -358,6 +360,8 @@ export function createServer() {
 
   // LLM/AI Assistant routes
   app.post("/api/llm/ask", handleAskLLM);
+  // v1 alias for compatibility with client
+  app.post("/api/v1/llm/ask", handleAskLLM);
   app.get("/api/llm/status", handleLLMStatus);
   app.delete("/api/llm/rate-limit/:userId", handleResetRateLimit);
 
