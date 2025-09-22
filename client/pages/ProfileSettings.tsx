@@ -364,7 +364,7 @@ export default function ProfileSettings() {
     try {
       const response = await handleApiRequest(
         () =>
-          apiFetch("/api/users/settings", {
+          apiFetch("/api/user/trading-settings", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ settings: tradingSettings }),
@@ -436,7 +436,7 @@ export default function ProfileSettings() {
 
       const response = await handleApiRequest(
         () =>
-          apiFetch("/api/users/settings", {
+          apiFetch("/api/user/trading-settings", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
