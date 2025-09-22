@@ -539,7 +539,7 @@ export default function AdminModels() {
     } finally {
       setIsLoading((prev) => ({ ...prev, models: false }));
     }
-  }, []);
+  }, [modelSearch, modelStatus, modelType]);
 
   const fetchCurriculum = useCallback(async () => {
     try {
