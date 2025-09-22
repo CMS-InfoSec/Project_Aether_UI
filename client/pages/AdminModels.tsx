@@ -400,21 +400,12 @@ export default function AdminModels() {
   const algorithmOptions = {
     forecast: [
       "LSTM",
-      "Transformer",
-      "CNN-LSTM",
-      "GRU",
-      "Prophet",
-      "XGBoost",
-      "ARIMA",
+      "Transformer"
     ],
     rl_agent: [
       "PPO",
       "Recurrent PPO",
-      "SAC",
-      "TD3",
-      "A2C",
-      "DDPG",
-      "Rainbow DQN",
+      "SAC"
     ],
     sentiment: [
       "FinBERT",
@@ -656,22 +647,54 @@ export default function AdminModels() {
       return;
     }
 
+    // Map to Project_Aether API schema
+    const model_type = trainingForm.modelType === 'rl_agent' ? 'rl' : trainingForm.modelType === 'forecast' ? 'forecast' : trainingForm.modelType;
+
+    // Guard unsupported types for backend training
+    if (model_type !== 'forecast' && model_type !== 'rl') {
+      toast({
+        title: "Unsupported",
+        description: "Backend training supports Forecast or RL models.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Algorithm/architecture mapping
+    const rlAlgoMap: Record<string, string> = {
+      'PPO': 'ppo',
+      'Recurrent PPO': 'recurrent_ppo',
+      'SAC': 'sac',
+    };
+    const archMap: Record<string, 'lstm' | 'transformer'> = {
+      'LSTM': 'lstm',
+      'Transformer': 'transformer',
+    } as const;
+
+    const payload: any = {
+      model_type,
+      coin: trainingForm.coins.slice(0, 10),
+      lookback_days: trainingForm.lookbackDays,
+      interval: trainingForm.interval,
+    };
+
+    if (model_type === 'rl') {
+      payload.algorithm = rlAlgoMap[trainingForm.algorithm] || 'ppo';
+    } else {
+      payload.architecture = archMap[trainingForm.algorithm] || 'lstm';
+    }
+
+    if (trainingForm.callbackUrl) payload.callback_url = trainingForm.callbackUrl;
+
     setIsProcessing(true);
 
     try {
-      const response = await apiFetch("/api/models/train", {
+      const response = await apiFetch(`/api/v1/models/train${trainingForm.tuneFlag ? '?tune=true' : ''}` as string, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...trainingForm,
-          architecture: JSON.parse(trainingForm.architecture),
-          environmentConfig:
-            trainingForm.modelType === "rl_agent"
-              ? JSON.parse(trainingForm.environmentConfig)
-              : undefined,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -696,7 +719,7 @@ export default function AdminModels() {
 
         toast({
           title: "Training Started",
-          description: `${trainingForm.modelType} model training initiated for ${trainingForm.coins.join(", ")}`,
+          description: `${model_type.toUpperCase()} training initiated for ${trainingForm.coins.join(", ")}`,
         });
 
         // Refresh training jobs
