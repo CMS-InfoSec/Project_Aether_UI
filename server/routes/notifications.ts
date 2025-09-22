@@ -35,6 +35,7 @@ export function handleAlertApiFailure(_req: Request, res: Response){
 export function handleAlertMarketCapFailure(_req: Request, res: Response){
   res.json({ status:'success', data: { template:'alert_market_cap_failure', dispatched:true } });
 }
+import { pushNotification } from './reports';
 export function handleSendNotification(req: Request, res: Response){
   const { title='Manual', message='Text', severity='info', category='system' } = (req.body||{}) as any;
   const newNotification = {
@@ -48,5 +49,6 @@ export function handleSendNotification(req: Request, res: Response){
     read: false,
     metadata: { manual:true }
   };
-  res.json({ status:'success', data: newNotification });
+  pushNotification(newNotification as any);
+  res.status(201).json({ status:'success', data: newNotification });
 }
