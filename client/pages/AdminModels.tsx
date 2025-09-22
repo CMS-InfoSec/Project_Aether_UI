@@ -709,6 +709,15 @@ export default function AdminModels() {
         admin: true,
       });
 
+      if (response.status === 422) {
+        const err = await response.json();
+        const fields = err.fields || {};
+        const msgs = Object.entries(fields).map(([k,v])=> `${k}: ${v}`).join(', ');
+        toast({ title: 'Validation Error', description: msgs || err.message || 'Invalid inputs', variant:'destructive' });
+        setIsProcessing(false);
+        return;
+      }
+
       const data = await response.json();
 
       if (data.status === "success") {
