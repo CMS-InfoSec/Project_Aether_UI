@@ -118,12 +118,23 @@ export async function apiFetch(
             if (key) resHeaders.append(key, value);
           });
 
-          const body = xhr.response instanceof Blob ? xhr.response : new Blob([xhr.response]);
-          const response = new Response(body, {
-            status,
-            statusText,
-            headers: resHeaders,
-          });
+          const nullBodyStatuses = new Set([204, 205, 304]);
+          const bodyAllowed = !nullBodyStatuses.has(status);
+          let response: Response;
+          if (bodyAllowed) {
+            const body = xhr.response instanceof Blob ? xhr.response : new Blob([xhr.response]);
+            response = new Response(body, {
+              status,
+              statusText,
+              headers: resHeaders,
+            });
+          } else {
+            response = new Response(null, {
+              status,
+              statusText,
+              headers: resHeaders,
+            });
+          }
           resolve(response);
         };
 
