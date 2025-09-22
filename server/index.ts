@@ -207,6 +207,16 @@ export function createServer() {
   app.get("/api/models/curriculum", handleGetCurriculumStages);
   app.get("/api/models/datasets", handleGetDatasets);
   app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
+  // Audit log endpoint
+  app.get('/api/models/audit', (_req, res) => {
+    try {
+      const { auditLog } = require('./routes/models');
+      const lim = 200;
+      res.json({ status: 'success', data: auditLog.slice(0, lim) });
+    } catch (e) {
+      res.status(500).json({ status: 'error', message: 'Audit log unavailable' });
+    }
+  });
 
   // Markets routes
   app.get("/api/markets/eligible", handleGetEligibleMarkets);
