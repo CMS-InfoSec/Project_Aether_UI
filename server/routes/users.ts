@@ -203,7 +203,8 @@ export const handleApproveUser: RequestHandler = (req, res) => {
         id: user.id,
         email: user.email,
         role: assignedRole || user.requestedRole,
-        approvedAt: new Date().toISOString()
+        approvedAt: new Date().toISOString(),
+        audit_id: `AUD-${Date.now()}`
       }
     });
   } catch (error) {
