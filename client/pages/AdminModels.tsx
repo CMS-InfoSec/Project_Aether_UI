@@ -929,6 +929,7 @@ export default function AdminModels() {
       });
       setFounderApproval(false);
       fetchModels();
+      fetchAudit();
     } catch (e: any) {
       toast({
         title: "Rollback Failed",
