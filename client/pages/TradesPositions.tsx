@@ -210,7 +210,7 @@ export default function TradesPositions() {
       try {
         const offset = (page - 1) * itemsPerPage;
         const response = await apiFetch(
-          `/api/v1/trades/recent?limit=${itemsPerPage}&offset=${offset}`,
+          `/api/trades/recent?limit=${itemsPerPage}&offset=${offset}`,
           {
             cache: "no-cache",
             headers: { "Cache-Control": "no-cache" },
@@ -247,7 +247,7 @@ export default function TradesPositions() {
       try {
         const offset = (page - 1) * itemsPerPage;
         const response = await apiFetch(
-          `/api/v1/trades/positions/open?limit=${itemsPerPage}&offset=${offset}`,
+          `/api/positions/open?limit=${itemsPerPage}&offset=${offset}`,
           {
             cache: "no-cache",
             headers: { "Cache-Control": "no-cache" },
@@ -279,7 +279,7 @@ export default function TradesPositions() {
     setVetoingTrades((prev) => new Set(prev).add(tradeId));
 
     try {
-      const response = await apiFetch("/api/v1/trades/admin/veto", {
+      const response = await apiFetch("/api/admin/trades/veto", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -435,7 +435,7 @@ export default function TradesPositions() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await apiFetch("/api/v1/markets/eligible?limit=100");
+        const r = await apiFetch("/api/markets/eligible?limit=100");
         const j = await r.json();
         const syms = (j.items || []).map((m: any) => m.symbol);
         setEligibleSymbols(syms);
@@ -901,7 +901,7 @@ export default function TradesPositions() {
                       }
                       setConsoleLoading(true);
                       try {
-                        const res = await apiFetch("/api/v1/trades/decision", {
+                        const res = await apiFetch("/api/trades/decision", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
@@ -1074,7 +1074,7 @@ export default function TradesPositions() {
                             setConsoleLoading(true);
                             try {
                               const res = await apiFetch(
-                                "/api/v1/trades/execute",
+                                "/api/trades/execute",
                                 {
                                   method: "POST",
                                   headers: {
