@@ -46,7 +46,8 @@ import {
   handleGetShadowTests,
   handleGetCurriculumStages,
   handleGetDatasets,
-  handleGetSentimentPipelines
+  handleGetSentimentPipelines,
+  handleStartTrainingV1
 } from "./routes/models";
 import {
   handleGetEligibleMarkets,
@@ -182,7 +183,7 @@ export function createServer() {
   // Models routes
   app.post("/api/models/train", handleStartTraining);
   // v1 alias for compatibility with client
-  app.post("/api/v1/models/train", handleStartTraining);
+  app.post("/api/v1/models/train", handleStartTrainingV1);
   app.get("/api/models/status/:jobId", handleGetTrainingStatus);
   app.get("/api/models/jobs", handleGetAllTrainingJobs);
   app.delete("/api/models/train/:jobId", handleCancelTraining);
