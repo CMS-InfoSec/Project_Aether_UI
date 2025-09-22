@@ -762,6 +762,7 @@ export default function AdminModels() {
 
   // Cancel training job
   const cancelTraining = async (jobId: string) => {
+    if (!window.confirm(`Cancel training job ${jobId}?`)) return;
     try {
       const response = await apiFetch(`/api/models/train/${jobId}`, {
         method: "DELETE",
