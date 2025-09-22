@@ -901,13 +901,16 @@ export default function TradesPositions() {
                       }
                       setConsoleLoading(true);
                       try {
-                        const res = await apiFetch("/api/trades/decision", {
+                        const res = await apiFetch("/api/v1/trades/decision", {
                           method: "POST",
                           headers: { "Content-Type": "application/json" },
                           body: JSON.stringify({
                             symbol: sym,
                             size,
-                            include: includeContext,
+                            include_strategies: includeContext.strategies,
+                            include_risk_limits: includeContext.risk,
+                            include_sentiment: includeContext.sentiment,
+                            include_positions: includeContext.exposure,
                           }),
                         });
                         if (!res.ok) {
@@ -917,9 +920,9 @@ export default function TradesPositions() {
                           throw new Error(j.detail || `HTTP ${res.status}`);
                         }
                         const j = await res.json();
-                        setDecision(j.data);
-                        setExecSide(j.data?.recommended || "buy");
-                        setExecSize(j.data?.size || size);
+                        setDecision(j);
+                        setExecSide((j.action || j.recommended || "buy") as any);
+                        setExecSize(size);
                       } catch (e: any) {
                         toast({
                           title: "Error",
