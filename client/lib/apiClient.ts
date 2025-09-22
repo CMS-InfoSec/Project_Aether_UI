@@ -228,7 +228,18 @@ export async function getJson<T = any>(
   init?: ApiFetchInit,
 ): Promise<T> {
   const r = await apiFetch(path, init);
-  return r.json();
+  if (r.status === 204 || r.status === 205) return null as any;
+  const ct = r.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await r.text();
+    if (!text) return null as any;
+    try {
+      return JSON.parse(text) as T;
+    } catch (err) {
+      throw new Error(`Expected JSON response but received: ${text}`);
+    }
+  }
+  return r.json() as Promise<T>;
 }
 export async function postJson<T = any>(
   path: string,
@@ -241,7 +252,18 @@ export async function postJson<T = any>(
     body: JSON.stringify(body),
     ...init,
   });
-  return r.json();
+  if (r.status === 204 || r.status === 205) return null as any;
+  const ct = r.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await r.text();
+    if (!text) return null as any;
+    try {
+      return JSON.parse(text) as T;
+    } catch (err) {
+      throw new Error(`Expected JSON response but received: ${text}`);
+    }
+  }
+  return r.json() as Promise<T>;
 }
 export async function patchJson<T = any>(
   path: string,
@@ -254,14 +276,36 @@ export async function patchJson<T = any>(
     body: JSON.stringify(body),
     ...init,
   });
-  return r.json();
+  if (r.status === 204 || r.status === 205) return null as any;
+  const ct = r.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await r.text();
+    if (!text) return null as any;
+    try {
+      return JSON.parse(text) as T;
+    } catch (err) {
+      throw new Error(`Expected JSON response but received: ${text}`);
+    }
+  }
+  return r.json() as Promise<T>;
 }
 export async function deleteJson<T = any>(
   path: string,
   init?: ApiFetchInit,
 ): Promise<T> {
   const r = await apiFetch(path, { method: "DELETE", ...(init || {}) });
-  return r.json();
+  if (r.status === 204 || r.status === 205) return null as any;
+  const ct = r.headers.get("content-type") || "";
+  if (!ct.includes("application/json")) {
+    const text = await r.text();
+    if (!text) return null as any;
+    try {
+      return JSON.parse(text) as T;
+    } catch (err) {
+      throw new Error(`Expected JSON response but received: ${text}`);
+    }
+  }
+  return r.json() as Promise<T>;
 }
 
 export default apiFetch;
