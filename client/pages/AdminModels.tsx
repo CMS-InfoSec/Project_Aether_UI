@@ -858,6 +858,7 @@ export default function AdminModels() {
   };
 
   const startShadow = async (modelId: string) => {
+    if (!window.confirm(`Start shadow for ${modelId}?`)) return;
     try {
       const r = await apiFetch("/api/models/shadow/start", {
         method: "POST",
