@@ -113,13 +113,16 @@ export default function AdminSystemConfig() {
   // Available config keys for dropdown (mock - in production would come from Config.__annotations__)
   const AVAILABLE_CONFIG_KEYS = [
     'trading.max_position_size',
-    'trading.risk_limit_percent', 
+    'trading.risk_limit_percent',
     'trading.stop_loss_percent',
     'api.rate_limit_per_minute',
     'system.maintenance_mode',
     'logging.level',
     'monitoring.alert_threshold',
-    'cache.ttl_seconds'
+    'cache.ttl_seconds',
+    // External tooling endpoints
+    'mlflow.ui_url',
+    'dvc.registry_url'
   ];
 
   // Load initial data
