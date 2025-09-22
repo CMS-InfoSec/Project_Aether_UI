@@ -2610,6 +2610,35 @@ export default function AdminModels() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="inline-flex items-center gap-2">Recent Model Actions <HelpTip content="Latest admin actions for training, deployment, shadow, and rollback." /></CardTitle>
+                <CardDescription>
+                  Server-side audit of sensitive model operations
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center mb-3">
+                  <div className="text-sm text-muted-foreground">Showing latest {Math.min(200, audit.length)} events</div>
+                  <Button variant="outline" size="sm" onClick={fetchAudit}>Refresh</Button>
+                </div>
+                <div className="text-xs space-y-1 max-h-64 overflow-auto">
+                  {audit.length === 0 ? (
+                    <div className="text-muted-foreground">No recent actions</div>
+                  ) : (
+                    audit.slice(0, 200).map((e: any, idx: number) => (
+                      <div key={idx} className="grid grid-cols-5 gap-2 border-t pt-1">
+                        <div><span className="font-mono">{new Date(e.at).toLocaleString()}</span></div>
+                        <div className="col-span-2">{e.type}</div>
+                        <div>{e.modelId || e.jobId || `${e.from || ''}${e.to ? '→'+e.to : ''}`}</div>
+                        <div className="text-muted-foreground">{e.actor}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Curriculum Tab - Enhanced with progress tracking */}
