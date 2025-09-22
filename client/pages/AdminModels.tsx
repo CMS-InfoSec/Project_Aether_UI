@@ -570,7 +570,7 @@ export default function AdminModels() {
   const [audit, setAudit] = useState<any[]>([]);
   const fetchAudit = useCallback(async () => {
     try {
-      const r = await apiFetch('/api/models/audit');
+      const r = await apiFetch('/api/models/audit', { admin: true });
       const j = await r.json();
       if (j.status === 'success') setAudit(j.data || []);
     } catch {}
