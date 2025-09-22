@@ -440,6 +440,11 @@ export default function AdminModels() {
   const intervalOptions = ["1m", "5m", "15m", "1h", "4h", "1d"];
   const riskProfiles = ["conservative", "moderate", "aggressive"];
 
+  // Model Registry filters
+  const [modelSearch, setModelSearch] = useState<string>("");
+  const [modelStatus, setModelStatus] = useState<string>("");
+  const [modelType, setModelType] = useState<string>("");
+
   // API integration functions
   const fetchTrainingJobs = useCallback(async () => {
     try {
