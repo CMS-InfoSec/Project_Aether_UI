@@ -247,7 +247,7 @@ export default function TradesPositions() {
       try {
         const offset = (page - 1) * itemsPerPage;
         const response = await apiFetch(
-          `/api/positions/open?limit=${itemsPerPage}&offset=${offset}`,
+          `/api/v1/trades/positions/open?limit=${itemsPerPage}&offset=${offset}`,
           {
             cache: "no-cache",
             headers: { "Cache-Control": "no-cache" },
