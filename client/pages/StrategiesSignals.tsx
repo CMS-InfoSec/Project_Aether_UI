@@ -128,7 +128,7 @@ export default function StrategiesSignals() {
     setLoadingRegistry(true);
     setError(null);
     try {
-      const r = await fetch("/api/strategies/flags");
+      const r = await apiFetch("/api/strategies/flags");
       const j = await r.json();
       const items: StrategyFlag[] = j.data || [];
       setRegistry(items);
@@ -143,7 +143,7 @@ export default function StrategiesSignals() {
   const loadTelemetry = async () => {
     setTelemetryLoading(true);
     try {
-      const r = await fetch("/api/strategies/breakdown");
+      const r = await apiFetch("/api/strategies/breakdown");
       const j = await r.json();
       lastBreakdown.current = breakdown;
       setBreakdown(j.data);
@@ -164,7 +164,7 @@ export default function StrategiesSignals() {
       return;
     }
     try {
-      const s = await fetch(
+      const s = await apiFetch(
         `/api/news/sentiment?asset=${encodeURIComponent(a)}`,
       );
       if (s.status === 422) {
@@ -185,11 +185,11 @@ export default function StrategiesSignals() {
       }
       const sj = await s.json();
       setSentiment(sj);
-      const n = await fetch("/api/news/latest");
+      const n = await apiFetch("/api/news/latest");
       setNews((await n.json()).items || []);
-      const so = await fetch("/api/social/latest");
+      const so = await apiFetch("/api/social/latest");
       setSocial((await so.json()).items || []);
-      const m = await fetch("/api/signals/metrics");
+      const m = await apiFetch("/api/signals/metrics");
       setMetrics(await m.json());
     } catch {}
   };
@@ -197,7 +197,7 @@ export default function StrategiesSignals() {
   const loadExplainability = async () => {
     setExplainLoading(true);
     try {
-      const r = await fetch("/api/strategies/explain");
+      const r = await apiFetch("/api/strategies/explain");
       const j = await r.json();
       setExplainCaps(j?.caps || null);
       setExplainItems(j?.items || []);
@@ -209,7 +209,7 @@ export default function StrategiesSignals() {
 
   const loadModels = async () => {
     try {
-      const r = await fetch("/api/models");
+      const r = await apiFetch("/api/models");
       const j = await r.json();
       setModels(j?.data || j || []);
     } catch {}
@@ -248,7 +248,7 @@ export default function StrategiesSignals() {
 
   const submitReweight = async () => {
     try {
-      const r = await fetch("/api/strategy/controller/reweight", {
+      const r = await apiFetch("/api/strategy/controller/reweight", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weights }),
@@ -270,7 +270,7 @@ export default function StrategiesSignals() {
 
   const toggleTrading = async (name: string, enabled: boolean) => {
     try {
-      const r = await fetch(
+      const r = await apiFetch(
         `/api/strategies/${encodeURIComponent(name)}/trading`,
         {
           method: "PATCH",
@@ -559,7 +559,7 @@ export default function StrategiesSignals() {
                         );
                         if (!ok) return;
                         try {
-                          const r = await fetch("/api/news/replay-failures", {
+                          const r = await apiFetch("/api/news/replay-failures", {
                             method: "POST",
                           });
                           const j = await r.json();
@@ -787,7 +787,7 @@ export default function StrategiesSignals() {
                           Number(illiquidityDuration);
                       if (downtimeDuration)
                         payload.downtime_duration = Number(downtimeDuration);
-                      const r = await fetch("/api/strategies/stress-test", {
+                      const r = await apiFetch("/api/strategies/stress-test", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify(payload),
@@ -1160,7 +1160,7 @@ export default function StrategiesSignals() {
                             throw new Error("invalid series");
                           q = `?data=${encodeURIComponent(JSON.stringify(vals))}`;
                         }
-                        const r = await fetch(
+                        const r = await apiFetch(
                           `/api/models/explain/${encodeURIComponent(modelId)}${q}`,
                         );
                         const j = await r.json();
@@ -1376,7 +1376,7 @@ export default function StrategiesSignals() {
                   size="sm"
                   onClick={async () => {
                     try {
-                      const r = await fetch("/api/signals/metrics");
+                      const r = await apiFetch("/api/signals/metrics");
                       const j = await r.json();
                       setMetrics(j);
                       toast({
@@ -1520,7 +1520,7 @@ export default function StrategiesSignals() {
                     if (ingUser) headers["X-Target-User"] = ingUser;
                     if (ingAuth) headers["Authorization"] = ingAuth;
                     if (ingSig) headers["X-Provider-Signature"] = ingSig;
-                    const res = await fetch("/api/signals/ingest", {
+                    const res = await apiFetch("/api/signals/ingest", {
                       method: "POST",
                       headers,
                       body: ingPayload,
