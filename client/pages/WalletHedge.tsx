@@ -240,6 +240,7 @@ export default function WalletHedge() {
   const [hedgePercent, setHedgePercent] = useState(0);
   const [autoAdjustEnabled, setAutoAdjustEnabled] = useState(true);
   const [isHedgeDialogOpen, setIsHedgeDialogOpen] = useState(false);
+  const [hedgeAmount, setHedgeAmount] = useState<number>(0);
 
   // Utility functions
   const formatCurrency = (amount: number) => {
@@ -486,11 +487,15 @@ export default function WalletHedge() {
     setLoading((prev) => ({ ...prev, executeHedge: true }));
 
     try {
+      if (!withdrawable || hedgeAmount <= 0 || hedgeAmount > (withdrawable?.maxSafeWithdrawal || 0)) {
+        throw new Error("Enter a valid hedge amount within the safe limit");
+      }
       const response = await apiFetch("/api/hedge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: "manual_hedge",
+          amount: hedgeAmount,
         }),
       });
 
@@ -533,6 +538,8 @@ export default function WalletHedge() {
     fetchHedgeHistory,
     fetchWalletBalances,
     fetchWithdrawableFunds,
+    hedgeAmount,
+    withdrawable,
   ]);
 
   // Save hedge settings
@@ -586,6 +593,13 @@ export default function WalletHedge() {
       setLoading((prev) => ({ ...prev, saveSettings: false }));
     }
   }, [hedgePercent, autoAdjustEnabled]);
+
+  useEffect(() => {
+    if (isHedgeDialogOpen) {
+      const max = withdrawable?.maxSafeWithdrawal || 0;
+      setHedgeAmount(max > 0 ? Number(max.toFixed(2)) : 0);
+    }
+  }, [isHedgeDialogOpen, withdrawable]);
 
   // Initial data loading
   useEffect(() => {
@@ -718,6 +732,21 @@ export default function WalletHedge() {
                   </AlertDescription>
                 </Alert>
               )}
+              <div className="space-y-2">
+                <Label htmlFor="hedgeAmount">Amount to hedge (USDT)</Label>
+                <Input
+                  id="hedgeAmount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={hedgeAmount}
+                  onChange={(e) => setHedgeAmount(parseFloat(e.target.value) || 0)}
+                  placeholder="Enter amount"
+                />
+                {withdrawable && hedgeAmount > withdrawable.maxSafeWithdrawal && (
+                  <div className="text-xs text-red-600">Exceeds max safe amount</div>
+                )}
+              </div>
               <DialogFooter>
                 <Button
                   variant="outline"
@@ -725,7 +754,7 @@ export default function WalletHedge() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={executeHedge} disabled={loading.executeHedge}>
+                <Button onClick={executeHedge} disabled={loading.executeHedge || hedgeAmount <= 0 || (withdrawable ? hedgeAmount > withdrawable.maxSafeWithdrawal : false)}>
                   {loading.executeHedge ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
