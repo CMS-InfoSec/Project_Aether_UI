@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import { defineConfig } from "vite";
 import path from "path";
 
 // Server build configuration
