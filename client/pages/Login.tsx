@@ -36,7 +36,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      const success = await login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password, remember);
       if (success) {
         navigate('/dashboard');
       } else {
