@@ -66,7 +66,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  const login = async (email: string, password: string, remember: boolean = true): Promise<boolean> => {
     try {
       setIsLoading(true);
       const response = await apiFetch("/api/auth/login", {
@@ -77,8 +77,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
       if (!response.ok) return false;
       const data = await response.json();
-      localStorage.setItem("access_token", data.access_token);
-      localStorage.setItem("refresh_token", data.refresh_token);
+      const store = remember ? localStorage : sessionStorage;
+      store.setItem("access_token", data.access_token);
+      store.setItem("refresh_token", data.refresh_token);
       await fetchMe();
       return true;
     } catch (error) {
