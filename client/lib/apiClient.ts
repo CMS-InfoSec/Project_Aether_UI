@@ -208,10 +208,8 @@ export async function apiFetch(
         const ok = await tokenRefresher();
         if (ok) {
           // Update Authorization header with the latest token
-          const newAccess =
-            typeof window !== "undefined"
-              ? localStorage.getItem("access_token")
-              : null;
+          let newAccess = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+          if (!newAccess && typeof window !== "undefined") newAccess = sessionStorage.getItem("access_token");
           if (newAccess) headers.set("Authorization", `Bearer ${newAccess}`);
           res = await apiFetch(urlStr, { ...(init || {}), _retried: true });
         }
