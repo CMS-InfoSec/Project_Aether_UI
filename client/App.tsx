@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 // Pages
 import Login from "./pages/Login";
 import ResetConfirm from "./pages/ResetConfirm";
+import Signup from "./pages/Signup";
 
 // User Pages (accessible to both USER and ADMIN)
 import UserDashboard from "./pages/UserDashboard";
@@ -184,6 +185,7 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<Signup />} />
       <Route path="/reset/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
       <Route path="/" element={<AppLayout />}>
         {/* Default redirect to dashboard */}
