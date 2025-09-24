@@ -30,10 +30,6 @@ export default function Signup() {
       setError("Enter a valid email address");
       return;
     }
-    if (founderApprovals.length < requiredApprovals) {
-      setError(`${requiredApprovals} founder approvals required for ${role}`);
-      return;
-    }
 
     setSubmitting(true);
     try {
@@ -45,7 +41,7 @@ export default function Signup() {
       if (res?.status && res.status !== "success") {
         throw new Error(res.error || res.message || "Invitation failed");
       }
-      setSuccess("Request submitted. Your account will be activated after founder approvals.");
+      setSuccess("Request submitted. Your account will remain pending until founders approve access.");
       setTimeout(() => navigate("/login"), 1500);
     } catch (e: any) {
       setError(e?.message || "Failed to submit invitation");
@@ -60,7 +56,7 @@ export default function Signup() {
         <CardHeader>
           <CardTitle>Create Account</CardTitle>
           <CardDescription>
-            Request access. You need {requiredApprovals} founder approvals for the {role} role.
+            Request access. Founders must approve: {requiredApprovals} approvals needed for {role}. You can provide any approvals already obtained (optional).
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -83,9 +79,9 @@ export default function Signup() {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="founders">Founder Approvals (IDs or emails, separated by commas or new lines)</Label>
-              <textarea id="founders" className="w-full border rounded p-2 h-24 text-sm" value={founders} onChange={(e)=> setFounders(e.target.value)} placeholder="founder1@example.com, founder2@example.com, founder3@example.com" />
-              <div className="text-xs text-muted-foreground">Provide at least {requiredApprovals} unique entries.</div>
+              <Label htmlFor="founders">Founder Approvals (IDs or emails, optional)</Label>
+              <textarea id="founders" className="w-full border rounded p-2 h-24 text-sm" value={founders} onChange={(e)=> setFounders(e.target.value)} placeholder="founder1@example.com, founder2@example.com" />
+              <div className="text-xs text-muted-foreground">Optional: include any approvals you already have. Remaining approvals will be gathered by founders.</div>
             </div>
             <div className="flex justify-between">
               <Button type="button" variant="outline" onClick={()=> navigate('/login')}>Back to Login</Button>
