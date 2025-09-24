@@ -152,7 +152,6 @@ export default function Login() {
                 </label>
                 <div className="flex items-center gap-3">
                   <button className="text-sm text-primary hover:underline" type="button" onClick={()=> setResetOpen(true)}>Forgot password?</button>
-                  <a className="text-sm text-primary hover:underline" href="/signup">Create account</a>
                 </div>
               </div>
 

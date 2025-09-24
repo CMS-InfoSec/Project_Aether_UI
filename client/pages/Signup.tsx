@@ -1,93 +1,22 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { postJson } from "@/lib/apiClient";
+import { useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"user" | "admin">("user");
-  const [founders, setFounders] = useState<string>("");
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
-
-  const requiredApprovals = role === "admin" ? 5 : 3;
-
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null); setSuccess(null);
-    const founderApprovals = founders
-      .split(/[,\n]/)
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    if (!email || !email.includes("@")) {
-      setError("Enter a valid email address");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const res = await postJson<any>("/api/users/invite", {
-        email,
-        role,
-        founderApprovals,
-      }, { noAuth: true });
-      if (res?.status && res.status !== "success") {
-        throw new Error(res.error || res.message || "Invitation failed");
-      }
-      setSuccess("Request submitted. Your account will remain pending until founders approve access.");
-      setTimeout(() => navigate("/login"), 1500);
-    } catch (e: any) {
-      setError(e?.message || "Failed to submit invitation");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Create Account</CardTitle>
+          <CardTitle>Access by Invitation Only</CardTitle>
           <CardDescription>
-            Request access. Founders must approve: {requiredApprovals} approvals needed for {role}. You can provide any approvals already obtained (optional).
+            This platform requires a founder invitation to create an account. If you believe you should have access, please contact a founder or administrator to receive an invitation.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
-            {error && (
-              <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>
-            )}
-            {success && (
-              <Alert><AlertDescription>{success}</AlertDescription></Alert>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" value={email} onChange={(e)=> setEmail(e.target.value)} placeholder="you@example.com" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <div className="flex gap-2">
-                <Button type="button" variant={role === 'user' ? 'default' : 'outline'} onClick={()=> setRole('user')}>User</Button>
-                <Button type="button" variant={role === 'admin' ? 'default' : 'outline'} onClick={()=> setRole('admin')}>Admin</Button>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="founders">Founder Approvals (IDs or emails, optional)</Label>
-              <textarea id="founders" className="w-full border rounded p-2 h-24 text-sm" value={founders} onChange={(e)=> setFounders(e.target.value)} placeholder="founder1@example.com, founder2@example.com" />
-              <div className="text-xs text-muted-foreground">Optional: include any approvals you already have. Remaining approvals will be gathered by founders.</div>
-            </div>
-            <div className="flex justify-between">
-              <Button type="button" variant="outline" onClick={()=> navigate('/login')}>Back to Login</Button>
-              <Button type="submit" disabled={submitting || !email}>{submitting ? 'Submitting…' : 'Request Access'}</Button>
-            </div>
-          </form>
+          <div className="flex justify-end">
+            <Button onClick={() => navigate('/login')}>Back to Login</Button>
+          </div>
         </CardContent>
       </Card>
     </div>
