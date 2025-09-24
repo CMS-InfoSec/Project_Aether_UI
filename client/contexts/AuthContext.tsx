@@ -34,7 +34,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     setTokenRefresher(refreshToken);
-    const token = localStorage.getItem("access_token");
+    let token = localStorage.getItem("access_token");
+    if (!token) token = sessionStorage.getItem("access_token");
     if (token) {
       fetchMe();
     } else {
