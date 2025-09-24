@@ -6,7 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { getJson } from "@/lib/apiClient";
 import copy from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -133,86 +133,117 @@ export default function AdminBacktest() {
   const [selectedReportPath, setSelectedReportPath] = useState<string>("");
   const [lastChecksum, setLastChecksum] = useState<string>("");
 
-  // Mock backtest report data
-  const mockReport: BacktestReport = {
-    summary: {
-      net_pnl: 125780.5,
-      return_percentage: 0.2289,
-      win_rate: 0.6842,
-      profit_factor: 1.847,
-      expectancy: 185.32,
-      sharpe_ratio: 1.923,
-      sortino_ratio: 2.456,
-      confidence_decay: 0.0156,
-      alternative_scenario_success: 0.7891,
-      daily_volatility: 0.0234,
-      streak_consistency: 0.8923,
-      risk_of_ruin: 0.0034,
-      max_drawdown: -0.0823,
-      fee_percentage: 0.0015,
-      slippage_bps: 2.5,
-    },
-    equity_curve: Array.from({ length: 50 }, (_, i) => ({
-      date: new Date(Date.now() - (49 - i) * 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split("T")[0],
-      balance: 100000 + (Math.random() * 50000 - 10000) + i * 2000,
-      trade_number: i + 1,
-    })),
-    trade_history: Array.from({ length: 127 }, (_, i) => ({
-      action: Math.random() > 0.5 ? "BUY" : ("SELL" as "BUY" | "SELL"),
-      symbol: ["BTC", "ETH", "ADA", "SOL", "MATIC", "DOT"][
-        Math.floor(Math.random() * 6)
-      ],
-      amount: Math.random() * 10 + 0.1,
-      price: Math.random() * 50000 + 1000,
-      timestamp: new Date(Date.now() - i * 2 * 60 * 60 * 1000).toISOString(),
-      pnl: (Math.random() - 0.3) * 5000,
-    })),
-    factor_performance: {
-      momentum: {
-        average_confidence: 0.7845,
-        win_rate: 0.7234,
-        return_contribution: 0.3456,
-      },
-      mean_reversion: {
-        average_confidence: 0.6789,
-        win_rate: 0.6543,
-        return_contribution: 0.2987,
-      },
-      volatility: {
-        average_confidence: 0.8123,
-        win_rate: 0.789,
-        return_contribution: 0.2234,
-      },
-      volume_profile: {
-        average_confidence: 0.7456,
-        win_rate: 0.6789,
-        return_contribution: 0.1323,
-      },
-    },
-    hypothetical_trades: {
-      hypothetical_pnl: 45672.3,
-      hypothetical_success_rate: 0.7234,
-    },
-    generated_at: new Date().toISOString(),
-    test_period: {
-      start_date: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString(),
-      end_date: new Date().toISOString(),
-    },
-  };
+  // Transform server backtest payload into BacktestReport shape
+  function toReport(payload: any): BacktestReport {
+    const curve = Array.isArray(payload?.equityCurve) ? payload.equityCurve : [];
+    const firstEq = curve.length ? Number(curve[0].equity) : 0;
+    const lastEq = curve.length ? Number(curve[curve.length - 1].equity) : 0;
+    const netPnL = lastEq - firstEq;
+    const retPct = firstEq > 0 ? lastEq / firstEq - 1 : 0;
 
-  // Fetch report data
+    // Build equity curve with date strings
+    const equity_curve = curve.map((pt: any, i: number) => {
+      const date = new Date(Date.now() - (curve.length - 1 - i) * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .split("T")[0];
+      return { date, balance: Number(pt.equity) || 0, trade_number: i + 1 };
+    });
+
+    // Daily volatility from equity curve
+    const rets: number[] = [];
+    for (let i = 1; i < equity_curve.length; i++) {
+      const prev = equity_curve[i - 1].balance || 1;
+      const curr = equity_curve[i].balance || 1;
+      rets.push(prev > 0 ? curr / prev - 1 : 0);
+    }
+    const mean = rets.length ? rets.reduce((a, b) => a + b, 0) / rets.length : 0;
+    const variance = rets.length
+      ? rets.reduce((s, r) => s + Math.pow(r - mean, 2), 0) / rets.length
+      : 0;
+    const dailyVol = Math.sqrt(variance);
+
+    // Factor performance
+    const factorPerf: BacktestReport["factor_performance"] = payload?.factorAttribution
+      ? Object.fromEntries(
+          (payload.factorAttribution as any[]).map((f: any) => [
+            String(f.factor || "unknown"),
+            {
+              average_confidence: 0,
+              win_rate: 0,
+              return_contribution: Number(f.contribution) || 0,
+            },
+          ]),
+        )
+      : undefined;
+
+    // Hypothetical trades
+    const hypoRaw = payload?.hypotheticalTrades;
+    const hypothetical_trades = hypoRaw
+      ? {
+          hypothetical_pnl: Number(hypoRaw.avgPnl || 0) * Number(hypoRaw.count || 0),
+          hypothetical_success_rate: 0,
+        }
+      : undefined;
+
+    const startDate = equity_curve.length
+      ? new Date(Date.now() - (equity_curve.length - 1) * 86400000).toISOString()
+      : new Date(Date.now() - 30 * 86400000).toISOString();
+    const endDate = new Date().toISOString();
+
+    const fees = Number(payload?.totals?.fees) || 0;
+    const slippage = Number(payload?.totals?.slippage) || 0;
+
+    return {
+      summary: {
+        net_pnl: isFinite(netPnL) ? netPnL : 0,
+        return_percentage: isFinite(retPct) ? retPct : 0,
+        win_rate: 0,
+        profit_factor: Number(payload?.profitFactor) || 0,
+        expectancy: Number(payload?.expectancy) || 0,
+        sharpe_ratio: Number(payload?.sharpe) || 0,
+        sortino_ratio: Number(payload?.sortino) || 0,
+        confidence_decay: 0,
+        alternative_scenario_success: 0,
+        daily_volatility: isFinite(dailyVol) ? dailyVol : 0,
+        streak_consistency: 0,
+        risk_of_ruin: 0,
+        max_drawdown: Number(payload?.maxDrawdown) || 0,
+        fee_percentage: lastEq > 0 ? fees / lastEq : 0,
+        slippage_bps: lastEq > 0 ? (slippage / lastEq) * 10000 : 0,
+      },
+      equity_curve,
+      trade_history: [],
+      factor_performance: factorPerf,
+      hypothetical_trades,
+      generated_at: new Date().toISOString(),
+      test_period: { start_date: startDate, end_date: endDate },
+    };
+  }
+
+  // Fetch report data from backend
   const fetchReport = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      // Mock API response
-      setReport(mockReport);
+      const r = await apiFetch("/api/reports/backtest?format=json");
+      if (r.status === 404) {
+        setReport(null);
+        setError("Not Found");
+        return;
+      }
+      if (!r.ok) {
+        let msg = `HTTP ${r.status}`;
+        try {
+          const j = await r.json();
+          msg = j?.error || j?.message || msg;
+        } catch {}
+        throw new Error(msg);
+      }
+      const j = await r.json();
+      const payload = j?.data ?? j;
+      const rep = toReport(payload);
+      setReport(rep);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch backtest report",
