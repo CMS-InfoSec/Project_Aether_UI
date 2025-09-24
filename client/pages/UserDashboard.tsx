@@ -42,54 +42,8 @@ import {
   Cell,
 } from "recharts";
 
-import { getJson } from "@/lib/apiClient";
+import { getJson, patchJson } from "@/lib/apiClient";
 
-// Mock data for user-specific charts (fallback only)
-const dailyReturnsData = [
-  { date: "2024-01-15", returns: 2.4, benchmark: 1.8 },
-  { date: "2024-01-16", returns: -1.2, benchmark: -0.8 },
-  { date: "2024-01-17", returns: 3.1, benchmark: 2.2 },
-  { date: "2024-01-18", returns: 1.8, benchmark: 1.5 },
-  { date: "2024-01-19", returns: -0.5, benchmark: 0.2 },
-  { date: "2024-01-20", returns: 2.8, benchmark: 1.9 },
-  { date: "2024-01-21", returns: 1.5, benchmark: 1.1 },
-];
-
-const portfolioAllocation = [
-  { name: "BTC", value: 35, amount: 21500 },
-  { name: "ETH", value: 25, amount: 15250 },
-  { name: "SOL", value: 15, amount: 9150 },
-  { name: "AVAX", value: 10, amount: 6100 },
-  { name: "MATIC", value: 10, amount: 6100 },
-  { name: "USDT", value: 5, amount: 3050 },
-];
-
-const recentTrades = [
-  {
-    asset: "BTC",
-    type: "buy",
-    amount: 0.25,
-    price: 43200,
-    pnl: 150,
-    time: "2h ago",
-  },
-  {
-    asset: "ETH",
-    type: "sell",
-    amount: 1.5,
-    price: 2680,
-    pnl: -75,
-    time: "4h ago",
-  },
-  {
-    asset: "SOL",
-    type: "buy",
-    amount: 50,
-    price: 88,
-    pnl: 125,
-    time: "6h ago",
-  },
-];
 
 const COLORS = [
   "hsl(var(--chart-1))",
@@ -109,46 +63,15 @@ interface Notification {
   read: boolean;
 }
 
-const mockNotifications: Notification[] = [
-  {
-    id: "1",
-    title: "Trade Executed",
-    message: "Successfully bought 0.25 BTC at $43,200",
-    severity: "success",
-    timestamp: "2024-01-21T14:30:00Z",
-    read: false,
-  },
-  {
-    id: "2",
-    title: "Price Alert",
-    message: "ETH has reached your target price of $2,700",
-    severity: "info",
-    timestamp: "2024-01-21T13:15:00Z",
-    read: false,
-  },
-  {
-    id: "3",
-    title: "Stop Loss Triggered",
-    message: "SOL position closed due to stop loss at $85",
-    severity: "warning",
-    timestamp: "2024-01-21T11:45:00Z",
-    read: true,
-  },
-  {
-    id: "4",
-    title: "Portfolio Rebalanced",
-    message: "Your portfolio has been automatically rebalanced",
-    severity: "info",
-    timestamp: "2024-01-21T10:20:00Z",
-    read: false,
-  },
-];
 
 export default function UserDashboard() {
   const [notifications, setNotifications] =
-    useState<Notification[]>(mockNotifications);
+    useState<Notification[]>([]);
   const [dailyReport, setDailyReport] = useState<any>(null);
   const [weeklyReport, setWeeklyReport] = useState<any>(null);
+  const [performanceData, setPerformanceData] = useState<Array<{date:string; returns:number; benchmark:number}>>([]);
+  const [allocationData, setAllocationData] = useState<Array<{name:string; value:number; amount?:number}>>([]);
+  const [recentTrades, setRecentTrades] = useState<Array<{asset:string; type:'buy'|'sell'; amount:number; price:number; pnl:number; time:string}>>([]);
   const [isRefreshing, setIsRefreshing] = useState({
     daily: false,
     weekly: false,
@@ -161,6 +84,8 @@ export default function UserDashboard() {
     loadDailyReport();
     loadWeeklyReport();
     loadNotifications();
+    loadPerAsset();
+    loadRecentTrades();
 
     // Cleanup function
     return () => {
@@ -184,6 +109,8 @@ export default function UserDashboard() {
         activeTrades: data?.activePortfolios ?? 0,
         lastUpdated: data?.lastUpdated || new Date().toISOString(),
       });
+      const dr = Array.isArray(data?.dailyReturnsData) ? data.dailyReturnsData : [];
+      setPerformanceData(dr.map((d:any)=> ({ date: d.date, returns: Number(d.returns)||0, benchmark: Number(d.benchmark)||0 })));
     } catch (error) {
       console.error("Error loading daily report:", error);
     } finally {
@@ -200,11 +127,13 @@ export default function UserDashboard() {
       const j = await getJson<any>("/api/reports/weekly");
       const data = j?.data || j;
       if (!mounted) return;
+      const sortedBest = Array.isArray(data?.weeklyAssetData) ? [...data.weeklyAssetData].sort((a:any,b:any)=> (b.returns||0)-(a.returns||0)) : [];
+      const sortedWorst = Array.isArray(data?.weeklyAssetData) ? [...data.weeklyAssetData].sort((a:any,b:any)=> (a.returns||0)-(b.returns||0)) : [];
       setWeeklyReport({
         weeklyReturn: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(data?.weeklyReturn || 0),
         weeklyReturnPercent: `${(data?.weeklyReturnPercent ?? 0).toFixed(2)}%`,
-        bestPerformer: `${data?.weeklyAssetData?.sort?.((a:any,b:any)=> (b.returns||0)-(a.returns||0))[0]?.asset || "-"} (+${(data?.weeklyAssetData?.[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
-        worstPerformer: `${data?.weeklyAssetData?.sort?.((a:any,b:any)=> (a.returns||0)-(b.returns||0))[0]?.asset || "-"} (${(data?.weeklyAssetData?.[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
+        bestPerformer: `${sortedBest[0]?.asset || "-"} (+${(sortedBest[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
+        worstPerformer: `${sortedWorst[0]?.asset || "-"} (${(sortedWorst[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
         winRate: `${Math.round((data?.winRate ?? 0)*100)}%`,
         sharpeRatio: Number(data?.sharpeRatio ?? 0).toFixed ? Number(data?.sharpeRatio).toFixed(2) : data?.sharpeRatio,
         lastUpdated: data?.lastUpdated || new Date().toISOString(),
@@ -235,11 +164,49 @@ export default function UserDashboard() {
     }
   };
 
-  const markNotificationAsRead = (id: string) => {
+  const loadPerAsset = async () => {
+    try {
+      const j = await getJson<any>("/api/reports/per-asset");
+      const data = j?.data || j;
+      const assets = Array.isArray(data?.assets) ? data.assets : [];
+      setAllocationData(assets.map((a:any)=> ({ name: a.symbol || a.name, value: Number(a.allocation)||0, amount: Number(a.currentPrice)||undefined })));
+    } catch (e) {
+      console.error("Error loading per-asset report:", e);
+    }
+  };
+
+  const loadRecentTrades = async () => {
+    try {
+      const j = await getJson<any>("/api/trades/recent");
+      const items = Array.isArray(j?.items) ? j.items : [];
+      const toAgo = (ts:string) => {
+        const diff = Date.now() - new Date(ts).getTime();
+        const m = Math.floor(diff/60000);
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m/60);
+        if (h < 24) return `${h}h ago`;
+        const d = Math.floor(h/24);
+        return `${d}d ago`;
+      };
+      setRecentTrades(items.map((t:any)=> ({
+        asset: String(t.symbol||'').split('/')[0] || t.symbol || '-',
+        type: (t.action === 'sell' ? 'sell' : 'buy') as 'buy'|'sell',
+        amount: Number(t.amount)||0,
+        price: Number(t.price)||0,
+        pnl: Number(t.net_pnl ?? t.pnl ?? 0),
+        time: t.timestamp ? toAgo(t.timestamp) : '',
+      })));
+    } catch (e) {
+      console.error("Error loading recent trades:", e);
+    }
+  };
+
+  const markNotificationAsRead = async (id: string) => {
     if (!mounted) return;
     setNotifications((prev) =>
       prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)),
     );
+    try { await patchJson(`/api/notifications/${id}/read`, { read: true }); } catch {}
   };
 
   const getSeverityIcon = (severity: string) => {
@@ -392,9 +359,9 @@ export default function UserDashboard() {
                   <HelpTip content="Line chart comparing your daily returns against a benchmark." />
                 </CardHeader>
                 <CardContent>
-                  {dailyReturnsData && dailyReturnsData.length > 0 ? (
+                  {performanceData && performanceData.length > 0 ? (
                     <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={dailyReturnsData}>
+                      <LineChart data={performanceData}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                         <YAxis tick={{ fontSize: 12 }} />
@@ -436,11 +403,11 @@ export default function UserDashboard() {
                 <HelpTip content="Breakdown of assets by percentage of your portfolio." />
               </CardHeader>
               <CardContent>
-                {portfolioAllocation && portfolioAllocation.length > 0 ? (
+                {allocationData && allocationData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={300}>
                     <RechartsPieChart>
                       <Pie
-                        data={portfolioAllocation}
+                        data={allocationData}
                         cx="50%"
                         cy="50%"
                         outerRadius={80}
@@ -448,16 +415,14 @@ export default function UserDashboard() {
                         dataKey="value"
                         label={({ name, value }) => `${name} ${value}%`}
                       >
-                        {portfolioAllocation.map((entry, index) => (
+                        {allocationData.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
                             fill={COLORS[index % COLORS.length]}
                           />
                         ))}
                       </Pie>
-                      <Tooltip
-                        formatter={(value, name) => [`${value}%`, name]}
-                      />
+                      <Tooltip formatter={(value, name) => [`${value}%`, name]} />
                     </RechartsPieChart>
                   </ResponsiveContainer>
                 ) : (
