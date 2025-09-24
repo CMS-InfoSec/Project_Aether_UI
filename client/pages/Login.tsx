@@ -169,9 +169,6 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-3 text-center">
-              <button className="text-sm text-primary hover:underline" onClick={()=> setResetOpen(true)}>Forgot password?</button>
-            </div>
 
             {/* Demo credentials hint */}
             <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border/50">
