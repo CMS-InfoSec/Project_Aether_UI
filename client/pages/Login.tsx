@@ -16,6 +16,7 @@ export default function Login() {
     email: '',
     password: ''
   });
+  const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
