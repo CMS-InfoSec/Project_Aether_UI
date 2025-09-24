@@ -42,7 +42,9 @@ import {
   Cell,
 } from "recharts";
 
-// Mock data for user-specific charts
+import { getJson } from "@/lib/apiClient";
+
+// Mock data for user-specific charts (fallback only)
 const dailyReturnsData = [
   { date: "2024-01-15", returns: 2.4, benchmark: 1.8 },
   { date: "2024-01-16", returns: -1.2, benchmark: -0.8 },
@@ -170,17 +172,17 @@ export default function UserDashboard() {
     if (!mounted) return;
     setIsRefreshing((prev) => ({ ...prev, daily: true }));
     try {
-      // Mock API call - replace with GET /reports/daily
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const j = await getJson<any>("/api/reports/daily");
+      const data = j?.data || j;
       if (!mounted) return;
       setDailyReport({
-        portfolioValue: "$61,150",
-        dailyChange: "+$1,245",
-        dailyChangePercent: "+2.08%",
-        totalReturn: "+$8,150",
-        totalReturnPercent: "+15.3%",
-        activeTrades: 3,
-        lastUpdated: new Date().toISOString(),
+        portfolioValue: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(1000000 + (data?.totalReturn || 0)),
+        dailyChange: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(data?.totalReturn || 0),
+        dailyChangePercent: `${(data?.totalReturnPercent ?? 0).toFixed(2)}%`,
+        totalReturn: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(data?.totalReturn || 0),
+        totalReturnPercent: `${(data?.totalReturnPercent ?? 0).toFixed(2)}%`,
+        activeTrades: data?.activePortfolios ?? 0,
+        lastUpdated: data?.lastUpdated || new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error loading daily report:", error);
@@ -195,17 +197,17 @@ export default function UserDashboard() {
     if (!mounted) return;
     setIsRefreshing((prev) => ({ ...prev, weekly: true }));
     try {
-      // Mock API call - replace with GET /reports/weekly
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const j = await getJson<any>("/api/reports/weekly");
+      const data = j?.data || j;
       if (!mounted) return;
       setWeeklyReport({
-        weeklyReturn: "+$3,750",
-        weeklyReturnPercent: "+6.5%",
-        bestPerformer: "SOL (+18.2%)",
-        worstPerformer: "MATIC (-2.1%)",
-        winRate: "67%",
-        sharpeRatio: 1.85,
-        lastUpdated: new Date().toISOString(),
+        weeklyReturn: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(data?.weeklyReturn || 0),
+        weeklyReturnPercent: `${(data?.weeklyReturnPercent ?? 0).toFixed(2)}%`,
+        bestPerformer: `${data?.weeklyAssetData?.sort?.((a:any,b:any)=> (b.returns||0)-(a.returns||0))[0]?.asset || "-"} (+${(data?.weeklyAssetData?.[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
+        worstPerformer: `${data?.weeklyAssetData?.sort?.((a:any,b:any)=> (a.returns||0)-(b.returns||0))[0]?.asset || "-"} (${(data?.weeklyAssetData?.[0]?.returns ?? 0).toFixed?.(1) || 0}%)`,
+        winRate: `${Math.round((data?.winRate ?? 0)*100)}%`,
+        sharpeRatio: Number(data?.sharpeRatio ?? 0).toFixed ? Number(data?.sharpeRatio).toFixed(2) : data?.sharpeRatio,
+        lastUpdated: data?.lastUpdated || new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error loading weekly report:", error);
@@ -220,9 +222,10 @@ export default function UserDashboard() {
     if (!mounted) return;
     setIsRefreshing((prev) => ({ ...prev, notifications: true }));
     try {
-      // Mock API call - replace with GET /notifications
-      await new Promise((resolve) => setTimeout(resolve, 800));
-      // Data already loaded from mock
+      const j = await getJson<any>("/api/notifications");
+      const data = j?.data || j;
+      const items = data?.notifications || data?.items || [];
+      if (Array.isArray(items)) setNotifications(items as any);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
