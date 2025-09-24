@@ -183,6 +183,7 @@ const AppRouter = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
       <Route path="/" element={<AppLayout />}>
         {/* Default redirect to dashboard */}
         <Route
