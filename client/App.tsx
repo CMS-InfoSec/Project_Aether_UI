@@ -11,6 +11,7 @@ import { useState, useEffect } from "react";
 
 // Pages
 import Login from "./pages/Login";
+import ResetConfirm from "./pages/ResetConfirm";
 
 // User Pages (accessible to both USER and ADMIN)
 import UserDashboard from "./pages/UserDashboard";
