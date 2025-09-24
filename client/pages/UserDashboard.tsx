@@ -320,10 +320,10 @@ export default function UserDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">$61,150</div>
+                <div className="text-2xl font-bold">{dailyReport?.portfolioValue || "$0"}</div>
                 <p className="text-xs text-muted-foreground">
                   <TrendingUp className="inline h-3 w-3 mr-1" />
-                  +2.08% today
+                  {dailyReport?.dailyChangePercent || "+0.00%"} today
                 </p>
               </CardContent>
             </Card>
@@ -337,7 +337,7 @@ export default function UserDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-accent">+$1,245</div>
+                <div className="text-2xl font-bold text-accent">{dailyReport?.dailyChange || "$0"}</div>
                 <p className="text-xs text-muted-foreground">
                   Since market open
                 </p>
@@ -355,7 +355,7 @@ export default function UserDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-accent">+$8,150</div>
+                <div className="text-2xl font-bold text-accent">{dailyReport?.totalReturn || "$0"}</div>
                 <p className="text-xs text-muted-foreground">+15.3% all time</p>
               </CardContent>
             </Card>
@@ -371,7 +371,7 @@ export default function UserDashboard() {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">3</div>
+                <div className="text-2xl font-bold">{dailyReport?.activeTrades ?? 0}</div>
                 <p className="text-xs text-muted-foreground">Open positions</p>
               </CardContent>
             </Card>
