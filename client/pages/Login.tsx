@@ -145,9 +145,17 @@ export default function Login() {
                 </div>
               </div>
 
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <input type="checkbox" className="h-4 w-4" checked={remember} onChange={(e)=> setRemember(e.target.checked)} />
+                  Remember me
+                </label>
+                <button className="text-sm text-primary hover:underline" type="button" onClick={()=> setResetOpen(true)}>Forgot password?</button>
+              </div>
+
               <Button
                 type="submit"
-                className="w-full h-11 text-base font-medium"
+                className="w-full h-11 text-base font-medium mt-2"
                 disabled={isSubmitting || !formData.email || !formData.password}
               >
                 {isSubmitting ? (
