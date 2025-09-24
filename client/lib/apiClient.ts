@@ -72,8 +72,10 @@ export async function apiFetch(
   );
 
   // Attach Authorization unless disabled
-  const access =
-    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  let access = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  if (!access && typeof window !== "undefined") {
+    access = sessionStorage.getItem("access_token");
+  }
   if (!init?.noAuth && access && !headers.has("Authorization")) {
     headers.set("Authorization", `Bearer ${access}`);
   }
