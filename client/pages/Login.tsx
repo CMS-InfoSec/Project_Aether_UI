@@ -150,7 +150,10 @@ export default function Login() {
                   <input type="checkbox" className="h-4 w-4" checked={remember} onChange={(e)=> setRemember(e.target.checked)} />
                   Remember me
                 </label>
-                <button className="text-sm text-primary hover:underline" type="button" onClick={()=> setResetOpen(true)}>Forgot password?</button>
+                <div className="flex items-center gap-3">
+                  <button className="text-sm text-primary hover:underline" type="button" onClick={()=> setResetOpen(true)}>Forgot password?</button>
+                  <a className="text-sm text-primary hover:underline" href="/signup">Create account</a>
+                </div>
               </div>
 
               <Button
