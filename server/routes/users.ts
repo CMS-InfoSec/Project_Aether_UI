@@ -67,7 +67,7 @@ const mockUserSettings = new Map<string, UserSettingsRequest>();
 // Invite User
 export const handleInviteUser: RequestHandler = (req, res) => {
   try {
-    const { email, role, founderApprovals } = req.body as InviteUserRequest;
+    const { email, role, founderApprovals } = req.body as Partial<InviteUserRequest> as any;
 
     // Validation
     if (!email || !email.includes('@')) {
@@ -85,12 +85,9 @@ export const handleInviteUser: RequestHandler = (req, res) => {
     }
 
     const requiredApprovals = role === 'admin' ? 5 : 3;
-    if (!founderApprovals || founderApprovals.length < requiredApprovals) {
-      return res.status(400).json({
-        status: 'error',
-        error: `${requiredApprovals} founder approvals required for ${role} role`
-      });
-    }
+    const approvalsList: string[] = Array.isArray(founderApprovals) ? founderApprovals.filter(Boolean) : [];
+    // Signup is open to anyone; approvals are collected asynchronously by founders.
+    // We accept the request even if approvals are zero or below required threshold.
 
     // Check if user already exists
     const existingUser = mockPendingUsers.find(u => u.email === email);
@@ -106,10 +103,10 @@ export const handleInviteUser: RequestHandler = (req, res) => {
       id: `user_${Date.now()}`,
       email,
       requestedRole: role,
-      approvalsReceived: founderApprovals.length,
+      approvalsReceived: approvalsList.length,
       approvalsNeeded: role === 'admin' ? 5 : 3,
       invitedAt: new Date().toISOString(),
-      founderApprovals
+      founderApprovals: approvalsList
     };
 
     mockPendingUsers.push(newUser);
