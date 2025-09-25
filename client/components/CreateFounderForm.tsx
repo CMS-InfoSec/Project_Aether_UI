@@ -242,22 +242,24 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
             </Button>
           </form>
 
-          {/* Development Reset Button */}
-          <div className="mt-4 pt-4 border-t border-gray-200">
-            <p className="text-xs text-gray-500 mb-2 text-center">
-              Development Only
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full text-xs"
-              onClick={handleResetSystem}
-              disabled={isResetting || isLoading}
-            >
-              {isResetting ? "Resetting..." : "Reset System for Testing"}
-            </Button>
-          </div>
+          {/* Development Reset Button (only shown when explicitly enabled) */}
+          {typeof window !== "undefined" && localStorage.getItem("enable-bootstrap-reset") === "true" && (
+            <div className="mt-4 pt-4 border-t border-gray-200">
+              <p className="text-xs text-gray-500 mb-2 text-center">
+                Development Only
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={handleResetSystem}
+                disabled={isResetting || isLoading}
+              >
+                {isResetting ? "Resetting..." : "Reset System for Testing"}
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
