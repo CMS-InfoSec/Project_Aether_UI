@@ -170,7 +170,7 @@ export default function AuditLogs() {
     let wb: WebSocket | null = null;
     try {
       wt = new WebSocket(
-        wsBase.replace(/^http/, "ws").replace(/\/$/, "") + "/api/v1/ws/trades",
+        wsBase.replace(/^http/, "ws").replace(/\/$/, "") + "/api/v1/events/trades",
       );
       wt.onmessage = (ev) => {
         try {
@@ -183,7 +183,7 @@ export default function AuditLogs() {
     try {
       wb = new WebSocket(
         wsBase.replace(/^http/, "ws").replace(/\/$/, "") +
-          "/api/v1/ws/balances",
+          "/api/v1/events/balances",
       );
       wb.onmessage = (ev) => {
         try {
