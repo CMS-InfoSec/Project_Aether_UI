@@ -386,7 +386,7 @@ export default function AdminSystemControl() {
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/system/mode', {
+      const response = await apiRequest('/api/v1/system/mode', {
         method: 'POST',
         body: JSON.stringify({
           mode: selectedMode,
