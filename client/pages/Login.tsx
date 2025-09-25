@@ -150,9 +150,7 @@ export default function Login() {
                   <input type="checkbox" className="h-4 w-4" checked={remember} onChange={(e)=> setRemember(e.target.checked)} />
                   Remember me
                 </label>
-                <div className="flex items-center gap-3">
-                  <button className="text-sm text-primary hover:underline" type="button" onClick={()=> setResetOpen(true)}>Forgot password?</button>
-                </div>
+                <div className="flex items-center gap-3"></div>
               </div>
 
               <Button
@@ -191,31 +189,6 @@ export default function Login() {
         </div>
       </div>
 
-      <Dialog open={resetOpen} onOpenChange={setResetOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Password Reset</DialogTitle>
-            <DialogDescription>Enter your email to receive a reset link.</DialogDescription>
-          </DialogHeader>
-          {resetMsg && (<Alert variant="destructive"><AlertDescription>{resetMsg}</AlertDescription></Alert>)}
-          <div className="space-y-2">
-            <Label htmlFor="resetEmail">Email</Label>
-            <Input id="resetEmail" type="email" value={resetEmail} onChange={e=> { setResetEmail(e.target.value); setResetMsg(null); }} />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={()=> setResetOpen(false)} disabled={resetSubmitting}>Cancel</Button>
-            <Button onClick={async()=>{
-              setResetSubmitting(true); setResetMsg(null);
-              try {
-                const r = await apiFetch('/api/auth/reset/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: resetEmail }), noAuth: true });
-                if (r.status === 202) { setResetOpen(false); }
-                else { const j = await r.json().catch(()=>({detail:'Failed'})); setResetMsg(j.detail || 'Failed'); }
-              } catch (e:any) { setResetMsg(e?.message || 'Network error'); }
-              finally { setResetSubmitting(false); }
-            }} disabled={resetSubmitting || !resetEmail}>Send Reset</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
