@@ -149,15 +149,15 @@ export default function AdminSystemControl() {
     return response;
   };
 
-  // Fetch system status
+  // Fetch system mode (backend exposes mode; pause/kill-switch status not queryable)
   const fetchSystemState = async () => {
     try {
-      const response = await apiRequest('/api/system/status');
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setSystemState(data.data);
-        setSelectedMode(data.data.mode);
+      const response = await apiRequest('/api/v1/system/mode');
+      const data = await response.json().catch(() => ({} as any));
+      if (response.ok) {
+        const mode = data?.mode || systemState.mode;
+        setSystemState((prev) => ({ ...prev, mode }));
+        setSelectedMode(mode);
       }
     } catch (error) {
       console.error('Failed to fetch system state:', error);
