@@ -422,5 +422,17 @@ export function createServer() {
   app.get('/api/data/price-series', handleDataPriceSeries);
   app.get('/api/tasks/:id', handleTaskStatus);
 
+  // Global error handler: ensure we always return JSON for unexpected errors
+  app.use((err: any, _req: any, res: any, _next: any) => {
+    console.error('Unhandled server error:', err);
+    if (res.headersSent) return;
+    res.status(500).json({ error: 'Internal server error' });
+  });
+
+  // API 404 handler: return JSON for unknown API routes (avoid serving HTML)
+  app.use('/api', (_req: any, res: any) => {
+    res.status(404).json({ error: 'API endpoint not found' });
+  });
+
   return app;
 }
