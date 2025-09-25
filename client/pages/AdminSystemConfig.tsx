@@ -53,6 +53,7 @@ import {
   ExternalLink
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import apiFetch from "@/lib/apiClient";
 
 // Types
 interface RuntimeConfig {
@@ -131,8 +132,8 @@ export default function AdminSystemConfig() {
       setIsLoading(true);
       try {
         const [runtimeRes, systemRes] = await Promise.all([
-          fetch('/api/config/runtime'),
-          fetch('/api/config')
+          apiFetch('/api/config/runtime'),
+          apiFetch('/api/config')
         ]);
 
         const [runtimeData, systemData] = await Promise.all([
@@ -222,7 +223,7 @@ export default function AdminSystemConfig() {
   const applyRuntimeChanges = async () => {
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/config/runtime', {
+      const response = await apiFetch('/api/config/runtime', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: runtimeConfig, actor: 'admin@example.com' }),
@@ -258,7 +259,7 @@ export default function AdminSystemConfig() {
   const handleReloadConfig = async () => {
     setIsReloading(true);
     try {
-      const response = await fetch('/api/config/reload', {
+      const response = await apiFetch('/api/config/reload', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ actor: 'admin@example.com' }),
@@ -289,7 +290,7 @@ export default function AdminSystemConfig() {
 
   const handleViewEffectiveConfig = async () => {
     try {
-      const response = await fetch('/api/config/effective');
+      const response = await apiFetch('/api/config/effective');
       const data = await response.json();
       
       if (data.status === 'success') {
@@ -357,7 +358,7 @@ export default function AdminSystemConfig() {
   const applySystemSettings = async () => {
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/config', {
+      const response = await apiFetch('/api/config', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: systemSettings, actor: 'admin@example.com' }),
@@ -393,7 +394,7 @@ export default function AdminSystemConfig() {
 
     setIsProcessing(true);
     try {
-      const response = await fetch('/api/config', {
+      const response = await apiFetch('/api/config', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
