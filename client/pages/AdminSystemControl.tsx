@@ -452,7 +452,7 @@ export default function AdminSystemControl() {
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/admin/kill-switch', {
+      const response = await apiRequest('/api/v1/admin/kill-switch', {
         method: 'POST',
         body: JSON.stringify({
           enabled,
