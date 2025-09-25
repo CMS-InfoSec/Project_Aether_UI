@@ -338,18 +338,17 @@ export default function AdminSystemControl() {
         }),
       });
 
-      const data = await response.json();
-      
-      if (data.status === 'success') {
+      if (response.ok) {
         setSystemState(prev => ({ ...prev, isPaused: false }));
         toast({
           title: "Success",
           description: "System resumed",
         });
         setResumeReason('');
-        await Promise.all([fetchSystemState(), fetchAuditLog()]);
+        await Promise.all([fetchSystemState()]);
       } else {
-        throw new Error(data.message);
+        const j = await response.json().catch(() => ({} as any));
+        throw new Error(j?.message || 'Failed');
       }
     } catch (error) {
       toast({
