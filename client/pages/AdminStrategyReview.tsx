@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Drawer, DrawerContent, DrawerDescription, DrawerFooter, DrawerHeader, DrawerTitle } from '@/components/ui/drawer';
 import { useToast } from '@/hooks/use-toast';
+import apiFetch from "@/lib/apiClient";
 
 interface StrategyItem {
   strategy_id: string;
@@ -82,7 +83,7 @@ export default function AdminStrategyReview(){
     setLoading(true); setErrorBanner(null);
     try {
       const qs = buildQuery(off);
-      const r = await fetch(`/api/strategy-review/strategies/pending?${qs}`);
+      const r = await apiFetch(`/api/strategy-review/strategies/pending?${qs}`);
       const degradedHeader = (r.headers.get('X-Supabase-Degraded')||'').toLowerCase() === 'true';
       if (!r.ok) {
         const j = await r.json().catch(()=>({ detail:`HTTP ${r.status}` }));
@@ -113,7 +114,7 @@ export default function AdminStrategyReview(){
     if (!sel) return; if (!ack) { toast({ title:'Acknowledgement required', description:'Confirm the approval action', variant:'destructive' }); return; }
     setIsApproving(true);
     try {
-      const r = await fetch(`/api/strategy-review/strategies/${encodeURIComponent(sel.strategy_id)}/approve`, { method:'POST', headers:{ 'X-Request-ID': `req_${Date.now()}` } });
+      const r = await apiFetch(`/api/strategy-review/strategies/${encodeURIComponent(sel.strategy_id)}/approve`, { method:'POST', headers:{ 'X-Request-ID': `req_${Date.now()}` } });
       const j = await r.json().catch(()=>({}));
       if (r.ok || r.status === 503) {
         setItems(prev => prev.filter(it => it.strategy_id !== sel.strategy_id));
