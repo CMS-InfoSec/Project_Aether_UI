@@ -7,6 +7,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import apiFetch from '@/lib/apiClient';
 
 interface PostItem { external_id: string; author: string; content: string; captured_at: string; }
 
@@ -69,7 +70,7 @@ export default function AdminAutomationSocial(){
 
   const fetchLimits = useCallback(async () => {
     try {
-      const r = await fetch('/api/automation/limits/me');
+      const r = await apiFetch('/api/automation/limits/me');
       const j = await r.json();
       const per = j?.data?.per_user;
       if (per) setLimits(per);
@@ -115,7 +116,7 @@ export default function AdminAutomationSocial(){
   const submit = async () => {
     setErrorBanner(null); setResult(null); setSubmitting(true);
     try {
-      const r = await fetch('/api/automation/social', {
+      const r = await apiFetch('/api/automation/social', {
         method:'POST', headers:{ 'Content-Type':'application/json', 'X-Signature': signature || '', 'X-Timestamp': timestamp, 'X-Nonce': nonce }, body: payloadString
       });
       const j = await r.json().catch(()=>({}));
