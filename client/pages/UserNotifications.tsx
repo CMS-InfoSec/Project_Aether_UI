@@ -1075,7 +1075,7 @@ export default function UserNotifications() {
         </Card>
       )}
 
-      {/* Push / Mobile Delivery */}
+      {/* Notifications List */}
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
