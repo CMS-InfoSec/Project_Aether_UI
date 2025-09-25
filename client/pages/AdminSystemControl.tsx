@@ -331,7 +331,7 @@ export default function AdminSystemControl() {
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/system/resume', {
+      const response = await apiRequest('/api/v1/system/resume', {
         method: 'POST',
         body: JSON.stringify({
           actor: resumeActor,
