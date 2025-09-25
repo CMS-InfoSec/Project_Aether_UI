@@ -39,9 +39,10 @@ export default function AdminPushConsole() {
 
   const load = async () => {
     const r = await apiFetch("/api/mobile/status");
-    const j = await r.json();
-    setStatus(j.data);
-    setNonce((j.data?.last_nonce || 1000) + 1);
+    const j = await r.json().catch(() => ({} as any));
+    const data = j?.data || j || {};
+    setStatus(data);
+    setNonce((data?.last_nonce || 1000) + 1);
   };
   useEffect(() => {
     load();
@@ -114,15 +115,16 @@ export default function AdminPushConsole() {
         setCooldown(isNaN(ra) ? 60 : ra);
         throw new Error("Throttled. Please wait.");
       }
-      const j = await r.json();
+      const j = await r.json().catch(() => ({} as any));
       if (!r.ok)
         throw new Error(
           j.errors ? JSON.stringify(j.errors) : j.detail || "Failed",
         );
+      const data = j?.data || j || {};
       setSentNonces((prev) => new Set(prev).add(nonce));
       toast({
         title: "Queued",
-        description: `Processed tokens: ${j.data?.queued || 0}`,
+        description: `Processed tokens: ${data?.queued || 0}`,
       });
       await load();
     } catch (e: any) {
