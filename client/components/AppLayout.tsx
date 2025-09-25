@@ -198,7 +198,7 @@ export default function AppLayout() {
             setStatusText(j.data.isPaused ? "Paused" : "Active");
           }
         }
-        const h = await apiRequest("/health/live");
+        const h = await apiRequest("/api/v1/system/health/live");
         if (!cancelled) setApiHealthy(h.ok);
       } catch {
         /* ignore */
@@ -622,7 +622,7 @@ export default function AppLayout() {
                             }
                             try {
                               const url =
-                                base.replace(/\/+$/, "") + "/health/live";
+                                base.replace(/\/+$/, "") + "/api/v1/system/health/live";
                               const s = performance.now();
                               const r = await fetch(url);
                               const latency = Math.round(performance.now() - s);
