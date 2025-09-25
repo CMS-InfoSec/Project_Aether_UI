@@ -398,7 +398,8 @@ export default function AdminBacktest() {
           .replace(/^.*path=/, "")
           .replace(/^\/?api\/reports\/backtest\?/, ""),
       );
-    const url = `/api/reports/backtest?${qp.toString()}`;
+    const base = (window as any)?.location?.origin || "";
+    const url = `${base}/api/v1/reports/backtest?${qp.toString()}`;
     try {
       const r = await fetch(url);
       if (!r.ok) {
@@ -686,7 +687,7 @@ export default function AdminBacktest() {
             <div>
               <div className="text-xs font-medium mb-1">Report Path</div>
               <Input
-                placeholder="/api/reports/backtest?format=json&path=reports/latest"
+                placeholder="/api/v1/reports/backtest?format=json&path=reports/latest"
                 value={selectedReportPath}
                 onChange={(e) => setSelectedReportPath(e.target.value)}
               />
@@ -737,7 +738,7 @@ export default function AdminBacktest() {
                       onClick={() => setSelectedReportPath(h)}
                       className="font-mono"
                     >
-                      {h.replace("/api/reports/backtest?format=json&path=", "")}
+                      {h.replace("/api/v1/reports/backtest?format=json&path=", "")}
                     </Button>
                   ))
                 )}
