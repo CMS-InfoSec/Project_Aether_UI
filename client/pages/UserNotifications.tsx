@@ -702,12 +702,7 @@ export default function UserNotifications() {
             />
             <Label htmlFor="auto-refresh">Auto-refresh 30s</Label>
           </div>
-          {notifications?.summary.unread > 0 && (
-            <Button variant="outline" onClick={markAllAsRead}>
-              Mark All Read
-            </Button>
-          )}
-          <Button
+                    <Button
             variant="outline"
             onClick={async () => {
               const params = new URLSearchParams();
