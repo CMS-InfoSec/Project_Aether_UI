@@ -1093,57 +1093,6 @@ export default function AdminSystemControl() {
         </CardContent>
       </Card>
 
-      {/* Audit Log Summary */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <CardTitle className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
-              <span>Recent Actions</span>
-            </CardTitle>
-            <HelpTip content="Audit log of control operations (who, what, when). Use it for reviews and compliance." />
-          </div>
-          <CardDescription>
-            Recent system control actions and changes
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {auditLog.length > 0 ? (
-              auditLog.slice(0, 10).map((entry) => (
-                <div key={entry.id} className="flex items-start space-x-3 p-3 border rounded-lg">
-                  <div className="flex-shrink-0 mt-0.5">
-                    {entry.success ? (
-                      <CheckCircle className="h-4 w-4 text-accent" />
-                    ) : (
-                      <AlertTriangle className="h-4 w-4 text-destructive" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <div className="font-medium text-sm">{entry.action.replace('_', ' ')}</div>
-                      <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(entry.timestamp).toLocaleString()}</span>
-                      </div>
-                    </div>
-                    <div className="text-sm text-muted-foreground mt-1">{entry.details}</div>
-                    <div className="flex items-center space-x-1 mt-2 text-xs">
-                      <User className="h-3 w-3" />
-                      <span>{entry.actor}</span>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Clock className="h-8 w-8 mx-auto mb-2" />
-                <p>No recent actions found</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
