@@ -180,19 +180,7 @@ export default function AdminSystemControl() {
     }
   };
 
-  // Fetch audit log
-  const fetchAuditLog = async () => {
-    try {
-      const response = await apiRequest('/api/system/audit?limit=20');
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setAuditLog(data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch audit log:', error);
-    }
-  };
+  // Audit log endpoint not available in backend; hiding this feature for now
 
   // Test backend connection
   const testBackendConnection = async () => {
