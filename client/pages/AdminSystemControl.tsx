@@ -277,7 +277,7 @@ export default function AdminSystemControl() {
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/system/pause', {
+      const response = await apiRequest('/api/v1/system/pause', {
         method: 'POST',
         body: JSON.stringify({
           actor: pauseActor,
