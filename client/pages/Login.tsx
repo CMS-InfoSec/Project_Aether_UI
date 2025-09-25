@@ -170,16 +170,17 @@ export default function Login() {
             </form>
 
 
-            {/* Demo credentials hint */}
-            <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border/50">
-              <p className="text-sm text-muted-foreground text-center">
-                <strong>Demo Credentials:</strong>
-              </p>
-              <p className="text-sm text-muted-foreground text-center mt-1">
-                Email: admin@projectaether.com<br />
-                Password: admin123
-              </p>
-            </div>
+            {typeof window !== 'undefined' && localStorage.getItem('show-demo-credentials') === 'true' && (
+              <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border/50">
+                <p className="text-sm text-muted-foreground text-center">
+                  <strong>Demo Credentials:</strong>
+                </p>
+                <p className="text-sm text-muted-foreground text-center mt-1">
+                  Email: admin@projectaether.com<br />
+                  Password: admin123
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
