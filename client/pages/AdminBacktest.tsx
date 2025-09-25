@@ -401,7 +401,7 @@ export default function AdminBacktest() {
     const base = (window as any)?.location?.origin || "";
     const url = `${base}/api/v1/reports/backtest?${qp.toString()}`;
     try {
-      const r = await fetch(url);
+      const r = await apiFetch(url);
       if (!r.ok) {
         const j = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
         toast({
