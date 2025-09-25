@@ -91,7 +91,8 @@ export async function apiFetch(
 
   // Add admin key when needed (from env/config only)
   if (shouldAddAdminKey(urlStr, init) && !headers.has("X-API-Key")) {
-    const envKey = (typeof import_meta !== "undefined" ? (import_meta as any).env?.VITE_API_KEY : undefined) as string | undefined;
+    let envKey: string | undefined = undefined;
+    try { envKey = (import.meta as any)?.env?.VITE_API_KEY; } catch {}
     const cfgKey = typeof window !== "undefined" ? localStorage.getItem("aether-api-key") || undefined : undefined;
     const apiKey = envKey || cfgKey;
     if (apiKey) headers.set("X-API-Key", apiKey);
