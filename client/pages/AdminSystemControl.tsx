@@ -189,13 +189,8 @@ export default function AdminSystemControl() {
 
     try {
       const testUrl = backendUrl.replace(/\/+$/, '') + '/api/v1/system/health/live';
-      const response = await fetch(testUrl, {
+      const response = await apiRequest(testUrl, {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': API_KEY,
-        },
-        timeout: 10000, // 10 second timeout
       });
 
       if (response.ok) {
