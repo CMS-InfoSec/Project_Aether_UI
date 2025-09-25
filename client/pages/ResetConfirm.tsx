@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import apiFetch from "@/lib/apiClient";
 
 export default function ResetConfirm() {
   const [params] = useSearchParams();
@@ -22,7 +23,7 @@ export default function ResetConfirm() {
     try {
       if (!token || !password || !confirm) { setErr("All fields are required"); return; }
       if (password !== confirm) { setErr("Passwords do not match"); return; }
-      const r = await fetch("/api/auth/reset/confirm", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ token, password }) });
+      const r = await apiFetch("/api/auth/reset/confirm", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ token, password }) });
       if (!r.ok) {
         const j = await r.json().catch(()=>({ detail: r.statusText }));
         throw new Error(j.detail || "Reset failed");
