@@ -207,7 +207,7 @@ export default function Login() {
             <Button onClick={async()=>{
               setResetSubmitting(true); setResetMsg(null);
               try {
-                const r = await fetch('/api/auth/reset/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: resetEmail }) });
+                const r = await apiFetch('/api/auth/reset/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: resetEmail }), noAuth: true });
                 if (r.status === 202) { setResetOpen(false); }
                 else { const j = await r.json().catch(()=>({detail:'Failed'})); setResetMsg(j.detail || 'Failed'); }
               } catch (e:any) { setResetMsg(e?.message || 'Network error'); }
