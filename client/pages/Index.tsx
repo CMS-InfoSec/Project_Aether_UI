@@ -12,8 +12,8 @@ export default function Index() {
   // Example of how to fetch data from the server (if needed)
   const fetchDemo = async () => {
     try {
-      const response = await apiFetch("/api/demo");
-      const data = (await response.json()) as DemoResponse;
+      const response = await apiFetch("/health/ready", { cache: "no-cache" });
+      const data = await response.json().catch(()=> ({} as any));
       setExampleFromServer(data.message);
     } catch (error) {
       console.error("Error fetching hello:", error);
