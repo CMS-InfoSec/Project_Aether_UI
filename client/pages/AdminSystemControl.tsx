@@ -459,21 +459,20 @@ export default function AdminSystemControl() {
         }),
       });
 
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setSystemState(prev => ({ ...prev, killSwitchEnabled: enabled }));
+      const data = await response.json().catch(() => ({} as any));
+      if (response.ok) {
+        setSystemState(prev => ({ ...prev, killSwitchEnabled: !!data?.enabled }));
         toast({
           title: "Success",
-          description: `Kill switch ${enabled ? 'enabled' : 'disabled'}`,
-          variant: enabled ? "destructive" : "default"
+          description: `Kill switch ${data?.enabled ? 'enabled' : 'disabled'}`,
+          variant: data?.enabled ? "destructive" : "default"
         });
-        if (!enabled) {
+        if (!data?.enabled) {
           setKillSwitchReason('');
         }
-        await Promise.all([fetchSystemState(), fetchAuditLog()]);
+        await Promise.all([fetchSystemState()]);
       } else {
-        throw new Error(data.message);
+        throw new Error(data?.message || 'Failed');
       }
     } catch (error) {
       toast({
