@@ -1088,8 +1088,8 @@ export default function UserNotifications() {
               onClick={async () => {
                 try {
                   const r = await safeFetch("/api/mobile/status");
-                  const j = await r.json();
-                  setPushStatus(j.data);
+                  const j = await r.json().catch(() => ({} as any));
+                  setPushStatus(j?.data || j || null);
                 } catch {}
               }}
             >
@@ -1198,13 +1198,13 @@ export default function UserNotifications() {
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(payload),
                 });
-                const j = await r.json();
-                if (r.status === 202)
+                const j = await r.json().catch(() => ({} as any));
+                if (r.ok && (j?.queued === true || j?.data?.queued === true))
                   toast({
                     title: "Queued",
-                    description: `Queued ${j.data?.queued || ""}`,
+                    description: `Queued ${j?.data?.queued ? 1 : j?.queued ? 1 : ""}`,
                   });
-                else throw new Error(j.error || "Failed");
+                else throw new Error(j.error || j.detail || "Failed");
               } catch (e: any) {
                 toast({
                   title: "Error",
