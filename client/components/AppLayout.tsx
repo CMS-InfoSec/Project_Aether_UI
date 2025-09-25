@@ -190,12 +190,13 @@ export default function AppLayout() {
           const d = await m.json();
           if (!cancelled) setMode(d.data.mode);
         }
-        const s = await apiRequest("/api/system/status");
+        const s = await apiRequest("/api/system/health/ready");
         if (s.ok) {
-          const j = await s.json();
+          const j = await s.json().catch(() => ({} as any));
           if (!cancelled) {
-            setKillSwitch(!!j.data.killSwitchEnabled);
-            setStatusText(j.data.isPaused ? "Paused" : "Active");
+            const ok = (j && (j.ok === true || j.data?.ok === true)) ? true : false;
+            setStatusText(ok ? "Ready" : "Degraded");
+            setKillSwitch(false);
           }
         }
         const h = await apiRequest("/api/v1/system/health/live");
