@@ -185,12 +185,12 @@ export default function AppLayout() {
     let cancelled = false;
     const load = async () => {
       try {
-        const m = await apiRequest("/api/system/mode");
+        const m = await apiRequest("/api/v1/system/mode");
         if (m.ok) {
           const d = await m.json();
           if (!cancelled) setMode(d.data.mode);
         }
-        const s = await apiRequest("/api/system/health/ready");
+        const s = await apiRequest("/api/v1/system/health/ready");
         if (s.ok) {
           const j = await s.json().catch(() => ({} as any));
           if (!cancelled) {

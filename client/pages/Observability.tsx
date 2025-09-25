@@ -64,7 +64,10 @@ export default function Observability() {
 
   // Derived chips from readiness details
   const serviceCards = useMemo(() => {
-    const list = readyDetails?.dependencies || [];
+    const deps = readyDetails?.dependencies || {};
+    const list = Array.isArray(deps)
+      ? deps
+      : Object.entries(deps).map(([name, v]: any) => ({ name, ...(v || {}) }));
     const required = new Set(["Supabase", "Binance", "Redis"]);
     return list.map((d: any) => ({
       name: d.name,
@@ -80,16 +83,16 @@ export default function Observability() {
   // Pollers
   const pollReadiness = useCallback(async () => {
     try {
-      const r = await apiFetch("/health/ready", { cache: "no-cache" });
+      const r = await apiFetch("/api/system/health/ready", { cache: "no-cache" });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      const j = await r.json();
-      setReady(!!j.ready);
-      localStorage.setItem("aether-ready", String(!!j.ready));
+      const j = await r.json().catch(() => ({} as any));
+      const ok = j?.ok === true || j?.data?.ok === true;
+      setReady(!!ok);
+      localStorage.setItem("aether-ready", String(!!ok));
       window.dispatchEvent(
-        new CustomEvent("aether:readiness", { detail: { ready: !!j.ready } }),
+        new CustomEvent("aether:readiness", { detail: { ready: !!ok } }),
       );
-      const d = await apiFetch("/health/ready/details", { cache: "no-cache" });
-      setReadyDetails(await d.json());
+      setReadyDetails(j?.data || j || {});
       setReadyErr(null);
     } catch (e: any) {
       setReadyErr(e.message || "Failed");
@@ -100,8 +103,9 @@ export default function Observability() {
   const pollDependencies = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const d = await apiFetch("/health/dependencies", { cache: "no-cache" });
-      const list: DependencyRow[] = await d.json();
+      const d = await apiFetch("/api/v1/system/health/dependencies", { cache: "no-cache" });
+      const j = await d.json().catch(() => ({} as any));
+      const list: DependencyRow[] = Object.entries(j || {}).map(([id, v]: any) => ({ id, ...(v || {}) }));
       setDeps(list);
       setDepsErr(null);
     } catch (e: any) {
@@ -112,14 +116,8 @@ export default function Observability() {
   const pollLiveness = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await apiFetch("/health/live/details", { cache: "no-cache" });
-      if (!r.ok) {
-        if (r.status === 503) {
-          setLiveErr("Service Unavailable");
-        } else {
-          setLiveErr(`${r.status} ${r.statusText}`);
-        }
-      }
+      const r = await apiFetch("/api/v1/system/health/live", { cache: "no-cache" });
+      if (!r.ok) setLiveErr(`${r.status} ${r.statusText}`);
       const j = await r.json().catch(() => null);
       setLiveDetails(j);
     } catch (e: any) {

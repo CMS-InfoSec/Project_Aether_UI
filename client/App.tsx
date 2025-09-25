@@ -74,9 +74,9 @@ const AppRouter = () => {
         },
       });
       if (response.ok) {
-        const data = await response.json();
-        console.log("Bootstrap status:", data); // Debug log
-        setFoundersExist(data.foundersExist);
+        const data = await response.json().catch(()=> ({} as any));
+        console.log("Bootstrap status:", data);
+        setFoundersExist(!!data.foundersExist);
       } else {
         console.error(
           "Bootstrap status check failed:",
