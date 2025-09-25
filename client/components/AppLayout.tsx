@@ -198,7 +198,7 @@ export default function AppLayout() {
             setStatusText(j.data.isPaused ? "Paused" : "Active");
           }
         }
-        const h = await apiRequest("/api/health/live");
+        const h = await apiRequest("/health/live");
         if (!cancelled) setApiHealthy(h.ok);
       } catch {
         /* ignore */
@@ -622,7 +622,7 @@ export default function AppLayout() {
                             }
                             try {
                               const url =
-                                base.replace(/\/+$/, "") + "/api/health/live";
+                                base.replace(/\/+$/, "") + "/health/live";
                               const s = performance.now();
                               const r = await fetch(url);
                               const latency = Math.round(performance.now() - s);
@@ -732,7 +732,7 @@ export default function AppLayout() {
             </a>
             <a
               className="hover:underline"
-              href="/api/openapi.json"
+              href="/openapi.json"
               target="_blank"
               rel="noreferrer"
             >
