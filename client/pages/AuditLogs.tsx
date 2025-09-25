@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { getJson } from "@/lib/apiClient";
 import copy from "@/lib/clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,9 +48,13 @@ interface BalanceEvent {
   hmac_verified?: boolean;
 }
 
+type EventsPayload<T> = { total: number; items: T[]; next?: string | number };
 interface EventsResponse<T> {
-  status: string;
-  data: { total: number; items: T[]; next?: string };
+  status?: string;
+  data?: EventsPayload<T>;
+  total?: number;
+  items?: T[];
+  next?: string | number;
 }
 
 async function sha256Hex(input: string): Promise<string> {
@@ -73,8 +77,8 @@ export default function AuditLogs() {
   // Data state
   const [trades, setTrades] = useState<TradeEvent[]>([]);
   const [balances, setBalances] = useState<BalanceEvent[]>([]);
-  const [tNext, setTNext] = useState<string | undefined>();
-  const [bNext, setBNext] = useState<string | undefined>();
+  const [tNext, setTNext] = useState<string | number | undefined>();
+  const [bNext, setBNext] = useState<string | number | undefined>();
   const [error, setError] = useState<string | null>(null);
 
   // Caching headers
@@ -90,18 +94,19 @@ export default function AuditLogs() {
   // Polling
   const [auto, setAuto] = useState(true);
 
-  const buildQuery = (cursor?: string) => {
+  const buildQuery = (cursorOrOffset?: string | number) => {
     const p = new URLSearchParams();
     if (symbol) p.set("symbol", symbol);
     if (action) p.set("status", action);
     if (since) p.set("since", new Date(since).toISOString());
-    if (cursor) p.set("cursor", cursor);
+    if (typeof cursorOrOffset === "string" && cursorOrOffset) p.set("cursor", cursorOrOffset);
+    if (typeof cursorOrOffset === "number") p.set("offset", String(cursorOrOffset));
     p.set("limit", String(limit));
     return p.toString();
   };
 
   const fetchTrades = useCallback(
-    async (cursor?: string, append = false) => {
+    async (cursor?: string | number, append = false) => {
       const qs = buildQuery(cursor);
       const headers: Record<string, string> = {};
       if (tradesETag.current) headers["If-None-Match"] = tradesETag.current;
@@ -112,15 +117,16 @@ export default function AuditLogs() {
       if (et) tradesETag.current = et;
       const lm = r.headers.get("Last-Modified");
       if (lm) tradesLM.current = lm;
-      const j: EventsResponse<TradeEvent> = await r.json();
-      setTNext(j.data.next);
-      setTrades((prev) => (append ? prev.concat(j.data.items) : j.data.items));
+      const j: EventsResponse<TradeEvent> = await r.json().catch(() => ({} as any));
+      const data: EventsPayload<TradeEvent> = j.data || { total: j.total as any, items: (j.items as any) || [], next: j.next };
+      setTNext(data.next);
+      setTrades((prev) => (append ? prev.concat(data.items) : data.items));
     },
     [symbol, action, since, limit],
   );
 
   const fetchBalances = useCallback(
-    async (cursor?: string, append = false) => {
+    async (cursor?: string | number, append = false) => {
       const qs = buildQuery(cursor);
       const headers: Record<string, string> = {};
       if (balancesETag.current) headers["If-None-Match"] = balancesETag.current;
@@ -131,10 +137,11 @@ export default function AuditLogs() {
       if (et) balancesETag.current = et;
       const lm = r.headers.get("Last-Modified");
       if (lm) balancesLM.current = lm;
-      const j: EventsResponse<BalanceEvent> = await r.json();
-      setBNext(j.data.next);
+      const j: EventsResponse<BalanceEvent> = await r.json().catch(() => ({} as any));
+      const data: EventsPayload<BalanceEvent> = j.data || { total: j.total as any, items: (j.items as any) || [], next: j.next };
+      setBNext(data.next);
       setBalances((prev) =>
-        append ? prev.concat(j.data.items) : j.data.items,
+        append ? prev.concat(data.items) : data.items,
       );
     },
     [symbol, action, since, limit],
@@ -487,7 +494,7 @@ export default function AuditLogs() {
           <div className="mt-3 flex items-center gap-2">
             <Button
               variant="outline"
-              disabled={!tNext}
+              disabled={tNext === undefined || tNext === null}
               onClick={() => fetchTrades(tNext, true)}
             >
               Load more
@@ -602,7 +609,7 @@ export default function AuditLogs() {
           <div className="mt-3 flex items-center gap-2">
             <Button
               variant="outline"
-              disabled={!bNext}
+              disabled={bNext === undefined || bNext === null}
               onClick={() => fetchBalances(bNext, true)}
             >
               Load more
