@@ -12,7 +12,7 @@ export default function Index() {
   // Example of how to fetch data from the server (if needed)
   const fetchDemo = async () => {
     try {
-      const response = await apiFetch("/api/system/health/ready", { cache: "no-cache" });
+      const response = await apiFetch("/api/v1/system/health/ready", { cache: "no-cache" });
       const data = await response.json().catch(()=> ({} as any));
       setExampleFromServer(data.message);
     } catch (error) {
