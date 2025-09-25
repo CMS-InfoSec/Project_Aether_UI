@@ -393,18 +393,18 @@ export default function AdminSystemControl() {
         }),
       });
 
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setSystemState(prev => ({ ...prev, mode: selectedMode }));
+      const data = await response.json().catch(() => ({} as any));
+      if (response.ok) {
+        const mode = data?.mode || selectedMode;
+        setSystemState(prev => ({ ...prev, mode }));
         toast({
           title: "Success",
-          description: `Trading mode set to ${selectedMode}`,
+          description: `Trading mode set to ${mode}`,
         });
         setModeReason('');
-        await Promise.all([fetchSystemState(), fetchAuditLog()]);
+        await Promise.all([fetchSystemState()]);
       } else {
-        throw new Error(data.message);
+        throw new Error(data?.message || 'Failed');
       }
     } catch (error) {
       toast({
