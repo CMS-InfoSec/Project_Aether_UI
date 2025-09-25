@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import apiFetch from "@/lib/apiClient";
 import { HelpTip } from '@/components/ui/help-tip';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from 'recharts';
@@ -50,7 +51,7 @@ export default function AdminSystemTasks(){
   const triggerUser = async () => {
     setConfirmOpen(false); setErrorBanner(null); setUserRefreshing(true);
     try {
-      const r = await fetch('/api/tasks/data-refresh', { method:'POST' });
+      const r = await apiFetch('/api/tasks/data-refresh', { method:'POST' });
       const j = await r.json().catch(()=>({}));
       if (r.status === 429) {
         const ra = parseInt(r.headers.get('Retry-After') || '60', 10) || 60;
@@ -67,7 +68,7 @@ export default function AdminSystemTasks(){
   const triggerGlobal = async () => {
     setErrorBanner(null); setGlobalRefreshing(true);
     try {
-      const r = await fetch('/api/data/refresh', { method:'POST' });
+      const r = await apiFetch('/api/data/refresh', { method:'POST' });
       const j = await r.json().catch(()=>({}));
       if (r.status === 429) {
         const ra = parseInt(r.headers.get('Retry-After') || '60', 10) || 60;
@@ -102,7 +103,7 @@ export default function AdminSystemTasks(){
       if (source.trim()) url.searchParams.set('source', source.trim());
       if (start) url.searchParams.set('start', start);
       if (end) url.searchParams.set('end', end);
-      const r = await fetch(url.toString());
+      const r = await apiFetch(url.toString());
       const j = await r.json();
       if (j.status === 'queued' && j.message) {
         const id = j.message as string;
@@ -115,7 +116,7 @@ export default function AdminSystemTasks(){
   const pollTask = useCallback(async (id: string, delayMs: number) => {
     if (!pollingEnabled) return;
     try {
-      const r = await fetch(`/api/tasks/${encodeURIComponent(id)}`);
+      const r = await apiFetch(`/api/tasks/${encodeURIComponent(id)}`);
       if (r.status === 429) {
         const ra = parseInt(r.headers.get('Retry-After') || '15', 10) || 15;
         setTasks(prev => prev.map(t => t.id===id ? { ...t, nextDelay: ra*1000 } : t));
