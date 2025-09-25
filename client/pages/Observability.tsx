@@ -83,7 +83,7 @@ export default function Observability() {
   // Pollers
   const pollReadiness = useCallback(async () => {
     try {
-      const r = await apiFetch("/api/system/health/ready", { cache: "no-cache" });
+      const r = await apiFetch("/api/v1/system/health/ready", { cache: "no-cache" });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       const j = await r.json().catch(() => ({} as any));
       const ok = j?.ok === true || j?.data?.ok === true;
