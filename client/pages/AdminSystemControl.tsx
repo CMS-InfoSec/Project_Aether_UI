@@ -168,12 +168,12 @@ export default function AdminSystemControl() {
   // Fetch current mode
   const fetchCurrentMode = async () => {
     try {
-      const response = await apiRequest('/api/system/mode');
-      const data = await response.json();
-      
-      if (data.status === 'success') {
-        setSystemState(prev => ({ ...prev, mode: data.data.mode }));
-        setSelectedMode(data.data.mode);
+      const response = await apiRequest('/api/v1/system/mode');
+      const data = await response.json().catch(() => ({} as any));
+      if (response.ok) {
+        const mode = data?.mode || systemState.mode;
+        setSystemState(prev => ({ ...prev, mode }));
+        setSelectedMode(mode);
       }
     } catch (error) {
       console.error('Failed to fetch trading mode:', error);
