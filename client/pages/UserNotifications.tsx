@@ -1087,7 +1087,7 @@ export default function UserNotifications() {
               variant="outline"
               onClick={async () => {
                 try {
-                  const r = await safeFetch("/api/mobile/status");
+                  const r = await apiFetch("/api/mobile/status");
                   const j = await r.json().catch(() => ({} as any));
                   setPushStatus(j?.data || j || null);
                 } catch {}
@@ -1193,7 +1193,7 @@ export default function UserNotifications() {
                   url: pushForm.url || undefined,
                   nonce: Number(pushForm.nonce),
                 };
-                const r = await safeFetch("/api/mobile/push", {
+                const r = await apiFetch("/api/mobile/push", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(payload),
