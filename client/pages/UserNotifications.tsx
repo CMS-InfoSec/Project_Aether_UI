@@ -436,7 +436,7 @@ export default function UserNotifications() {
   // Load preferences (graceful)
   const loadPreferences = useCallback(async () => {
     try {
-      const r = await safeFetch("/api/notifications/preferences");
+      const r = await apiFetch("/api/notifications/preferences");
       if (!r.ok) return;
       const j = await r.json().catch(() => null);
       if (j?.status === "success") setPrefs(j.data);
@@ -459,7 +459,7 @@ export default function UserNotifications() {
 
       let response: Response;
       try {
-        response = await safeFetch(`/api/notifications?${params}`);
+        response = await apiFetch(`/api/notifications?${params}`);
       } catch (networkErr) {
         console.warn(
           "Network error fetching notifications, retrying once",
@@ -467,7 +467,7 @@ export default function UserNotifications() {
         );
         try {
           await new Promise((res) => setTimeout(res, 700));
-          response = await safeFetch(`/api/notifications?${params}`);
+          response = await apiFetch(`/api/notifications?${params}`);
         } catch (networkErr2) {
           console.error("Network error fetching notifications", networkErr2);
           setDegraded(true);
@@ -522,7 +522,7 @@ export default function UserNotifications() {
   // Mark notification as read
   const markAsRead = async (notificationId: string, read: boolean = true) => {
     try {
-      const response = await safeFetch(
+      const response = await apiFetch(
         `/api/notifications/${notificationId}/read`,
         {
           method: "PATCH",
@@ -567,7 +567,7 @@ export default function UserNotifications() {
   // Mark all as read
   const markAllAsRead = async () => {
     try {
-      const response = await safeFetch("/api/notifications/mark-all-read", {
+      const response = await apiFetch("/api/notifications/mark-all-read", {
         method: "POST",
       });
 
@@ -621,7 +621,7 @@ export default function UserNotifications() {
       if (severityFilter !== "all") params.set("severity", severityFilter);
       if (categoryFilter !== "all") params.set("category", categoryFilter);
       if (unreadOnly) params.set("unreadOnly", "true");
-      const r = await safeFetch(`/api/notifications?${params}`);
+      const r = await apiFetch(`/api/notifications?${params}`);
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const j = await r.json();
       setNotifications((prev) =>
@@ -714,7 +714,7 @@ export default function UserNotifications() {
               if (categoryFilter !== "all")
                 params.set("category", categoryFilter);
               if (unreadOnly) params.set("unreadOnly", "true");
-              const r = await safeFetch(
+              const r = await apiFetch(
                 `/api/notifications?${params}&format=csv`,
               );
               const txt = await r.text();
@@ -739,7 +739,7 @@ export default function UserNotifications() {
               if (categoryFilter !== "all")
                 params.set("category", categoryFilter);
               if (unreadOnly) params.set("unreadOnly", "true");
-              const r = await safeFetch(`/api/notifications?${params}`);
+              const r = await apiFetch(`/api/notifications?${params}`);
               const j = await r.json();
               const a = document.createElement("a");
               a.href = URL.createObjectURL(
@@ -1037,7 +1037,7 @@ export default function UserNotifications() {
               <Button
                 onClick={async () => {
                   try {
-                    const r = await safeFetch(
+                    const r = await apiFetch(
                       "/api/notifications/preferences",
                       {
                         method: "POST",
