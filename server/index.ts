@@ -208,6 +208,13 @@ export function createServer() {
   app.get("/api/models/curriculum", handleGetCurriculumStages);
   app.get("/api/models/datasets", handleGetDatasets);
   app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
+  // Generic v1 compatibility: redirect /api/v1/* -> /api/* preserving method
+  app.use('/api/v1', (req, res, next) => {
+    // If a specific /api/v1 route above handled it, skip
+    if (res.headersSent) return next();
+    const target = req.originalUrl.replace(/^\/api\/v1/, '/api');
+    return res.redirect(308, target);
+  });
   // Audit log endpoint
   app.get('/api/models/audit', requireAdminKey, (_req, res) => {
     try {
