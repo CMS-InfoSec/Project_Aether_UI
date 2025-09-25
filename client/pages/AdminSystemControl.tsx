@@ -188,7 +188,7 @@ export default function AdminSystemControl() {
     setConnectionStatus('testing');
 
     try {
-      const testUrl = backendUrl.replace(/\/+$/, '') + '/api/system/status';
+      const testUrl = backendUrl.replace(/\/+$/, '') + '/api/v1/system/health/live';
       const response = await fetch(testUrl, {
         method: 'GET',
         headers: {
