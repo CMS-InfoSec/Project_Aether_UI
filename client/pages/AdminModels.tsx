@@ -613,7 +613,7 @@ export default function AdminModels() {
   useEffect(() => {
     let es: EventSource | null = null;
     try {
-      es = new EventSource("/api/models/jobs/stream");
+      es = new EventSource("/api/v1/models/jobs/stream");
       es.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data || "{}");
