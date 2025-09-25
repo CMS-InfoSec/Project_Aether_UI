@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import apiFetch from "@/lib/apiClient";
 import { useSearchParams } from "react-router-dom";
 import {
   Card,
