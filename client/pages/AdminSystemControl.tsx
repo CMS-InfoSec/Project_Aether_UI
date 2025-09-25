@@ -241,8 +241,7 @@ export default function AdminSystemControl() {
       try {
         await Promise.all([
           fetchSystemState(),
-          fetchCurrentMode(),
-          fetchAuditLog()
+          fetchCurrentMode()
         ]);
         setConnectionStatus('connected'); // If we can load data, we're connected
       } catch (error) {
