@@ -80,7 +80,7 @@ export default function Observability() {
   // Pollers
   const pollReadiness = useCallback(async () => {
     try {
-      const r = await apiFetch("/api/health/ready", { cache: "no-cache" });
+      const r = await apiFetch("/health/ready", { cache: "no-cache" });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
       const j = await r.json();
       setReady(!!j.ready);
@@ -88,7 +88,7 @@ export default function Observability() {
       window.dispatchEvent(
         new CustomEvent("aether:readiness", { detail: { ready: !!j.ready } }),
       );
-      const d = await apiFetch("/api/health/ready/details", { cache: "no-cache" });
+      const d = await apiFetch("/health/ready/details", { cache: "no-cache" });
       setReadyDetails(await d.json());
       setReadyErr(null);
     } catch (e: any) {
@@ -100,7 +100,7 @@ export default function Observability() {
   const pollDependencies = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const d = await apiFetch("/api/health/dependencies", { cache: "no-cache" });
+      const d = await apiFetch("/health/dependencies", { cache: "no-cache" });
       const list: DependencyRow[] = await d.json();
       setDeps(list);
       setDepsErr(null);
@@ -112,7 +112,7 @@ export default function Observability() {
   const pollLiveness = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await apiFetch("/api/health/live/details", { cache: "no-cache" });
+      const r = await apiFetch("/health/live/details", { cache: "no-cache" });
       if (!r.ok) {
         if (r.status === 503) {
           setLiveErr("Service Unavailable");
@@ -130,7 +130,7 @@ export default function Observability() {
   const fetchMetrics = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await apiFetch("/api/metrics", { cache: "no-cache" });
+      const r = await apiFetch("/metrics", { cache: "no-cache" });
       if (r.status === 401 || r.status === 403) {
         setMetricsVisible(false);
         return;
@@ -554,7 +554,7 @@ export default function Observability() {
                   Copy
                 </Button>
                 <Button size="sm" variant="ghost" asChild>
-                  <a href="/api/metrics" target="_blank" rel="noreferrer">
+                  <a href="/metrics" target="_blank" rel="noreferrer">
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Open
                   </a>
