@@ -279,7 +279,7 @@ export default function TradesPositions() {
     setVetoingTrades((prev) => new Set(prev).add(tradeId));
 
     try {
-      const response = await apiFetch("/api/admin/trades/veto", {
+      const response = await apiFetch("/api/trades/admin/veto", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
