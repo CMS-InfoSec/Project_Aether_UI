@@ -462,11 +462,14 @@ export default function TradesPositions() {
   const connectWs = useCallback(() => {
     try {
       setWsStatus("connecting");
-      const override = localStorage.getItem("aether-ws-url");
-      const base =
-        override ||
-        `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}/ws/trades`;
-      const ws = new WebSocket(base);
+      const wsBase = localStorage.getItem("aether-ws-url");
+      if (!wsBase) {
+        setWsStatus("disconnected");
+        startPolling();
+        return;
+      }
+      const url = wsBase.replace(/^http/, "ws").replace(/\/$/, "") + "/api/v1/events/trades";
+      const ws = new WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
         setWsStatus("connected");
@@ -483,22 +486,11 @@ export default function TradesPositions() {
       ws.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
-          if (msg.type === "trade") {
+          const trade = msg?.type === "trade" ? (msg.payload as Trade) : (msg as Trade);
+          if (trade && trade.id) {
             setTrades((prev) => {
               const mapped = new Map(prev.map((t) => [t.id, t]));
-              const t = msg.payload as Trade;
-              mapped.set(t.id, t);
-              return Array.from(mapped.values()).sort(
-                (a, b) =>
-                  new Date(b.timestamp).getTime() -
-                  new Date(a.timestamp).getTime(),
-              );
-            });
-          } else if (msg.type === "position") {
-            setPositions((prev) => {
-              const mapped = new Map(prev.map((p) => [p.id, p]));
-              const p = msg.payload as Position;
-              mapped.set(p.id, p);
+              mapped.set(trade.id, trade);
               return Array.from(mapped.values()).sort(
                 (a, b) =>
                   new Date(b.timestamp).getTime() -
