@@ -62,6 +62,15 @@ export async function apiFetch(
   } else {
     urlStr = input.url;
   }
+  // Rewrite /api/... to /api/v1/... when targeting same-origin backend
+  try {
+    const u = new URL(urlStr, base);
+    const sameOrigin = !/^https?:/i.test(urlStr) || u.origin === new URL(base).origin;
+    if (sameOrigin && /\/api\//.test(u.pathname) && !/\/api\/v1\//.test(u.pathname)) {
+      u.pathname = u.pathname.replace(/\/api\//, "/api/v1/");
+      urlStr = u.toString();
+    }
+  } catch {}
 
   // Prepare headers
   const headers = new Headers(
@@ -80,9 +89,12 @@ export async function apiFetch(
     headers.set("Authorization", `Bearer ${access}`);
   }
 
-  // Add admin key when needed
+  // Add admin key when needed (from env/config only)
   if (shouldAddAdminKey(urlStr, init) && !headers.has("X-API-Key")) {
-    headers.set("X-API-Key", "aether-admin-key-2024");
+    const envKey = (typeof import_meta !== "undefined" ? (import_meta as any).env?.VITE_API_KEY : undefined) as string | undefined;
+    const cfgKey = typeof window !== "undefined" ? localStorage.getItem("aether-api-key") || undefined : undefined;
+    const apiKey = envKey || cfgKey;
+    if (apiKey) headers.set("X-API-Key", apiKey);
   }
 
   const xhrFetch = (url: string, init?: ApiFetchInit): Promise<Response> => {
