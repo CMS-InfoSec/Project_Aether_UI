@@ -20,6 +20,7 @@ interface CreateFounderFormProps {
     email: string;
     password: string;
     name: string;
+    user_id?: string;
   }) => Promise<boolean>;
 }
 
@@ -27,6 +28,7 @@ interface FormData {
   email: string;
   password: string;
   name: string;
+  user_id?: string;
 }
 
 interface FormErrors {
@@ -102,7 +104,7 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
     setErrors({});
 
     try {
-      const success = await onSubmit(formData);
+      const success = await onSubmit({ ...formData, user_id: user?.id });
       if (!success) {
         setErrors({
           general: "Failed to create founder account. Please try again.",
