@@ -99,6 +99,7 @@ const AppRouter = () => {
     email: string;
     password: string;
     name: string;
+    user_id?: string;
   }): Promise<boolean> => {
     try {
       const response = await apiFetch("/api/founders/bootstrap", {
