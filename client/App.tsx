@@ -73,17 +73,21 @@ const AppRouter = () => {
           "Cache-Control": "no-cache",
         },
       });
-      if (response.ok) {
-        const data = await response.json().catch(()=> ({} as any));
+
+      // Server semantics: 404 indicates bootstrap is disabled because founders already exist
+      if (response.status === 404) {
+        setFoundersExist(true);
+      } else if (response.ok) {
+        const data = await response.json().catch(() => ({} as any));
         console.log("Bootstrap status:", data);
         setFoundersExist(!!data.foundersExist);
       } else {
-        console.error(
-          "Bootstrap status check failed:",
+        // Unexpected non-OK response (not 404) - treat as non-blocking by assuming founders exist
+        console.warn(
+          "Bootstrap status check unexpected response:",
           response.status,
           response.statusText,
         );
-        // If we can't check status, assume founders exist to avoid blocking
         setFoundersExist(true);
       }
     } catch (error) {
