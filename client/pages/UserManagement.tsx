@@ -154,7 +154,17 @@ export default function UserManagement() {
         const me = await meRes.json().catch(() => null);
         const prof = await profRes.json().catch(() => null);
         const fList = await foundersRes.json().catch(() => []);
-        const bStat = await bootRes.json().catch(() => null);
+
+        // Handle bootstrap-status which intentionally returns 404 when founders exist
+        let bStat: any = null;
+        try {
+          if (bootRes.status === 404) {
+            bStat = { foundersExist: true };
+          } else {
+            bStat = await bootRes.json().catch(() => null);
+          }
+        } catch {}
+
         if (me) setIdentity(me);
         if (prof?.status === "success") setProfile(prof.data);
         if (Array.isArray(fList) && fList.length) setFounders(fList);
