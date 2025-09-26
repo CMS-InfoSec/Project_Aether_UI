@@ -604,6 +604,18 @@ export default function AppLayout() {
                           }
                         />
                       </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="adminApiKey">Admin API Key (X-API-Key)</Label>
+                          <HelpTip content="Optional key for admin/system endpoints. Stored locally and sent as X-API-Key when needed." />
+                        </div>
+                        <Input
+                          id="adminApiKey"
+                          type="password"
+                          placeholder="Enter admin API key"
+                          defaultValue={localStorage.getItem("aether-api-key") || ""}
+                        />
+                      </div>
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
@@ -659,6 +671,11 @@ export default function AppLayout() {
                                 "wsUrl",
                               ) as HTMLInputElement
                             )?.value?.trim();
+                            const key = (
+                              document.getElementById(
+                                "adminApiKey",
+                              ) as HTMLInputElement
+                            )?.value?.trim();
                             if (!base) {
                               toast({
                                 title: "Validation",
@@ -673,6 +690,8 @@ export default function AppLayout() {
                             );
                             if (ws) localStorage.setItem("aether-ws-url", ws);
                             else localStorage.removeItem("aether-ws-url");
+                            if (key) localStorage.setItem("aether-api-key", key);
+                            else localStorage.removeItem("aether-api-key");
                             toast({
                               title: "Saved",
                               description: "Settings saved. Reinitializing…",
