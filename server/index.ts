@@ -321,6 +321,8 @@ export function createServer() {
   const { handleHealthLive, handleHealthReady, handleHealthReadyDetails, handleHealthDependencies, handleMetrics } = require('./routes/health');
   app.get('/api/health/live', handleHealthLive);
   app.get('/api/health/ready', handleHealthReady);
+  // Alias for system-scoped health path expected by client
+  app.get('/api/system/health/ready', handleHealthReady);
   app.get('/api/health/ready/details', handleHealthReadyDetails);
   app.get('/api/health/dependencies', handleHealthDependencies);
   app.get('/api/health/live/details', (require('./routes/health').handleHealthLiveDetails));
@@ -394,6 +396,8 @@ export function createServer() {
   app.get("/api/positions/open", handleGetOpenPositions);
   app.get("/api/trades/:id", handleGetTradeDetail);
   app.post("/api/admin/trades/veto", handleVetoTrade);
+  // Alias for Project Aether style path
+  app.post("/api/trades/admin/veto", handleVetoTrade);
   const { handleTradeDecision, handleTradeExecute } = require('./routes/trades_decision');
   app.post('/api/trades/decision', handleTradeDecision);
   app.post('/api/trades/execute', handleTradeExecute);
