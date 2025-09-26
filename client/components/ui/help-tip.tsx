@@ -5,6 +5,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import React from "react";
+import { HelpCircle } from "lucide-react";
 
 interface HelpTipProps {
   content: React.ReactNode;

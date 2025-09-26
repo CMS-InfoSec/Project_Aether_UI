@@ -162,6 +162,7 @@ export default function AppLayout() {
   const location = useSafeLocation();
   const { toast } = useToast();
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // Top bar status polling
   const API_KEY = "";
@@ -496,7 +497,7 @@ export default function AppLayout() {
                   {user.role === "admin" ? "Admin" : "User"}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <Dialog>
+                <Dialog open={feedbackOpen} onOpenChange={setFeedbackOpen}>
                   <DialogTrigger asChild>
                     <DropdownMenuItem>
                       <MessageSquare className="h-4 w-4 mr-2" /> Feedback
@@ -540,11 +541,7 @@ export default function AppLayout() {
                                 title: "Thanks!",
                                 description: "Feedback submitted.",
                               });
-                              (
-                                document.querySelector(
-                                  "[data-radix-dialog-close]",
-                                ) as HTMLElement
-                              )?.click();
+                              setFeedbackOpen(false);
                             } else {
                               const j = await r
                                 .json()
