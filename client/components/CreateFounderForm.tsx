@@ -12,6 +12,8 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 import apiFetch from "@/lib/apiClient";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface CreateFounderFormProps {
   onSubmit: (data: {
@@ -35,6 +37,8 @@ interface FormErrors {
 }
 
 const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<FormData>({
     email: "",
     password: "",
@@ -44,6 +48,12 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+
+  useEffect(() => {
+    if (user?.email) {
+      setFormData((prev) => ({ ...prev, email: user.email }));
+    }
+  }, [user?.email]);
 
   const validateForm = (): boolean => {
     const newErrors: FormErrors = {};
@@ -80,6 +90,11 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
     e.preventDefault();
 
     if (!validateForm()) {
+      return;
+    }
+
+    if (!user) {
+      setErrors({ general: "Please sign in first to bootstrap your own founder account." });
       return;
     }
 
@@ -159,6 +174,20 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
           <CardDescription>
             Set up the first administrator account for AETHER
           </CardDescription>
+          {!user && (
+            <Alert className="mt-2" variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                You must sign in with your own account to run the one-time bootstrap.
+                <button
+                  className="underline ml-1"
+                  onClick={() => navigate('/login')}
+                >
+                  Go to Login
+                </button>
+              </AlertDescription>
+            </Alert>
+          )}
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -194,8 +223,11 @@ const CreateFounderForm: React.FC<CreateFounderFormProps> = ({ onSubmit }) => {
                 value={formData.email}
                 onChange={handleInputChange("email")}
                 className={errors.email ? "border-red-500" : ""}
-                disabled={isLoading}
+                disabled={isLoading || !!user}
               />
+              {user && (
+                <p className="text-xs text-muted-foreground">Email locked to your signed-in account.</p>
+              )}
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email}</p>
               )}
