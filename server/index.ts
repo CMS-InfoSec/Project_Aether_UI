@@ -320,6 +320,8 @@ export function createServer() {
   // Health & observability routes
   const { handleHealthLive, handleHealthReady, handleHealthReadyDetails, handleHealthDependencies, handleMetrics } = require('./routes/health');
   app.get('/api/health/live', handleHealthLive);
+  // Alias for system-scoped health path expected by client
+  app.get('/api/system/health/live', handleHealthLive);
   app.get('/api/health/ready', handleHealthReady);
   // Alias for system-scoped health path expected by client
   app.get('/api/system/health/ready', handleHealthReady);
