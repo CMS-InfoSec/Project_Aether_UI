@@ -8,6 +8,7 @@ export interface CreateFounderRequest {
   email: string;
   password: string;
   name: string;
+  user_id?: string;
 }
 
 export interface CreateFounderResponse {
@@ -75,7 +76,7 @@ export const handleCreateFounder: RequestHandler = (req, res) => {
       return res.status(404).json({ status: 'error', code: 404, detail: 'Bootstrap disabled' });
     }
 
-    const { email, password, name } = req.body as CreateFounderRequest;
+    const { email, password, name, user_id } = req.body as CreateFounderRequest;
 
     // Validate input
     if (!email || !password || !name) {
@@ -93,22 +94,32 @@ export const handleCreateFounder: RequestHandler = (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
-    // Verify caller identity (must match payload email) — mock check using Authorization header
+    // Verify caller identity (must match payload user_id and email) and caller must be admin
     const auth = (req.headers['authorization'] as string) || '';
     const bearer = Array.isArray(auth) ? auth[0] : auth;
     let callerEmail: string | null = null;
+    let callerId: string | null = null;
+    let callerRole: string | null = null;
     try {
       if (bearer && bearer.toLowerCase().startsWith('bearer ')) {
         const token = bearer.slice(7);
         const parts = token.split('_');
-        const userId = parts[1];
+        const tokenUserId = parts[1];
         const { mockUsers } = require('./auth');
-        const u = mockUsers.find((x: any) => x.id === userId);
+        const u = mockUsers.find((x: any) => x.id === tokenUserId);
         callerEmail = u?.email || null;
+        callerId = u?.id || null;
+        callerRole = u?.role || null;
       }
     } catch {}
 
-    if (!callerEmail || callerEmail.toLowerCase() !== email.toLowerCase()) {
+    if (!callerId || !callerEmail) {
+      return res.status(401).json({ status: 'error', code: 401, detail: 'Unauthorized' });
+    }
+    if (callerRole !== 'admin') {
+      return res.status(403).json({ status: 'error', code: 403, detail: 'Admin required' });
+    }
+    if ((user_id && user_id !== callerId) || callerEmail.toLowerCase() !== email.toLowerCase()) {
       return res.status(403).json({ status: 'error', code: 403, detail: 'Caller must bootstrap self' });
     }
 
