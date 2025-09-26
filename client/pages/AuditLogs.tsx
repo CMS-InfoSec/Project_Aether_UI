@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import apiFetch, { getJson } from "@/lib/apiClient";
+import apiFetch, { getJson, getWsUrl } from "@/lib/apiClient";
 import copy from "@/lib/clipboard";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -169,44 +169,39 @@ export default function AuditLogs() {
     return () => clearInterval(t);
   }, [auto, load]);
 
-  // Attempt optional WS subscription if configured (degrades gracefully)
+  // Attempt optional WS subscription (degrades gracefully to polling)
   useEffect(() => {
-    const wsBase = localStorage.getItem("aether-ws-url");
-    if (!wsBase) return;
     let wt: WebSocket | null = null;
     let wb: WebSocket | null = null;
     try {
-      wt = new WebSocket(
-        wsBase.replace(/^http/, "ws").replace(/\/$/, "") + "/api/v1/events/trades",
-      );
-      wt.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data);
-          if (msg && msg.id)
-            setTrades((prev) => [msg as TradeEvent, ...prev].slice(0, 500));
-        } catch {}
-      };
+      const tUrl = getWsUrl("/api/v1/events/trades");
+      if (tUrl) {
+        wt = new WebSocket(tUrl);
+        wt.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg && msg.id)
+              setTrades((prev) => [msg as TradeEvent, ...prev].slice(0, 500));
+          } catch {}
+        };
+      }
     } catch {}
     try {
-      wb = new WebSocket(
-        wsBase.replace(/^http/, "ws").replace(/\/$/, "") +
-          "/api/v1/events/balances",
-      );
-      wb.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data);
-          if (msg && msg.id)
-            setBalances((prev) => [msg as BalanceEvent, ...prev].slice(0, 500));
-        } catch {}
-      };
+      const bUrl = getWsUrl("/api/v1/events/balances");
+      if (bUrl) {
+        wb = new WebSocket(bUrl);
+        wb.onmessage = (ev) => {
+          try {
+            const msg = JSON.parse(ev.data);
+            if (msg && msg.id)
+              setBalances((prev) => [msg as BalanceEvent, ...prev].slice(0, 500));
+          } catch {}
+        };
+      }
     } catch {}
     return () => {
-      try {
-        wt?.close();
-      } catch {}
-      try {
-        wb?.close();
-      } catch {}
+      try { wt?.close(); } catch {}
+      try { wb?.close(); } catch {}
     };
   }, []);
 
