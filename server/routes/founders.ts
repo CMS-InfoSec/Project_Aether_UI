@@ -51,16 +51,16 @@ export const handleGetBootstrapStatus: RequestHandler = (req, res) => {
 
     console.log('Bootstrap status check:', { foundersExist, foundersCount: mockFounders.length });
 
-    const response: BootstrapStatusResponse = {
-      foundersExist
-    };
+    // Align with production semantics: return 200 only when founders do NOT exist; otherwise 404 to disable reuse
+    if (foundersExist) {
+      return res.status(404).json({ status: 'error', code: 404, detail: 'Bootstrap disabled' });
+    }
 
+    const response: BootstrapStatusResponse = { foundersExist };
     res.json(response);
   } catch (error) {
     console.error('Bootstrap status error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
@@ -69,76 +69,71 @@ export const handleCreateFounder: RequestHandler = (req, res) => {
     // Ensure mockFounders is synchronized with admin users
     initializeMockFounders();
 
-    // Re-check that no founder record exists
+    // If a founder already exists, hide bootstrap behind 404 (semantics: disabled)
     if (mockFounders.length > 0) {
-      console.log('Bootstrap conflict: founders already exist', { foundersCount: mockFounders.length, founders: mockFounders });
-      return res.status(409).json({
-        error: 'Founders already exist. Bootstrap is not allowed.'
-      });
+      console.log('Bootstrap disabled: founders already exist', { count: mockFounders.length });
+      return res.status(404).json({ status: 'error', code: 404, detail: 'Bootstrap disabled' });
     }
 
     const { email, password, name } = req.body as CreateFounderRequest;
 
     // Validate input
     if (!email || !password || !name) {
-      return res.status(400).json({
-        error: 'Email, password, and name are required'
-      });
+      return res.status(400).json({ error: 'Email, password, and name are required' });
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        error: 'Invalid email format'
-      });
+      return res.status(400).json({ error: 'Invalid email format' });
     }
 
     // Validate password strength (minimum 8 characters)
     if (password.length < 8) {
-      return res.status(400).json({
-        error: 'Password must be at least 8 characters long'
-      });
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
-    // Generate unique ID
+    // Verify caller identity (must match payload email) — mock check using Authorization header
+    const auth = (req.headers['authorization'] as string) || '';
+    const bearer = Array.isArray(auth) ? auth[0] : auth;
+    let callerEmail: string | null = null;
+    try {
+      if (bearer && bearer.toLowerCase().startsWith('bearer ')) {
+        const token = bearer.slice(7);
+        const parts = token.split('_');
+        const userId = parts[1];
+        const { mockUsers } = require('./auth');
+        const u = mockUsers.find((x: any) => x.id === userId);
+        callerEmail = u?.email || null;
+      }
+    } catch {}
+
+    if (!callerEmail || callerEmail.toLowerCase() !== email.toLowerCase()) {
+      return res.status(403).json({ status: 'error', code: 403, detail: 'Caller must bootstrap self' });
+    }
+
+    // Generate unique ID for founder record (simulate Supabase ID assignment)
     const founderId = `founder_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // In a real implementation, this would:
-    // 1. Create a Supabase user with Role.ADMIN
-    // 2. Insert that user's ID into the founders table
-    // For now, we'll simulate this process
-    
-    const newFounder = {
-      id: founderId,
-      email,
-      name,
-      createdAt: new Date().toISOString()
-    };
-
+    const newFounder = { id: founderId, email, name, createdAt: new Date().toISOString() };
     mockFounders.push(newFounder);
 
-    // Also add to mock users for login purposes
+    // Also elevate caller to admin in mock users (simulate role assignment)
     const { mockUsers } = require('./auth');
     if (mockUsers) {
-      mockUsers.push({
-        id: founderId,
-        email,
-        password, // In production, this would be hashed
-        role: 'admin' as const
-      });
+      const idx = mockUsers.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
+      if (idx >= 0) {
+        mockUsers[idx] = { ...mockUsers[idx], role: 'admin' };
+      } else {
+        mockUsers.push({ id: founderId, email, password, role: 'admin' as const });
+      }
     }
 
-    const response: CreateFounderResponse = {
-      id: founderId
-    };
-
+    const response: CreateFounderResponse = { id: founderId };
     res.status(201).json(response);
   } catch (error) {
     console.error('Create founder error:', error);
-    res.status(500).json({
-      error: 'Internal server error'
-    });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
