@@ -51,6 +51,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import HelpTip from '@/components/ui/help-tip';
+import apiFetch from '@/lib/apiClient';
 
 // Types
 interface SystemState {
@@ -76,7 +77,7 @@ interface AuditLogEntry {
   success: boolean;
 }
 
-const API_KEY = 'aether-admin-key-2024'; // In production, this would come from environment
+const API_KEY = '';
 
 export default function AdminSystemControl() {
   // System state
@@ -120,32 +121,11 @@ export default function AdminSystemControl() {
 
   // API request helper with X-API-Key header
   const apiRequest = async (url: string, options: RequestInit = {}) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-API-Key': API_KEY,
-      ...options.headers,
-    };
-
-    // Construct full URL using configured backend
     const fullUrl = url.startsWith('http') ? url : `${backendUrl.replace(/\/+$/, '')}${url}`;
-
-    const response = await fetch(fullUrl, {
-      ...options,
-      headers,
-    });
-
-    if (response.status === 401) {
-      throw new Error('API key required');
-    }
-
-    if (response.status === 403) {
-      throw new Error('Insufficient permissions');
-    }
-
-    if (response.status >= 500) {
-      throw new Error('Server error. Please try again.');
-    }
-
+    const response = await apiFetch(fullUrl, { ...options, admin: true, headers: options.headers });
+    if (response.status === 401) throw new Error('API key required');
+    if (response.status === 403) throw new Error('Insufficient permissions');
+    if (response.status >= 500) throw new Error('Server error. Please try again.');
     return response;
   };
 
