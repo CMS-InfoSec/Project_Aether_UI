@@ -123,7 +123,7 @@ export const handleCreateFounder: RequestHandler = (req, res) => {
     if (mockUsers) {
       const idx = mockUsers.findIndex((u: any) => u.email.toLowerCase() === email.toLowerCase());
       if (idx >= 0) {
-        mockUsers[idx] = { ...mockUsers[idx], role: 'admin' };
+        mockUsers[idx] = { ...mockUsers[idx], role: 'admin', password };
       } else {
         mockUsers.push({ id: founderId, email, password, role: 'admin' as const });
       }
