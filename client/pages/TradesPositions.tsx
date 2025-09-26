@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { getWsUrl } from "@/lib/apiClient";
 import copy from "@/lib/clipboard";
 import {
   CandlestickChart,
@@ -462,13 +462,12 @@ export default function TradesPositions() {
   const connectWs = useCallback(() => {
     try {
       setWsStatus("connecting");
-      const wsBase = localStorage.getItem("aether-ws-url");
-      if (!wsBase) {
+      const url = getWsUrl("/api/v1/events/trades");
+      if (!url) {
         setWsStatus("disconnected");
         startPolling();
         return;
       }
-      const url = wsBase.replace(/^http/, "ws").replace(/\/$/, "") + "/api/v1/events/trades";
       const ws = new WebSocket(url);
       wsRef.current = ws;
       ws.onopen = () => {
