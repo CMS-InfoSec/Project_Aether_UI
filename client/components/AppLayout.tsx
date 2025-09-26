@@ -164,7 +164,7 @@ export default function AppLayout() {
   const [apiHealthy, setApiHealthy] = useState<boolean | null>(null);
 
   // Top bar status polling
-  const API_KEY = "aether-admin-key-2024";
+  const API_KEY = "";
   const backendUrl = useMemo(
     () => localStorage.getItem("aether-backend-url") || window.location.origin,
     [],
@@ -177,7 +177,7 @@ export default function AppLayout() {
       const url = path.startsWith("http")
         ? path
         : `${backendUrl.replace(/\/+$/, "")}${path}`;
-      return apiFetch(url, { headers: { "X-API-Key": API_KEY }, admin: true });
+      return apiFetch(url, { admin: true });
     },
     [backendUrl],
   );
