@@ -625,7 +625,7 @@ export default function AppLayout() {
                               const url =
                                 base.replace(/\/+$/, "") + "/api/v1/system/health/live";
                               const s = performance.now();
-                              const r = await fetch(url);
+                              const r = await apiFetch(url, { admin: true });
                               const latency = Math.round(performance.now() - s);
                               toast({
                                 title: r.ok
