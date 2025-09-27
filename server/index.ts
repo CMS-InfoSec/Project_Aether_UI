@@ -99,6 +99,7 @@ import {
   handleCreateNotification,
   handleGetExecutionMetrics
 } from "./routes/reports";
+import { handleGetUserTradesReport } from "./routes/reports.user-trades";
 import {
   handleGetUserProfile,
   handleUpdateUserProfile,
