@@ -288,6 +288,8 @@ export function createServer() {
   app.get("/api/reports/export", handleExportReportCSV);
   app.get('/api/reports/execution', handleGetExecutionMetrics);
   app.get('/api/reports/trades', handleGetUserTradesReport);
+  // UK tax-year report (v1 prefix)
+  app.get('/api/v1/reports/tax-year', (require('./routes/reports.tax-year').handleGetTaxYearReport));
   app.get("/api/notifications", handleGetNotifications);
   app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
