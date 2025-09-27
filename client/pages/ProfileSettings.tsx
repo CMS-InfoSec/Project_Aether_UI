@@ -1377,30 +1377,20 @@ export default function ProfileSettings() {
 }
 
 function UKTaxReports() {
-  const [taxYear, setTaxYear] = React.useState<string>(deriveCurrentTaxYear());
-  const [from, setFrom] = React.useState<string>(taxYearToDates(taxYear).from);
-  const [to, setTo] = React.useState<string>(taxYearToDates(taxYear).to);
+  const [taxYear, setTaxYear] = React.useState<number>(currentUkTaxYearStart());
   const [loading, setLoading] = React.useState(false);
   const [rows, setRows] = React.useState<any[]>([]);
   const [summary, setSummary] = React.useState<any | null>(null);
 
-  React.useEffect(() => {
-    const d = taxYearToDates(taxYear);
-    setFrom(d.from);
-    setTo(d.to);
-  }, [taxYear]);
-
   const fetchReport = async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      const res = await apiFetch(`/api/reports/trades?${params.toString()}`);
+      const params = new URLSearchParams({ tax_year: String(taxYear) });
+      const res = await apiFetch(`/api/v1/reports/tax-year?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.status !== 'success') throw new Error(data.error || 'Failed');
-      setRows(Array.isArray(data.data?.trades) ? data.data.trades : []);
-      setSummary(data.data?.summary || null);
+      if (!res.ok || !data || typeof data !== 'object') throw new Error('Failed');
+      setRows(Array.isArray(data.trades) ? data.trades : []);
+      setSummary(data);
     } catch (e) {
       setRows([]);
       setSummary(null);
@@ -1409,18 +1399,22 @@ function UKTaxReports() {
     }
   };
 
-  const downloadCsv = async () => {
+  const downloadCsv = () => {
     try {
-      const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      params.set('format','csv');
-      const res = await apiFetch(`/api/reports/trades?${params.toString()}`);
-      const blob = await res.blob();
+      const headers = ['timestamp','symbol','action','amount','price','notional','fee','net','source'];
+      const csvRows = [headers.join(',')].concat((rows||[]).map((t:any) => {
+        const vals = headers.map((h) => t[h]);
+        return vals.map((v:any) => {
+          const s = v === undefined || v === null ? '' : String(v);
+          return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+        }).join(',');
+      }));
+      const csv = csvRows.join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `user-trades-${from || 'start'}-${to || 'end'}.csv`;
+      a.download = `uk-tax-${taxYear}.csv`;
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1428,58 +1422,63 @@ function UKTaxReports() {
     } catch {}
   };
 
-  const years = getTaxYearsList(6);
+  const years = getAllowedTaxYears();
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-4">
         <div>
-          <Label>Tax Year</Label>
-          <Select value={taxYear} onValueChange={setTaxYear}>
+          <Label>Tax Year (start)</Label>
+          <Select value={String(taxYear)} onValueChange={(v)=>setTaxYear(parseInt(v,10))}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {years.map(y => (
-                <SelectItem key={y} value={y}>{y}</SelectItem>
+                <SelectItem key={y} value={String(y)}>{y}/{String(y+1).slice(2)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-        </div>
-        <div>
-          <Label>From</Label>
-          <Input type="date" value={from} onChange={e=>setFrom(e.target.value)} />
-        </div>
-        <div>
-          <Label>To</Label>
-          <Input type="date" value={to} onChange={e=>setTo(e.target.value)} />
         </div>
         <div className="flex items-end gap-2">
           <Button onClick={fetchReport} disabled={loading}>
             {loading ? (<><RefreshCw className="h-4 w-4 mr-1 animate-spin" />Loading</>) : 'View Report'}
           </Button>
-          <Button variant="outline" onClick={downloadCsv}>
+          <Button variant="outline" onClick={downloadCsv} disabled={!rows.length}>
             Export CSV
           </Button>
         </div>
       </div>
 
       {summary && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-5">
           <div className="p-3 border rounded">
-            <div className="text-xs text-muted-foreground">Gross Proceeds</div>
-            <div className="text-lg font-medium">£{Number(summary.grossProceeds).toFixed(2)}</div>
+            <div className="text-xs text-muted-foreground">Period</div>
+            <div className="text-sm font-medium break-words">{new Date(summary.period_start).toISOString().slice(0,10)} → {new Date(summary.period_end).toISOString().slice(0,10)}</div>
           </div>
           <div className="p-3 border rounded">
-            <div className="text-xs text-muted-foreground">Allowable Costs</div>
-            <div className="text-lg font-medium">£{Number(summary.allowableCosts).toFixed(2)}</div>
+            <div className="text-xs text-muted-foreground">Trades</div>
+            <div className="text-lg font-medium">{Number(summary.trade_count)||0}</div>
+          </div>
+          <div className="p-3 border rounded">
+            <div className="text-xs text-muted-foreground">Total Buys</div>
+            <div className="text-lg font-medium">£{Number(summary.total_buys).toFixed(2)}</div>
+          </div>
+          <div className="p-3 border rounded">
+            <div className="text-xs text-muted-foreground">Total Sells</div>
+            <div className="text-lg font-medium">£{Number(summary.total_sells).toFixed(2)}</div>
           </div>
           <div className="p-3 border rounded">
             <div className="text-xs text-muted-foreground">Total Fees</div>
-            <div className="text-lg font-medium">£{Number(summary.totalFees).toFixed(2)}</div>
+            <div className="text-lg font-medium">£{Number(summary.total_fees).toFixed(2)}</div>
           </div>
-          <div className={`p-3 border rounded ${Number(summary.indicativeGain) >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
-            <div className="text-xs text-muted-foreground">Indicative Gain/Loss</div>
-            <div className="text-lg font-medium">£{Number(summary.indicativeGain).toFixed(2)}</div>
+          <div className={`p-3 border rounded ${Number(summary.net_result) >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
+            <div className="text-xs text-muted-foreground">Net Result</div>
+            <div className="text-lg font-medium">£{Number(summary.net_result).toFixed(2)}</div>
           </div>
+          {summary.supabase_degraded && (
+            <div className="p-3 border rounded bg-yellow-50 col-span-full">
+              <div className="text-xs text-yellow-800">Data degraded: using audit log fallback</div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1487,73 +1486,59 @@ function UKTaxReports() {
         <table className="w-full text-sm">
           <thead className="bg-muted">
             <tr>
-              <th className="text-left p-2">Date</th>
-              <th className="text-left p-2">Type</th>
+              <th className="text-left p-2">Timestamp (UTC)</th>
               <th className="text-left p-2">Symbol</th>
-              <th className="text-right p-2">Quantity</th>
+              <th className="text-left p-2">Action</th>
+              <th className="text-right p-2">Amount</th>
               <th className="text-right p-2">Price</th>
+              <th className="text-right p-2">Notional</th>
               <th className="text-right p-2">Fee</th>
-              <th className="text-right p-2">Slippage</th>
-              <th className="text-right p-2">Total</th>
-              <th className="text-left p-2">Trade ID</th>
+              <th className="text-right p-2">Net</th>
+              <th className="text-left p-2">Source</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map((r, i) => {
-              const qty = Number(r.amount)||0; const price = Number(r.price)||0; const fee = Number(r.fee_cost)||0; const slip = Number(r.slippage_cost)||0; const total = qty*price;
-              return (
-                <tr key={r.id || r.trade_id || i} className="border-t">
-                  <td className="p-2">{new Date(r.timestamp).toLocaleString()}</td>
-                  <td className="p-2 capitalize">{r.action}</td>
-                  <td className="p-2">{r.symbol}</td>
-                  <td className="p-2 text-right">{qty.toFixed(8)}</td>
-                  <td className="p-2 text-right">{price.toFixed(8)}</td>
-                  <td className="p-2 text-right">{fee.toFixed(8)}</td>
-                  <td className="p-2 text-right">{slip.toFixed(8)}</td>
-                  <td className="p-2 text-right">{total.toFixed(8)}</td>
-                  <td className="p-2">{r.trade_id || r.id}</td>
-                </tr>
-              );
-            })}
+            {rows.map((r, i) => (
+              <tr key={i} className="border-t">
+                <td className="p-2">{new Date(r.timestamp).toISOString()}</td>
+                <td className="p-2">{r.symbol}</td>
+                <td className="p-2 capitalize">{r.action}</td>
+                <td className="p-2 text-right">{Number(r.amount||0).toFixed(8)}</td>
+                <td className="p-2 text-right">{Number(r.price||0).toFixed(8)}</td>
+                <td className="p-2 text-right">{Number(r.notional||0).toFixed(8)}</td>
+                <td className="p-2 text-right">{Number(r.fee||0).toFixed(8)}</td>
+                <td className={`p-2 text-right ${Number(r.net)>=0?'text-green-700':'text-red-700'}`}>{Number(r.net||0).toFixed(8)}</td>
+                <td className="p-2">{r.source}</td>
+              </tr>
+            ))}
             {!rows.length && (
               <tr>
-                <td className="p-4 text-center text-muted-foreground" colSpan={9}>No trades in selected range.</td>
+                <td className="p-4 text-center text-muted-foreground" colSpan={9}>No trades for selected tax year.</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
-
-      {summary?.disclaimer && (
-        <p className="text-xs text-muted-foreground">{summary.disclaimer}</p>
-      )}
     </div>
   );
 }
 
-function deriveCurrentTaxYear(): string {
+function currentUkTaxYearStart(): number {
   const now = new Date();
-  const y = now.getFullYear();
-  const taxYearStart = new Date(y, 3, 6); // 6 April
-  if (now < taxYearStart) return `${y-1}/${String(y).slice(2)}`;
-  return `${y}/${String(y+1).slice(2)}`;
+  const y = now.getUTCFullYear();
+  const start = Date.UTC(y,3,6,0,0,0);
+  return now.getTime() < start ? y-1 : y;
 }
 
-function taxYearToDates(taxYear: string){
-  const [startY, endY] = taxYear.split('/');
-  const sy = parseInt(startY,10);
-  const ey = parseInt(`20${endY}`,10);
-  return { from: new Date(sy,3,6).toISOString().split('T')[0], to: new Date(ey,3,5).toISOString().split('T')[0] };
-}
-
-function getTaxYearsList(n: number){
-  const list: string[] = [];
-  const now = new Date();
-  let y = now.getFullYear();
-  for (let i=0;i<n;i++){
-    const start = now < new Date(y,3,6) ? y-1-i : y-i;
-    const end = start+1;
-    list.push(`${start}/${String(end).slice(2)}`);
-  }
-  return list;
+function getAllowedTaxYears(): number[] {
+  const min = 2000;
+  const max = (()=>{
+    const now = new Date();
+    const y = now.getUTCFullYear();
+    const beforeApr6 = now.getTime() < Date.UTC(y,3,6,0,0,0);
+    return beforeApr6 ? currentUkTaxYearStart()+1 : currentUkTaxYearStart();
+  })();
+  const years: number[] = [];
+  for (let y = max; y >= min; y--) years.push(y);
+  return years;
 }
