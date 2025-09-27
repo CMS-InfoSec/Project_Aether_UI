@@ -204,6 +204,8 @@ export const handleGetRecentTrades: RequestHandler = (req, res) => {
   }
 };
 
+export function listAllTrades(): Trade[] { return [...mockTrades]; }
+
 export const handleGetOpenPositions: RequestHandler = (req, res) => {
   try {
     const limit = parseInt(req.query.limit as string) || 25;
