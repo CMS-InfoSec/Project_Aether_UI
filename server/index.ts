@@ -287,7 +287,7 @@ export function createServer() {
   app.get("/api/reports/backtest", handleGetBacktestReport);
   app.get("/api/reports/export", handleExportReportCSV);
   app.get('/api/reports/execution', handleGetExecutionMetrics);
-  app.get('/api/reports/trades', (require('./routes/reports').handleGetUserTradesReport));
+  app.get('/api/reports/trades', handleGetUserTradesReport);
   app.get("/api/notifications", handleGetNotifications);
   app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
