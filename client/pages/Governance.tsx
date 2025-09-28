@@ -62,6 +62,7 @@ import ComplianceAuditTab from "./components/ComplianceAuditTab";
 import ModelLineagePanel from "./components/ModelLineagePanel";
 import ModelComparisonTab from "./components/ModelComparisonTab";
 import RegulatoryReportsTab from "./components/RegulatoryReportsTab";
+import ComplianceForecastPanel from "./components/ComplianceForecastPanel";
 
 // Types
 interface Proposal {
@@ -470,12 +471,13 @@ export default function Governance() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-9">
+        <TabsList className="grid w-full grid-cols-10">
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
           <TabsTrigger value="voting">Voting</TabsTrigger>
           <TabsTrigger value="deploy">Deploy</TabsTrigger>
           <TabsTrigger value="asc-models">ASC Models</TabsTrigger>
           <TabsTrigger value="compliance">Compliance & Audit</TabsTrigger>
+          <TabsTrigger value="compliance-forecast">Compliance Forecast</TabsTrigger>
           <TabsTrigger value="regulatory-reports">Regulatory Reports</TabsTrigger>
           <TabsTrigger value="model-lineage">Model Lineage</TabsTrigger>
           <TabsTrigger value="model-comparison">Model Comparison</TabsTrigger>
@@ -766,6 +768,10 @@ export default function Governance() {
 
         <TabsContent value="compliance" className="space-y-6">
           <ComplianceAuditTab />
+        </TabsContent>
+
+        <TabsContent value="compliance-forecast" className="space-y-6">
+          <ComplianceForecastPanel />
         </TabsContent>
 
         <TabsContent value="regulatory-reports" className="space-y-6">
