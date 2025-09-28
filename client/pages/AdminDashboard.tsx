@@ -593,7 +593,7 @@ export default function AdminDashboard() {
       </div>
 
       <Tabs value={tab} onValueChange={onChangeTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-9 gap-2">
+        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
           <TabsTrigger value="controls"><span className="inline-flex items-center gap-1">Controls <HelpTip content="Pause/resume trading, change modes, and access the kill switch." /></span></TabsTrigger>
           <TabsTrigger value="governance"><span className="inline-flex items-center gap-1">Governance <HelpTip content="Review proposals and governance decisions affecting the system." /></span></TabsTrigger>
           <TabsTrigger value="plugins"><span className="inline-flex items-center gap-1">Plugins <HelpTip content="Manage strategy plugins and extensions." /></span></TabsTrigger>
@@ -763,7 +763,7 @@ export default function AdminDashboard() {
 
           {/* Reports inner tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
               <TabsTrigger value="overview"><span className="inline-flex items-center gap-1">Overview <HelpTip content="Key metrics and charts at a glance." /></span></TabsTrigger>
               <TabsTrigger value="reporting"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Detailed daily and weekly reports." /></span></TabsTrigger>
               <TabsTrigger value="per-asset"><span className="inline-flex items-center gap-1">Per-Asset <HelpTip content="Deep dive into each asset's metrics." /></span></TabsTrigger>
