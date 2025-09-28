@@ -42,13 +42,20 @@ function pickMetric(metrics: Record<string, number>, keys: string[], fallback?: 
   return fallback;
 }
 
-export default function RiskMonitoringPanel() {
+export default function RiskMonitoringPanel({ range }: { range?: { from: number; to: number } } = {}) {
   const [breaches, setBreaches] = useState<BreachItem[]>([]);
   const [promText, setPromText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
   const [perf, setPerf] = useState<Array<{ date: string; returns: number }>>([]);
+  const filteredPerf = useMemo(() => {
+    if (!range || !range.from || !range.to) return perf;
+    return perf.filter(p => {
+      const t = new Date(p.date).getTime();
+      return Number.isFinite(t) && t >= range.from && t <= range.to;
+    });
+  }, [perf, range]);
   const timerRef = useRef<number | null>(null);
 
   const load = async () => {
@@ -148,7 +155,7 @@ export default function RiskMonitoringPanel() {
     <Card>
       <CardHeader className="flex items-start justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2">Risk Monitoring <Badge variant="outline" className="ml-1">Live</Badge></CardTitle>
+          <CardTitle className="flex items-center gap-2">Risk Monitoring <Badge variant="outline" className="ml-1">Live</Badge>{range ? <Badge variant="secondary" className="ml-2">Filtered</Badge> : null}</CardTitle>
           <CardDescription>Live risk metrics and breach alerts. Auto-refreshes every 5 seconds.</CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -236,9 +243,9 @@ export default function RiskMonitoringPanel() {
             <HelpTip content="Sparkline of recent portfolio returns (last ~20 points)." />
           </div>
           <div className="h-32">
-            {perf.length > 0 ? (
+            {filteredPerf.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <RechartsLineChart data={perf}>
+                <RechartsLineChart data={filteredPerf}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="date" hide />
                   <YAxis hide domain={["auto","auto"]} />
@@ -252,7 +259,7 @@ export default function RiskMonitoringPanel() {
           </div>
         </div>
 
-        <div className="text-xs text-muted-foreground">Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "–"}</div>
+        <div className="text-xs text-muted-foreground">Last updated: {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "–"}{range ? ` • Window ${new Date(range.from).toLocaleTimeString()}–${new Date(range.to).toLocaleTimeString()}`: ''}</div>
       </CardContent>
     </Card>
   );
