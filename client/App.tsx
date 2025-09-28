@@ -17,6 +17,7 @@ import Signup from "./pages/Signup";
 // User Pages (accessible to both USER and ADMIN)
 import UserDashboard from "./pages/UserDashboard";
 import TradesPositions from "./pages/TradesPositions";
+import TradeDetails from "./pages/TradeDetails";
 import WalletHedge from "./pages/WalletHedge";
 import AIAssistant from "./pages/AIAssistant";
 import ProfileSettings from "./pages/ProfileSettings";
@@ -217,6 +218,14 @@ const AppRouter = () => {
           element={
             <ErrorBoundary>
               <TradesPositions />
+            </ErrorBoundary>
+          }
+        />
+        <Route
+          path="trades/:id"
+          element={
+            <ErrorBoundary>
+              <TradeDetails />
             </ErrorBoundary>
           }
         />
