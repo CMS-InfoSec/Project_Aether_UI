@@ -591,6 +591,9 @@ export default function StrategiesSignals() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Scenario Lab */}
+            <ScenarioLab />
           </div>
         </TabsContent>
 
