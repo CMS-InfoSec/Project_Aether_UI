@@ -1,6 +1,12 @@
 import React from "react";
 import apiFetch from "@/lib/apiClient";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import HelpTip from "@/components/ui/help-tip";
@@ -35,7 +41,7 @@ export default function QuantumSecurityPanel() {
 
   // Basic client-side PQC readiness check (no PQC libs present in this app)
   const pqcReady = Boolean(keys?.pqc_ready) || false;
-  const pqcFallback = (keys?.fallback ?? !pqcReady);
+  const pqcFallback = keys?.fallback ?? !pqcReady;
 
   const nextRotation = keys?.expires_at ? new Date(keys.expires_at) : null;
 
@@ -49,11 +55,13 @@ export default function QuantumSecurityPanel() {
         // Fallback to existing wallet API keys status
         res = await apiFetch("/api/wallet/api-keys/status");
       }
-      const data = await res.json().catch(() => ({} as any));
+      const data = await res.json().catch(() => ({}) as any);
       const payload: KeysStatus = data?.data || data || {};
       setKeys(payload);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to fetch security status");
+      setError(
+        e instanceof Error ? e.message : "Failed to fetch security status",
+      );
     } finally {
       setLoading(false);
     }
@@ -64,7 +72,8 @@ export default function QuantumSecurityPanel() {
     triggerStatus().catch(() => {});
   }, []);
 
-  const txs = keys?.tx_hashes && Array.isArray(keys.tx_hashes) ? keys.tx_hashes : [];
+  const txs =
+    keys?.tx_hashes && Array.isArray(keys.tx_hashes) ? keys.tx_hashes : [];
 
   return (
     <Card>
@@ -75,7 +84,8 @@ export default function QuantumSecurityPanel() {
             Quantum Security
           </CardTitle>
           <CardDescription>
-            Algorithms, rotation schedule, and post-quantum readiness. Includes on-chain signature metadata when available.
+            Algorithms, rotation schedule, and post-quantum readiness. Includes
+            on-chain signature metadata when available.
           </CardDescription>
         </div>
         <HelpTip content="Shows cryptography in use (from current code), next key rotation, and PQC readiness. Tries /security/keys/status; falls back to wallet key status." />
@@ -94,7 +104,9 @@ export default function QuantumSecurityPanel() {
 
         <div className="grid gap-4 md:grid-cols-3">
           <div className="p-4 border rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">Algorithms in use</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              Algorithms in use
+            </div>
             <div className="space-y-1">
               {knownAlgorithms.map((a) => (
                 <div key={a.name} className="flex items-center gap-2 text-sm">
@@ -103,29 +115,41 @@ export default function QuantumSecurityPanel() {
                   <span className="text-muted-foreground">— {a.category}</span>
                 </div>
               ))}
-              {Array.isArray(keys?.algorithms) && keys!.algorithms!.length > 0 && (
-                <div className="mt-2 space-y-1">
-                  {keys!.algorithms!.map((a) => (
-                    <div key={`${a.name}:${a.category}`} className="flex items-center gap-2 text-sm">
-                      <Lock className="h-3 w-3" />
-                      <span className="font-medium">{a.name}</span>
-                      <span className="text-muted-foreground">— {a.category}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
+              {Array.isArray(keys?.algorithms) &&
+                keys!.algorithms!.length > 0 && (
+                  <div className="mt-2 space-y-1">
+                    {keys!.algorithms!.map((a) => (
+                      <div
+                        key={`${a.name}:${a.category}`}
+                        className="flex items-center gap-2 text-sm"
+                      >
+                        <Lock className="h-3 w-3" />
+                        <span className="font-medium">{a.name}</span>
+                        <span className="text-muted-foreground">
+                          — {a.category}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
             </div>
           </div>
 
           <div className="p-4 border rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">Next rotation</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              Next rotation
+            </div>
             <div className="flex items-center gap-2 text-sm">
               <Calendar className="h-3 w-3" />
-              <span>{nextRotation ? nextRotation.toLocaleString() : "Unknown"}</span>
+              <span>
+                {nextRotation ? nextRotation.toLocaleString() : "Unknown"}
+              </span>
             </div>
             {typeof keys?.expiring_soon === "boolean" && (
               <div className="mt-2">
-                <Badge variant={keys!.expiring_soon ? "destructive" : "secondary"}>
+                <Badge
+                  variant={keys!.expiring_soon ? "destructive" : "secondary"}
+                >
                   {keys!.expiring_soon ? "Expiring soon" : "Healthy"}
                 </Badge>
               </div>
@@ -133,7 +157,9 @@ export default function QuantumSecurityPanel() {
           </div>
 
           <div className="p-4 border rounded-md">
-            <div className="text-xs text-muted-foreground mb-1">PQC readiness</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              PQC readiness
+            </div>
             <div className="flex items-center gap-2 text-sm">
               <Cpu className="h-3 w-3" />
               <span>{pqcReady ? "Ready" : "Not available"}</span>
@@ -146,7 +172,8 @@ export default function QuantumSecurityPanel() {
 
         <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="text-xs text-muted-foreground">
-            If PQC libraries are unavailable, the system falls back to classical algorithms.
+            If PQC libraries are unavailable, the system falls back to classical
+            algorithms.
           </div>
           <Button onClick={triggerStatus} disabled={loading}>
             {loading ? (
@@ -164,11 +191,15 @@ export default function QuantumSecurityPanel() {
         </div>
 
         <div className="border rounded-md p-3">
-          <div className="text-xs text-muted-foreground mb-2">On-chain signature TX hashes</div>
+          <div className="text-xs text-muted-foreground mb-2">
+            On-chain signature TX hashes
+          </div>
           {txs.length ? (
             <div className="space-y-1 text-sm">
               {txs.map((h, i) => (
-                <div key={`${i}:${h}`} className="font-mono break-all">{h}</div>
+                <div key={`${i}:${h}`} className="font-mono break-all">
+                  {h}
+                </div>
               ))}
             </div>
           ) : (

@@ -304,7 +304,11 @@ export function createServer() {
 
   // Manipulation defense
   {
-    const { handleGetDefenseEvents, handlePatchDefenseOverride, handleGetDefenseSettings } = require("./routes/defense");
+    const {
+      handleGetDefenseEvents,
+      handlePatchDefenseOverride,
+      handleGetDefenseSettings,
+    } = require("./routes/defense");
     app.get("/api/defense/events", handleGetDefenseEvents);
     app.get("/api/defense/settings", handleGetDefenseSettings);
     app.patch("/api/defense/override", handlePatchDefenseOverride);
@@ -446,7 +450,10 @@ export function createServer() {
   app.post("/api/strategies/backtest", handlePostBacktest);
 
   // Federated learning status
-  app.get("/api/federated/status", require("./routes/federated").handleFederatedStatus);
+  app.get(
+    "/api/federated/status",
+    require("./routes/federated").handleFederatedStatus,
+  );
 
   // Models explainability
   app.get("/api/models/explain/:modelId", (req, res) => {

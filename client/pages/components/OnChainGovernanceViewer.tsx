@@ -1,12 +1,25 @@
 import React from "react";
 import apiFetch from "@/lib/apiClient";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import HelpTip from "@/components/ui/help-tip";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ExternalLink, RefreshCw, CheckCircle, AlertTriangle, Vote, History } from "lucide-react";
+import {
+  ExternalLink,
+  RefreshCw,
+  CheckCircle,
+  AlertTriangle,
+  Vote,
+  History,
+} from "lucide-react";
 
 interface Proposal {
   id: string;
@@ -44,7 +57,8 @@ function shortHash(h: string) {
 function explorerUrl(tx: string): string | null {
   if (!tx) return null;
   if (/^0x[0-9a-fA-F]{64}$/.test(tx)) return `https://etherscan.io/tx/${tx}`;
-  if (/^[0-9a-fA-F]{64}$/.test(tx)) return `https://www.blockchain.com/explorer/transactions/btc/${tx}`;
+  if (/^[0-9a-fA-F]{64}$/.test(tx))
+    return `https://www.blockchain.com/explorer/transactions/btc/${tx}`;
   return null;
 }
 
@@ -64,12 +78,15 @@ export default function OnChainGovernanceViewer() {
       ]);
       const pData = await pRes.json().catch(() => ({}));
       const aData = await aRes.json().catch(() => ({}));
-      if (pRes.ok && pData?.status === "success") setProposals(pData.data || []);
+      if (pRes.ok && pData?.status === "success")
+        setProposals(pData.data || []);
       else setProposals([]);
       if (aRes.ok && aData?.status === "success") setAudit(aData.data || []);
       else setAudit([]);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load governance data");
+      setError(
+        e instanceof Error ? e.message : "Failed to load governance data",
+      );
     } finally {
       setLoading(false);
     }
@@ -81,16 +98,24 @@ export default function OnChainGovernanceViewer() {
   }, []);
 
   const rollbackEvents = React.useMemo(() => {
-    return (audit || []).filter((e) => e.type?.includes("rolled_back") || e.type?.includes("promoted") || e.type?.includes("deployed"));
+    return (audit || []).filter(
+      (e) =>
+        e.type?.includes("rolled_back") ||
+        e.type?.includes("promoted") ||
+        e.type?.includes("deployed"),
+    );
   }, [audit]);
 
   return (
     <Card>
       <CardHeader className="flex items-start justify-between">
         <div>
-          <CardTitle className="flex items-center gap-2">On-Chain Governance</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            On-Chain Governance
+          </CardTitle>
           <CardDescription>
-            View ASC votes and model rollbacks with blockchain transaction hashes and quorum status.
+            View ASC votes and model rollbacks with blockchain transaction
+            hashes and quorum status.
           </CardDescription>
         </div>
         <HelpTip content="Lists proposals with quorum progress and shows model governance events from the audit log. If tx hashes are present, links to chain explorers are provided." />
@@ -108,7 +133,9 @@ export default function OnChainGovernanceViewer() {
         )}
 
         <div className="flex items-center justify-between">
-          <div className="text-sm text-muted-foreground">Data refresh is manual. Some endpoints may require an admin API key.</div>
+          <div className="text-sm text-muted-foreground">
+            Data refresh is manual. Some endpoints may require an admin API key.
+          </div>
           <Button onClick={fetchAll} disabled={loading}>
             {loading ? (
               <>
@@ -141,9 +168,15 @@ export default function OnChainGovernanceViewer() {
               </thead>
               <tbody>
                 {(proposals || []).map((p) => {
-                  const approvals = typeof p.approvalCount === "number" ? p.approvalCount : p.votes.filter(v=>v.approve).length;
+                  const approvals =
+                    typeof p.approvalCount === "number"
+                      ? p.approvalCount
+                      : p.votes.filter((v) => v.approve).length;
                   const req = p.requiredVotes || 0;
-                  const pct = req > 0 ? Math.min(100, Math.round((approvals / req) * 100)) : 0;
+                  const pct =
+                    req > 0
+                      ? Math.min(100, Math.round((approvals / req) * 100))
+                      : 0;
                   const onChain = p.status === "deployed";
                   const link = p.tx_hash ? explorerUrl(p.tx_hash) : null;
                   return (
@@ -151,38 +184,66 @@ export default function OnChainGovernanceViewer() {
                       <td className="p-2 whitespace-nowrap">
                         <div className="font-mono text-xs">{p.id}</div>
                         {onChain && (
-                          <div className="mt-1"><Badge className="bg-green-100 text-green-800 border-green-200 inline-flex items-center gap-1"><CheckCircle className="h-3 w-3" /> On-chain</Badge></div>
+                          <div className="mt-1">
+                            <Badge className="bg-green-100 text-green-800 border-green-200 inline-flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" /> On-chain
+                            </Badge>
+                          </div>
                         )}
                       </td>
                       <td className="p-2 max-w-md">
                         <div className="line-clamp-3">{p.description}</div>
                       </td>
                       <td className="p-2">
-                        <Badge variant={p.status === "approved" || p.status === "deployed" ? "secondary" : p.status === "rejected" ? "destructive" : "outline"} className="capitalize">
+                        <Badge
+                          variant={
+                            p.status === "approved" || p.status === "deployed"
+                              ? "secondary"
+                              : p.status === "rejected"
+                                ? "destructive"
+                                : "outline"
+                          }
+                          className="capitalize"
+                        >
                           {p.status}
                         </Badge>
                         {p.deploymentStatus && (
-                          <div className="text-xs text-muted-foreground mt-1">{p.deploymentStatus}</div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {p.deploymentStatus}
+                          </div>
                         )}
                       </td>
                       <td className="p-2 w-56">
-                        <div className="text-xs mb-1">{approvals}/{req} approvals ({pct}%)</div>
+                        <div className="text-xs mb-1">
+                          {approvals}/{req} approvals ({pct}%)
+                        </div>
                         <Progress value={pct} />
                       </td>
                       <td className="p-2">
                         {p.tx_hash ? (
-                          <code className="font-mono text-xs">{shortHash(p.tx_hash)}</code>
+                          <code className="font-mono text-xs">
+                            {shortHash(p.tx_hash)}
+                          </code>
                         ) : (
-                          <span className="text-xs text-muted-foreground">n/a</span>
+                          <span className="text-xs text-muted-foreground">
+                            n/a
+                          </span>
                         )}
                       </td>
                       <td className="p-2">
                         {link ? (
-                          <a className="inline-flex items-center gap-1 text-blue-600 hover:underline" href={link} target="_blank" rel="noreferrer">
+                          <a
+                            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                            href={link}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             Verify <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -190,7 +251,12 @@ export default function OnChainGovernanceViewer() {
                 })}
                 {(!proposals || proposals.length === 0) && (
                   <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={6}>No proposals found</td>
+                    <td
+                      className="p-4 text-center text-muted-foreground"
+                      colSpan={6}
+                    >
+                      No proposals found
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -221,27 +287,64 @@ export default function OnChainGovernanceViewer() {
                   const link = explorerUrl(tx);
                   const human = ts ? new Date(ts).toLocaleString() : "";
                   return (
-                    <tr key={`${idx}:${e.type}:${ts}`} className="border-t align-top">
+                    <tr
+                      key={`${idx}:${e.type}:${ts}`}
+                      className="border-t align-top"
+                    >
                       <td className="p-2 whitespace-nowrap">{human}</td>
                       <td className="p-2">
-                        <Badge variant="outline" className="capitalize">{e.type.replace(/[:_]/g, " ")}</Badge>
+                        <Badge variant="outline" className="capitalize">
+                          {e.type.replace(/[:_]/g, " ")}
+                        </Badge>
                       </td>
                       <td className="p-2 text-xs">
-                        {e.modelId && <div>model: <code className="font-mono">{e.modelId}</code></div>}
-                        {e.from && <div>from: <code className="font-mono">{e.from}</code></div>}
-                        {e.to && <div>to: <code className="font-mono">{e.to}</code></div>}
-                        {e.actor && <div>actor: <code className="font-mono">{e.actor}</code></div>}
+                        {e.modelId && (
+                          <div>
+                            model:{" "}
+                            <code className="font-mono">{e.modelId}</code>
+                          </div>
+                        )}
+                        {e.from && (
+                          <div>
+                            from: <code className="font-mono">{e.from}</code>
+                          </div>
+                        )}
+                        {e.to && (
+                          <div>
+                            to: <code className="font-mono">{e.to}</code>
+                          </div>
+                        )}
+                        {e.actor && (
+                          <div>
+                            actor: <code className="font-mono">{e.actor}</code>
+                          </div>
+                        )}
                       </td>
                       <td className="p-2">
-                        {tx ? <code className="font-mono text-xs">{shortHash(tx)}</code> : <span className="text-xs text-muted-foreground">n/a</span>}
+                        {tx ? (
+                          <code className="font-mono text-xs">
+                            {shortHash(tx)}
+                          </code>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">
+                            n/a
+                          </span>
+                        )}
                       </td>
                       <td className="p-2">
                         {link ? (
-                          <a className="inline-flex items-center gap-1 text-blue-600 hover:underline" href={link} target="_blank" rel="noreferrer">
+                          <a
+                            className="inline-flex items-center gap-1 text-blue-600 hover:underline"
+                            href={link}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
                             Verify <ExternalLink className="h-3 w-3" />
                           </a>
                         ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
+                          <span className="text-xs text-muted-foreground">
+                            —
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -249,14 +352,20 @@ export default function OnChainGovernanceViewer() {
                 })}
                 {rollbackEvents.length === 0 && (
                   <tr>
-                    <td className="p-4 text-center text-muted-foreground" colSpan={5}>No on-chain events or rollbacks recorded</td>
+                    <td
+                      className="p-4 text-center text-muted-foreground"
+                      colSpan={5}
+                    >
+                      No on-chain events or rollbacks recorded
+                    </td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
           <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" /> Some audit endpoints require an admin API key. Add it in local settings if results appear empty.
+            <AlertTriangle className="h-3 w-3" /> Some audit endpoints require
+            an admin API key. Add it in local settings if results appear empty.
           </div>
         </div>
       </CardContent>
