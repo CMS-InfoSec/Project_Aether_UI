@@ -302,6 +302,14 @@ export function createServer() {
   app.post("/api/governance/plugins/:name/vote", handlePluginVote);
   app.post("/api/governance/plugins/:name/approve", handlePluginApprove);
 
+  // Manipulation defense
+  {
+    const { handleGetDefenseEvents, handlePatchDefenseOverride, handleGetDefenseSettings } = require("./routes/defense");
+    app.get("/api/defense/events", handleGetDefenseEvents);
+    app.get("/api/defense/settings", handleGetDefenseSettings);
+    app.patch("/api/defense/override", handlePatchDefenseOverride);
+  }
+
   // Strategy review
   const {
     handlePendingStrategies,

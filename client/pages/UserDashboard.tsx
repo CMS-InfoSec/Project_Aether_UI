@@ -48,6 +48,7 @@ import {
 } from "recharts";
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 import RegimeTimelineRibbon from "./components/RegimeTimelineRibbon";
+import ManipulationDefenseConsole from "./components/ManipulationDefenseConsole";
 
 import apiFetch, { getJson, patchJson } from "@/lib/apiClient";
 
@@ -962,6 +963,9 @@ export default function UserDashboard() {
 
           {/* Risk Monitoring */}
           <RiskMonitoringPanel range={regimeRange || undefined} />
+
+          {/* Manipulation Defense */}
+          <ManipulationDefenseConsole />
 
           {/* Notification Center */}
           <Card>
