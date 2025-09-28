@@ -81,7 +81,7 @@ export default function UserDashboard() {
     notifications: false,
   });
   const [mounted, setMounted] = useState(true);
-  const [alerts, setAlerts] = useState<Array<{ id:string; timestamp:number; title:string; message:string; severity:'info'|'warning'|'error'|'success'; read?:boolean; source?:string }>>([]);
+  const [alerts, setAlerts] = useState<Array<{ id:string; timestamp:number; title:string; message:string; severity:'info'|'warning'|'error'|'success'; read?:boolean; source?:string; acknowledged?: boolean }>>([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [portfolioHoldings, setPortfolioHoldings] = useState<Array<{ symbol:string; value:number; allocation:number; pnl:number }>>([]);
   const [portfolioTotal, setPortfolioTotal] = useState<number>(0);
@@ -290,6 +290,27 @@ export default function UserDashboard() {
           aggregated.push({ id: String(it.id || `${Date.now()}_${Math.random()}`), timestamp: new Date(it.timestamp || Date.now()).getTime(), title: `Audit: ${it.action}`, message: it.details || `Actor ${it.actor}`, severity: it.success === false ? 'warning' : 'info', read: false, source: 'audit' });
         }
       } catch {}
+      // Feed anomalies
+      try {
+        const an = await getJson<any>("/api/data/anomalies");
+        const items = Array.isArray(an?.data) ? an.data : (Array.isArray(an) ? an : []);
+        for (const it of items) {
+          const type = String(it.type || it.anomaly_type || '').toLowerCase();
+          const symbol = it.symbol || it.asset || '-';
+          const critical = !!(it.critical || it.severity === 'critical');
+          const ts = it.timestamp || it.ts || Date.now();
+          aggregated.push({
+            id: String(it.id || `${Date.now()}_${Math.random()}`),
+            timestamp: new Date(ts).getTime(),
+            title: `Feed anomaly: ${symbol}`,
+            message: `${symbol} • ${type || 'unknown'} anomaly`,
+            severity: critical ? 'error' : 'warning',
+            read: !!it.read,
+            source: 'anomalies',
+            acknowledged: !!it.acknowledged,
+          });
+        }
+      } catch {}
       aggregated.sort((a,b)=> b.timestamp - a.timestamp);
       setAlerts(aggregated.slice(0, 50));
     } finally { setAlertsLoading(false); }
@@ -314,6 +335,11 @@ export default function UserDashboard() {
   const markAllAlertsRead = async () => {
     setAlerts((prev)=> prev.map(a=> ({...a, read:true})));
     try { await apiFetch(`/api/notifications/mark-all-read`, { method: 'POST' }); } catch {}
+  };
+
+  const acknowledgeAnomaly = async (id: string) => {
+    try { await apiFetch(`/api/data/anomalies/${encodeURIComponent(id)}/ack`, { method: 'POST' }); } catch {}
+    setAlerts((prev)=> prev.map(a=> a.id===id ? { ...a, acknowledged:true, read:true } : a));
   };
 
   const loadRecentTrades = async () => {
@@ -730,6 +756,9 @@ export default function UserDashboard() {
                         <div className="font-medium">{n.title}</div>
                         <div className="flex items-center gap-2">
                           <Badge variant={n.severity==='error' ? 'destructive' : (n.severity==='warning' ? 'secondary' : 'outline')} className="text-xs capitalize">{n.severity}</Badge>
+                          {n.source==='anomalies' && !n.acknowledged && (
+                            <Button variant="outline" size="sm" onClick={() => acknowledgeAnomaly(n.id)}>Acknowledge</Button>
+                          )}
                           {!n.read && (
                             <Button variant="outline" size="sm" onClick={() => markAlertRead(n.id)}>Mark read</Button>
                           )}
