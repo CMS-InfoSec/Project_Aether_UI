@@ -266,7 +266,10 @@ export default function ScenarioLab() {
 
   const runAgents = async () => {
     try {
-      const r = await apiFetch('/api/sim/agents/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config: agentsCfg }) });
+      let r = await apiFetch('/api/sim/agents/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config: agentsCfg }) });
+      if (r.status === 404) {
+        r = await apiFetch('/sim/agents/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config: agentsCfg }) });
+      }
       const j = await r.json().catch(()=>({}));
       const data: AgentsRunResult = (j?.data || j);
       if (data?.id) {
@@ -297,8 +300,8 @@ export default function ScenarioLab() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-lg font-semibold">Multi-Agent LOB</div>
-              <div className="text-sm text-muted-foreground">Configure agent profiles and simulate. Tracks PnL distribution, spread impact, and stability.</div>
+              <div className="text-lg font-semibold">Market Ecology</div>
+              <div className="text-sm text-muted-foreground">Configure agent profiles (market makers, arbitrage, momentum, spoofers) and simulate. Visualizes PnL per class, liquidity depth proxy, and systemic stability.</div>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={saveAgentsCfg}>Save Config</Button>
@@ -310,13 +313,29 @@ export default function ScenarioLab() {
               <div className="text-sm font-medium">Agent Profiles</div>
               <div className="space-y-2">
                 {agentsCfg.profiles.map((p, idx) => (
-                  <div key={idx} className="p-2 border rounded-md grid grid-cols-8 gap-2 items-center">
+                  <div key={idx} className="p-2 border rounded-md grid grid-cols-9 gap-2 items-center">
                     <div className="col-span-2 text-xs capitalize">{p.type.replace('_',' ')}</div>
                     <div className="col-span-2"><Label className="text-[11px]">Count</Label><Input type="number" value={p.count} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, count: Number(e.target.value) } : q)}))} /></div>
                     <div className="col-span-2"><Label className="text-[11px]">Aggression</Label><Input type="number" step="0.01" min="0" max="1" value={p.aggression} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, aggression: Math.max(0, Math.min(1, Number(e.target.value))) } : q)}))} /></div>
                     <div className="col-span-2"><Label className="text-[11px]">Capital</Label><Input type="number" step="0.1" min="0" value={p.capital} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, capital: Math.max(0, Number(e.target.value)) } : q)}))} /></div>
+                    <div className="col-span-1 flex items-end"><Button variant="ghost" size="sm" onClick={()=> setAgentsCfg(c=> ({...c, profiles: c.profiles.filter((_,i)=> i!==idx)}))}>Remove</Button></div>
                   </div>
                 ))}
+                <div className="flex items-center gap-2 pt-1">
+                  <Label className="text-[11px]">Add Profile</Label>
+                  <select className="border rounded px-2 py-1 text-sm" onChange={(e)=>{
+                    const t = e.target.value as AgentProfile['type'];
+                    if (!t) return;
+                    setAgentsCfg(c=> ({ ...c, profiles: [...c.profiles, { type: t, count: 1, aggression: 0.5, capital: 0.5 }] }));
+                    e.currentTarget.selectedIndex = 0;
+                  }}>
+                    <option value="">Select type…</option>
+                    <option value="market_maker">market maker</option>
+                    <option value="arbitrage_bot">arbitrage bot</option>
+                    <option value="momentum_trader">momentum trader</option>
+                    <option value="spoofer">spoofer</option>
+                  </select>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
                 <div><Label className="text-[11px]">Seed</Label><Input type="number" value={agentsCfg.seed ?? ''} onChange={(e)=> setAgentsCfg(c=> ({...c, seed: Number(e.target.value)}))} /></div>
@@ -347,6 +366,17 @@ export default function ScenarioLab() {
                         <YAxis />
                         <RechartsTooltip />
                         <Line type="monotone" dataKey="spread_bps" stroke="#f59e0b" strokeWidth={2} dot={false} name="Spread (bps)" />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart data={agentRuns[0].spread_over_time.map(p=> ({ t:p.t, depth_index: 1/(1 + p.spread_bps/100) }))}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="t" />
+                        <YAxis domain={[0,1]} />
+                        <RechartsTooltip />
+                        <Line type="monotone" dataKey="depth_index" stroke="#3b82f6" strokeWidth={2} dot={false} name="Liquidity depth (proxy)" />
                       </RechartsLineChart>
                     </ResponsiveContainer>
                   </div>
