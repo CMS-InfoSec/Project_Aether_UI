@@ -25,6 +25,8 @@ import {
   Eye,
   Wallet,
   PieChart,
+  Bell,
+  X,
 } from "lucide-react";
 import {
   LineChart,
