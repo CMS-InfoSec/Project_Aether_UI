@@ -74,6 +74,8 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
+  BarChart as RechartsBarChart,
+  Bar,
 } from "recharts";
 import SpotPriceChecker from "./components/SpotPriceChecker";
 import HelpTip from "@/components/ui/help-tip";
@@ -93,6 +95,9 @@ interface Trade {
   status: "pending" | "executed" | "failed";
   trade_id: string;
 }
+
+// Explainability state for trade-level explanation
+interface TradeExplainState { loading: boolean; error: string | null; data: any | null; showJson: boolean; }
 
 interface Position {
   id: string;
@@ -649,6 +654,9 @@ export default function TradesPositions() {
       <ArrowDown className="h-4 w-4" />
     );
   };
+
+  const [tradeExplainId, setTradeExplainId] = useState<string>("");
+  const [tradeExplain, setTradeExplain] = useState<TradeExplainState>({ loading:false, error:null, data:null, showJson:false });
 
   const totalPages = Math.ceil(
     (activeTab === "trades" ? tradesTotal : positionsTotal) / itemsPerPage,
@@ -1351,6 +1359,78 @@ export default function TradesPositions() {
                 </div>
               </CardHeader>
               <CardContent>
+                {isAdmin && (
+                  <div className="mb-4 p-3 border rounded-md bg-muted/30">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="font-medium">Model Explanation (Admin)</div>
+                      <HelpTip content="Fetch SHAP/feature importances for a trade. Endpoint: /ai/explain/{trade_id}." />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input placeholder="Enter trade ID" value={tradeExplainId} onChange={(e)=> setTradeExplainId(e.target.value)} className="max-w-sm" />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={async ()=>{
+                          if (!tradeExplainId.trim()) { setTradeExplain((s)=> ({...s, error:'Trade ID required'})); return; }
+                          setTradeExplain({ loading:true, error:null, data:null, showJson:false });
+                          try {
+                            const r = await apiFetch(`/ai/explain/${encodeURIComponent(tradeExplainId.trim())}`);
+                            if (!r.ok) {
+                              const j = await r.json().catch(()=> ({}));
+                              throw new Error(j.detail || `Explain HTTP ${r.status}`);
+                            }
+                            const j = await r.json();
+                            setTradeExplain({ loading:false, error:null, data:j, showJson:false });
+                          } catch(e:any) {
+                            setTradeExplain({ loading:false, error: e?.message || 'Failed to load explanation', data:null, showJson:false });
+                          }
+                        }}
+                      >
+                        Fetch Explanation
+                      </Button>
+                      {tradeExplain.data && (
+                        <Button variant="ghost" size="sm" onClick={()=> setTradeExplain((s)=> ({...s, showJson: !s.showJson}))}>
+                          {tradeExplain.showJson ? 'Hide JSON' : 'Show JSON'}
+                        </Button>
+                      )}
+                    </div>
+                    {tradeExplain.loading && (<div className="text-sm text-muted-foreground mt-2">Loading…</div>)}
+                    {tradeExplain.error && (<div className="text-sm text-red-600 mt-2">{tradeExplain.error}</div>)}
+                    {tradeExplain.data && (
+                      <div className="grid md:grid-cols-2 gap-3 mt-3">
+                        <div className="h-56">
+                          {(() => {
+                            const raw = tradeExplain.data;
+                            const src = raw?.shap?.top_features || raw?.top_features || raw?.features || [];
+                            const items = Array.isArray(src) ? src : [];
+                            const bars = items.map((f:any)=> ({
+                              name: f.feature || f.name || String(f[0]||''),
+                              value: typeof f.weight === 'number' ? Math.abs(f.weight) : (typeof f.shap === 'number' ? Math.abs(f.shap) : (typeof f.value === 'number' ? Math.abs(f.value) : 0)),
+                            })).filter((x:any)=> x.name);
+                            if (!bars.length) return <div className="text-xs text-muted-foreground">No feature importance data</div>;
+                            return (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RechartsBarChart data={bars.slice(0,10)} layout="vertical" margin={{ left: 24 }}>
+                                  <XAxis type="number" />
+                                  <YAxis dataKey="name" type="category" width={120} />
+                                  <RechartsTooltip />
+                                  <Bar dataKey="value" fill="#2563eb" />
+                                </RechartsBarChart>
+                              </ResponsiveContainer>
+                            );
+                          })()}
+                        </div>
+                        <div className="text-xs bg-background border rounded p-2 overflow-auto max-h-56">
+                          {tradeExplain.showJson ? (
+                            <pre className="whitespace-pre-wrap">{JSON.stringify(tradeExplain.data, null, 2)}</pre>
+                          ) : (
+                            <div className="text-muted-foreground">Toggle JSON to view raw explanation</div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
                 <ScrollArea className="h-96">
                   <Table>
                     <TableHeader>
