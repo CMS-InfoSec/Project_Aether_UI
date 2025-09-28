@@ -47,6 +47,7 @@ import {
   Cell,
 } from "recharts";
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
+import RegimeTimelineRibbon from "./components/RegimeTimelineRibbon";
 
 import apiFetch, { getJson, patchJson } from "@/lib/apiClient";
 
@@ -96,6 +97,9 @@ export default function UserDashboard() {
 
   // Execution Heatmap
   const [execVenue, setExecVenue] = useState<string>("all");
+  const [regimeRange, setRegimeRange] = useState<{ from:number; to:number } | null>(() => {
+    try { const s = localStorage.getItem('regime_range'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
   const [execSymbol, setExecSymbol] = useState<string>("");
   const [execWindow, setExecWindow] = useState<string>("1h");
   const [execBuckets, setExecBuckets] = useState<Array<string>>([]);
@@ -158,6 +162,14 @@ export default function UserDashboard() {
       setMounted(false);
     };
   }, []);
+
+  useEffect(() => {
+    try {
+      if (regimeRange) localStorage.setItem('regime_range', JSON.stringify(regimeRange));
+      else localStorage.removeItem('regime_range');
+    } catch {}
+    loadExecutionHeatmap();
+  }, [regimeRange]);
 
   const loadDailyReport = async () => {
     if (!mounted) return;
@@ -362,7 +374,13 @@ export default function UserDashboard() {
       const params = new URLSearchParams();
       if (execVenue && execVenue !== 'all') params.set('venue', execVenue);
       if (execSymbol) params.set('symbol', execSymbol);
-      params.set('window', execWindow || '1h');
+      if (regimeRange) {
+        params.set('from', String(regimeRange.from));
+        params.set('to', String(regimeRange.to));
+        params.set('window', 'custom');
+      } else {
+        params.set('window', execWindow || '1h');
+      }
 
       let lat: any = null;
       try { lat = await getJson<any>(`/api/execution/latency?${params.toString()}`); } catch {}
@@ -415,7 +433,20 @@ export default function UserDashboard() {
         merged[v].byBucket[b] = { ...merged[v].byBucket[b], ...base };
       }
 
-      const bucketList = Array.from(buckets).sort((a,b)=> String(a).localeCompare(String(b)));
+      let bucketList = Array.from(buckets).sort((a,b)=> String(a).localeCompare(String(b)));
+      if (regimeRange) {
+        const inRange = (b: string) => {
+          const t = new Date(b).getTime();
+          if (Number.isFinite(t)) return t >= regimeRange.from && t <= regimeRange.to;
+          return true;
+        };
+        bucketList = bucketList.filter(inRange);
+        for (const r of Object.values(merged)) {
+          for (const k of Object.keys(r.byBucket)) {
+            if (!inRange(k)) delete r.byBucket[k];
+          }
+        }
+      }
       const rows = Object.values(merged).sort((a,b)=> a.venue.localeCompare(b.venue));
 
       let disc = 0;
@@ -541,6 +572,7 @@ export default function UserDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
+          <RegimeTimelineRibbon onSelect={(r)=> setRegimeRange(r ? { from: r.from, to: r.to } : null)} selected={regimeRange || undefined} />
           {/* Key Metrics Cards */}
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card>
@@ -864,7 +896,7 @@ export default function UserDashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2"><Label>Window</Label><HelpTip content="Aggregation window." /></div>
-                  <Select value={execWindow} onValueChange={setExecWindow}>
+                  <Select value={regimeRange ? 'custom' : execWindow} onValueChange={(v)=> { if (v==='custom') return; setExecWindow(v); setRegimeRange(null); }}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="15m">15 minutes</SelectItem>
@@ -929,7 +961,7 @@ export default function UserDashboard() {
           </Card>
 
           {/* Risk Monitoring */}
-          <RiskMonitoringPanel />
+          <RiskMonitoringPanel range={regimeRange || undefined} />
 
           {/* Notification Center */}
           <Card>
