@@ -57,6 +57,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
+import ASCModelsPanel from "./components/ASCModelsPanel";
 
 // Types
 interface Proposal {
