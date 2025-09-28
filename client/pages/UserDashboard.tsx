@@ -213,6 +213,68 @@ export default function UserDashboard() {
     } catch(e) {}
   };
 
+  const loadAlerts = async () => {
+    setAlertsLoading(true);
+    try {
+      const aggregated: Array<{ id:string; timestamp:number; title:string; message:string; severity:'info'|'warning'|'error'|'success'; read?:boolean; source?:string }> = [];
+      try {
+        const r = await getJson<any>("/api/alerts");
+        const items = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
+        for (const it of items) {
+          aggregated.push({ id: String(it.id || `${Date.now()}_${Math.random()}`), timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(), title: it.title || it.type || 'Alert', message: it.message || it.detail || '', severity: (String(it.severity || it.level || 'info').toLowerCase() as any) || 'info', read: !!it.read, source: 'alerts' });
+        }
+      } catch {}
+      try {
+        const j = await getJson<any>("/api/notifications");
+        const data = j?.data || j;
+        const items = data?.notifications || data?.items || [];
+        for (const n of (Array.isArray(items) ? items : [])) {
+          aggregated.push({ id: String(n.id || `${Date.now()}_${Math.random()}`), timestamp: new Date(n.timestamp || Date.now()).getTime(), title: n.title || 'Notification', message: n.message || '', severity: (n.severity || 'info') as any, read: !!n.read, source: 'notifications' });
+        }
+      } catch {}
+      try {
+        const r = await getJson<any>("/api/compliance/logs");
+        const items = Array.isArray(r?.data) ? r.data : (Array.isArray(r) ? r : []);
+        for (const c of items) {
+          const sev = String(c.status || c.severity || '').toLowerCase();
+          if (sev.includes('fail') || sev.includes('error') || sev.includes('violation')) {
+            aggregated.push({ id: String(c.id || `${Date.now()}_${Math.random()}`), timestamp: new Date(c.timestamp || Date.now()).getTime(), title: `Compliance: ${c.rule || c.rule_type || 'Violation'}`, message: c.message || `Trade ${c.tradeId || c.trade_id || ''} by ${c.user || c.actor || ''}`, severity: 'error', read: false, source: 'compliance' });
+          }
+        }
+      } catch {}
+      try {
+        const a = await getJson<any>("/api/system/audit");
+        const items = Array.isArray(a?.data) ? a.data : (Array.isArray(a) ? a : []);
+        for (const it of items) {
+          aggregated.push({ id: String(it.id || `${Date.now()}_${Math.random()}`), timestamp: new Date(it.timestamp || Date.now()).getTime(), title: `Audit: ${it.action}`, message: it.details || `Actor ${it.actor}`, severity: it.success === false ? 'warning' : 'info', read: false, source: 'audit' });
+        }
+      } catch {}
+      aggregated.sort((a,b)=> b.timestamp - a.timestamp);
+      setAlerts(aggregated.slice(0, 50));
+    } finally { setAlertsLoading(false); }
+  };
+
+  const markAlertRead = async (id: string) => {
+    setAlerts((prev)=> prev.map(a=> a.id===id ? { ...a, read:true } : a));
+    const a = alerts.find(x=> x.id===id);
+    if (a?.source === 'notifications') {
+      try { await patchJson(`/api/notifications/${id}/read`, { read: true }); } catch {}
+    }
+  };
+
+  const dismissAlert = async (id: string) => {
+    const a = alerts.find(x=> x.id===id);
+    if (a?.source === 'notifications' && !a.read) {
+      try { await patchJson(`/api/notifications/${id}/read`, { read: true }); } catch {}
+    }
+    setAlerts((prev)=> prev.filter(x=> x.id!==id));
+  };
+
+  const markAllAlertsRead = async () => {
+    setAlerts((prev)=> prev.map(a=> ({...a, read:true})));
+    try { await getJson(`/api/notifications/mark-all-read`); } catch {}
+  };
+
   const loadRecentTrades = async () => {
     try {
       const j = await getJson<any>("/api/trades/recent");
