@@ -45,7 +45,7 @@ import {
 } from "recharts";
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 
-import { getJson, patchJson } from "@/lib/apiClient";
+import apiFetch, { getJson, patchJson } from "@/lib/apiClient";
 
 
 const COLORS = [
