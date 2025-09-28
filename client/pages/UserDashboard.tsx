@@ -81,6 +81,8 @@ export default function UserDashboard() {
     notifications: false,
   });
   const [mounted, setMounted] = useState(true);
+  const [alerts, setAlerts] = useState<Array<{ id:string; timestamp:number; title:string; message:string; severity:'info'|'warning'|'error'|'success'; read?:boolean; source?:string }>>([]);
+  const [alertsLoading, setAlertsLoading] = useState(false);
   const [portfolioHoldings, setPortfolioHoldings] = useState<Array<{ symbol:string; value:number; allocation:number; pnl:number }>>([]);
   const [portfolioTotal, setPortfolioTotal] = useState<number>(0);
   const [portfolioPnL, setPortfolioPnL] = useState<number>(0);
