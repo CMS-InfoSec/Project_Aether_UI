@@ -272,7 +272,7 @@ export default function UserDashboard() {
 
   const markAllAlertsRead = async () => {
     setAlerts((prev)=> prev.map(a=> ({...a, read:true})));
-    try { await getJson(`/api/notifications/mark-all-read`); } catch {}
+    try { await apiFetch(`/api/notifications/mark-all-read`, { method: 'POST' }); } catch {}
   };
 
   const loadRecentTrades = async () => {
