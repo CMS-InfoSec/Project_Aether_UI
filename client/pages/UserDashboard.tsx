@@ -600,6 +600,66 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
+          {/* Cross-Market Panel */}
+          <Card>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle>Cross-Market</CardTitle>
+                <CardDescription>Venue health, depth, spreads, and arbitrage</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <HelpTip content="Aggregates /api/venue/health and /api/arbitrage/opportunities. Green highlights indicate positive expected spread." />
+                <Button variant="outline" size="sm" onClick={loadCrossMarket} disabled={crossLoading}>
+                  <RefreshCw className={`h-4 w-4 ${crossLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid lg:grid-cols-2 gap-4">
+                <div>
+                  <div className="text-sm font-medium mb-2">Venues</div>
+                  <div className="space-y-2 max-h-64 overflow-auto">
+                    {venues.length === 0 && (
+                      <div className="text-xs text-muted-foreground">No venue data</div>
+                    )}
+                    {venues.map((v, idx)=> (
+                      <div key={v.name+idx} className="p-2 border rounded-md">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="font-medium">{v.name}</div>
+                          <div className="text-muted-foreground">{v.latency.toFixed(0)} ms</div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div>Spread: <span className={v.spreadBps>20? 'text-destructive':'text-muted-foreground'}>{v.spreadBps.toFixed(1)} bps</span></div>
+                          <div>Depth: <span className="font-medium">{new Intl.NumberFormat('en-US',{ style:'currency', currency:'USD', maximumFractionDigits:0 }).format(v.depthUsd)}</span></div>
+                        </div>
+                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+                          <div className="h-2 bg-primary" style={{ width: `${Math.min(100, v.depthUsd ? Math.log10(v.depthUsd+1)/6*100 : 0)}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm font-medium mb-2">Arbitrage Opportunities</div>
+                  <div className="space-y-2 max-h-64 overflow-auto">
+                    {arbs.length === 0 && (
+                      <div className="text-xs text-muted-foreground">No opportunities detected</div>
+                    )}
+                    {arbs.map((a, idx)=> (
+                      <div key={a.symbol+idx} className="p-2 border rounded-md">
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="font-medium">{a.symbol}</div>
+                          <div className="text-green-600 font-semibold">{a.spreadPct.toFixed(2)}%</div>
+                        </div>
+                        <div className="text-xs text-muted-foreground">Buy on {a.buyVenue} → Sell on {a.sellVenue}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Risk Monitoring */}
           <RiskMonitoringPanel />
 
