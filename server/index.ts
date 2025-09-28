@@ -445,6 +445,9 @@ export function createServer() {
   app.post("/api/strategies/stress-test", handleStrategiesStressTest);
   app.post("/api/strategies/backtest", handlePostBacktest);
 
+  // Federated learning status
+  app.get("/api/federated/status", require("./routes/federated").handleFederatedStatus);
+
   // Models explainability
   app.get("/api/models/explain/:modelId", (req, res) => {
     const { modelId } = req.params as any;
