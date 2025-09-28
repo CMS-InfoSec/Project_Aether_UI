@@ -603,6 +603,47 @@ export default function UserDashboard() {
           {/* Risk Monitoring */}
           <RiskMonitoringPanel />
 
+          {/* Notification Center */}
+          <Card>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="inline-flex items-center gap-2"><Bell className="h-5 w-5" /> Notification Center</CardTitle>
+                <CardDescription>Alerts, governance decisions, and compliance events</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={markAllAlertsRead}>Mark all read</Button>
+                <Button variant="outline" size="sm" onClick={loadAlerts} disabled={alertsLoading}>
+                  <RefreshCw className={`h-4 w-4 ${alertsLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[320px]">
+                <div className="space-y-3">
+                  {alerts.length === 0 && (
+                    <div className="text-sm text-muted-foreground">No alerts</div>
+                  )}
+                  {alerts.map((n)=> (
+                    <div key={n.id} className={`p-3 border rounded-md ${n.read ? 'opacity-70' : ''} ${n.severity==='error' ? 'border-destructive/50 bg-destructive/5' : n.severity==='warning' ? 'border-yellow-200 bg-yellow-50/50' : ''}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="font-medium">{n.title}</div>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={n.severity==='error' ? 'destructive' : (n.severity==='warning' ? 'secondary' : 'outline')} className="text-xs capitalize">{n.severity}</Badge>
+                          {!n.read && (
+                            <Button variant="outline" size="sm" onClick={() => markAlertRead(n.id)}>Mark read</Button>
+                          )}
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => dismissAlert(n.id)} aria-label="Dismiss"><X className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                      <div className="text-sm mt-1">{n.message}</div>
+                      <div className="text-[11px] text-muted-foreground mt-1">{new Date(n.timestamp).toLocaleString()}</div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+
           {/* Recent Activity */}
           <Card>
             <CardHeader className="flex items-start justify-between">
