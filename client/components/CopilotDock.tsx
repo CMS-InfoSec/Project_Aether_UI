@@ -1,0 +1,190 @@
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useAuth } from "@/contexts/AuthContext";
+import apiFetch, { getJson, postJson } from "@/lib/apiClient";
+import { Sparkles, Bot, Shield, RefreshCw } from "lucide-react";
+
+interface Msg { role: 'user'|'assistant'|'system'; text: string; ts: number; }
+
+export default function CopilotDock() {
+  const { user } = useAuth();
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [confirm, setConfirm] = useState<{ open:boolean; title:string; desc:string; onConfirm: (()=>Promise<void>) | null}>({ open:false, title:'', desc:'', onConfirm:null });
+
+  if (!user) return null;
+
+  const logCopilot = async (title: string, message: string) => {
+    try {
+      await apiFetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, message, severity: 'info', category: 'copilot' }),
+      });
+    } catch {}
+  };
+
+  const append = (m: Msg) => setMsgs(prev => [...prev, m].slice(-50));
+
+  const sendLLM = async (question: string, sources: string[]) => {
+    setLoading(true);
+    const userMsg: Msg = { role: 'user', text: question, ts: Date.now() };
+    append(userMsg);
+    try {
+      const r = await apiFetch('/api/v1/llm/ask', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ question }) });
+      const j = await r.json().catch(()=>({ answer: 'No response' }));
+      const answer = typeof j?.answer === 'string' ? j.answer : (j?.data?.answer || JSON.stringify(j));
+      const cites = sources.length ? `\n\nSources: ${sources.join(', ')}` : '';
+      append({ role:'assistant', text: `${answer}${cites}`, ts: Date.now() });
+      await logCopilot('Copilot suggestion', `${question} → ${answer}`);
+    } catch (e:any) {
+      append({ role:'assistant', text: `Error: ${e?.message || 'Failed'}`, ts: Date.now() });
+    } finally { setLoading(false); }
+  };
+
+  const actWhyLastTrade = async () => {
+    setLoading(true);
+    try {
+      const tr = await getJson<any>('/api/trades/recent');
+      const items = Array.isArray(tr?.items) ? tr.items : [];
+      const last = items[0];
+      if (!last?.id) { append({ role:'assistant', text:'No recent trades.', ts: Date.now() }); return; }
+      const ex = await getJson<any>(`/api/ai/explain/${encodeURIComponent(last.id)}`).catch(async()=> await getJson<any>(`/ai/explain/${encodeURIComponent(last.id)}`));
+      const shap = ex?.data || ex || {};
+      const why = `Trade ${last.id} rationale: ${shap.summary || shap.reason || 'explanation unavailable'}`;
+      const cites = ['GET /api/trades/recent', 'GET /api/ai/explain/{id}'];
+      append({ role:'assistant', text: `${why}\n\nSources: ${cites.join(', ')}`, ts: Date.now() });
+      await logCopilot('Copilot why', `trade=${last.id}`);
+    } catch { append({ role:'assistant', text:'Failed to fetch rationale.', ts: Date.now() }); }
+    finally { setLoading(false); }
+  };
+
+  const actWhatIf = async (preset: 'flash'|'rally') => {
+    setLoading(true);
+    try {
+      const body = { scenario: preset==='flash' ? { name:'Flash Crash', price_jump_pct:-0.2, vol_spike_pct:0.8, spread_widen_bps:150, liquidity_drain_pct:0.7, duration_min:20 } : { name:'Rally on Thin Liquidity', price_jump_pct:0.15, vol_spike_pct:0.4, spread_widen_bps:60, liquidity_drain_pct:0.6, duration_min:45 } };
+      let r = await apiFetch('/api/sim/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+      if (r.status === 404) r = await apiFetch('/sim/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(body) });
+      const j = await r.json().catch(()=>({}));
+      const data = j?.data || j || {};
+      const pnl = Array.isArray(data.pnl) ? data.pnl[data.pnl.length-1] : (data.final_pnl || 0);
+      const dd = data.max_drawdown ?? data.metrics?.max_drawdown;
+      append({ role:'assistant', text: `Scenario '${body.scenario.name}' → Final PnL: ${Number(pnl).toFixed(2)}, Max DD: ${typeof dd==='number' ? (dd*100).toFixed(2)+'%' : '—'}\n\nSources: POST /api/sim/run`, ts: Date.now() });
+      await logCopilot('Copilot what-if', body.scenario.name);
+    } catch { append({ role:'assistant', text:'Scenario run failed.\n\nSources: POST /api/sim/run', ts: Date.now() }); }
+    finally { setLoading(false); }
+  };
+
+  const actRiskSummary = async () => {
+    setLoading(true);
+    try {
+      const daily = await getJson<any>('/api/reports/daily');
+      const hedge = await getJson<any>('/api/hedge/percent');
+      const dr = daily?.data || daily || {};
+      const hp = hedge?.data || hedge || {};
+      const txt = `Risk posture: total return ${(dr.totalReturnPercent??0).toFixed?.(2)||0}%, winRate ${Math.round((dr.winRate??0)*100)}%, hedge ${(hp.hedgePercent??hp.effectivePercent??0)*100}%`;
+      append({ role:'assistant', text: `${txt}\n\nSources: GET /api/reports/daily, GET /api/hedge/percent`, ts: Date.now() });
+      await logCopilot('Copilot risk summary', 'ok');
+    } catch { append({ role:'assistant', text:'Failed to summarize risk.\n\nSources: GET /api/reports/daily, GET /api/hedge/percent', ts: Date.now() }); }
+    finally { setLoading(false); }
+  };
+
+  const actRollback = async () => {
+    if (user.role !== 'admin') {
+      append({ role:'assistant', text:'Rollback requires admin confirmation.', ts: Date.now() });
+      return;
+    }
+    setConfirm({ open:true, title:'Confirm Rollback', desc:'Rollback model to previous stable version?', onConfirm: async () => {
+      try {
+        const models = await getJson<any>('/api/models?type=rl_agent');
+        const list = (models?.data || models || []).filter((m:any)=> m.status==='trained' || m.status==='shadow' || m.status==='deployed');
+        const deployed = (models?.data || models || []).find((m:any)=> m.status==='deployed');
+        const target = list.find((m:any)=> m.modelId !== deployed?.modelId);
+        if (!deployed || !target) { append({ role:'assistant', text:'No eligible rollback target.', ts: Date.now() }); return; }
+        const r = await apiFetch('/api/models/rollback', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ fromModelId: deployed.modelId, toModelId: target.modelId, founderApproval: true }), admin:true });
+        const j = await r.json().catch(()=>({}));
+        if (!r.ok) throw new Error(j.detail || 'Rollback failed');
+        append({ role:'assistant', text:`Rollback initiated ${deployed.modelId} → ${target.modelId}.\n\nSources: POST /api/models/rollback`, ts: Date.now() });
+        await logCopilot('Copilot action', `rollback ${deployed.modelId} -> ${target.modelId}`);
+      } catch (e:any) {
+        append({ role:'assistant', text:`Rollback failed: ${e?.message || 'error'}`, ts: Date.now() });
+      }
+    } });
+  };
+
+  const onSend = async () => {
+    const q = input.trim();
+    if (!q) return;
+    setInput("");
+    // Simple intent routing
+    const lower = q.toLowerCase();
+    if (lower.startsWith('why')) return actWhyLastTrade();
+    if (lower.includes('what-if') || lower.includes('flash')) return actWhatIf('flash');
+    if (lower.includes('rally')) return actWhatIf('rally');
+    if (lower.includes('risk')) return actRiskSummary();
+    if (lower.includes('rollback')) return actRollback();
+    return sendLLM(q, []);
+  };
+
+  return (
+    <>
+      <div className="fixed bottom-4 right-4 z-50">
+        <Button onClick={()=> setOpen(true)} className="shadow-lg"><Bot className="h-4 w-4 mr-2" /> Copilot</Button>
+      </div>
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col">
+          <div className="p-3 border-b flex items-center justify-between sticky top-0 bg-background z-10">
+            <div className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary" /><div className="font-medium">AI Copilot</div><Badge variant="outline">{user.role.toUpperCase()}</Badge></div>
+            <div className="text-[11px] text-muted-foreground">Cites data sources; admin actions require confirmation</div>
+          </div>
+          <div className="p-2 border-b flex flex-wrap gap-2 text-xs">
+            <Button variant="outline" size="sm" onClick={actWhyLastTrade}>Why last trade?</Button>
+            <Button variant="outline" size="sm" onClick={()=> actWhatIf('flash')}>What-if: Flash Crash</Button>
+            <Button variant="outline" size="sm" onClick={()=> actWhatIf('rally')}>What-if: Rally</Button>
+            <Button variant="outline" size="sm" onClick={actRiskSummary}>Risk summary</Button>
+            <Button variant="outline" size="sm" onClick={actRollback}><Shield className="h-3 w-3 mr-1" /> Rollback</Button>
+          </div>
+          <ScrollArea className="flex-1">
+            <div className="p-3 space-y-3">
+              {msgs.length===0 && (<div className="text-xs text-muted-foreground">Ask "why", run a scenario, or request how-to steps. Sensitive actions need admin.</div>)}
+              {msgs.map((m, i)=> (
+                <div key={i} className={`flex ${m.role==='user' ? 'justify-end' : 'justify-start'}`}>
+                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role==='user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                    <div className="opacity-70 text-[10px] mb-1">{new Date(m.ts).toLocaleString()}</div>
+                    <div style={{ whiteSpace:'pre-wrap' }}>{m.text}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+          <div className="p-3 border-t sticky bottom-0 bg-background">
+            <div className="flex items-center gap-2">
+              <Input value={input} onChange={e=> setInput(e.target.value)} placeholder="Ask why / what-if / how-to…" onKeyDown={(e)=> { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }} />
+              <Button onClick={onSend} disabled={loading}>{loading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Send'}</Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Dialog open={confirm.open} onOpenChange={(o)=> setConfirm(prev=> ({...prev, open:o}))}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{confirm.title}</DialogTitle>
+            <DialogDescription>{confirm.desc}</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=> setConfirm(prev=> ({...prev, open:false}))}>Cancel</Button>
+            <Button onClick={async()=> { if (confirm.onConfirm) await confirm.onConfirm(); setConfirm(prev=> ({...prev, open:false})); }}>Confirm</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
