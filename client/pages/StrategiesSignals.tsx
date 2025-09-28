@@ -15,7 +15,15 @@ import HelpTip from "@/components/ui/help-tip";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
-import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart as RechartsLineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ScenarioLab from "./components/ScenarioLab";
 import { toast } from "@/hooks/use-toast";
@@ -68,14 +76,20 @@ export default function StrategiesSignals() {
   // Builder controls
   const [signalThreshold, setSignalThreshold] = useState<number>(0.5);
   const [hedgePercent, setHedgePercent] = useState<number>(0.3);
-  const [builderSaving, setBuilderSaving] = useState<{ threshold?: boolean; hedge?: boolean; weights?: boolean }>({});
+  const [builderSaving, setBuilderSaving] = useState<{
+    threshold?: boolean;
+    hedge?: boolean;
+    weights?: boolean;
+  }>({});
   const thresholdTimer = useRef<number | null>(null);
   const hedgeTimer = useRef<number | null>(null);
 
   // Backtest
   const [btRunning, setBtRunning] = useState(false);
   const [btError, setBtError] = useState<string | null>(null);
-  const [btCurve, setBtCurve] = useState<Array<{ idx:number; value:number }>>([]);
+  const [btCurve, setBtCurve] = useState<Array<{ idx: number; value: number }>>(
+    [],
+  );
   const [btWinRate, setBtWinRate] = useState<number | null>(null);
   const [btDrawdown, setBtDrawdown] = useState<number | null>(null);
   const [explainCaps, setExplainCaps] = useState<{
@@ -240,16 +254,16 @@ export default function StrategiesSignals() {
     // Load builder defaults
     (async () => {
       try {
-        const r = await apiFetch('/api/config');
+        const r = await apiFetch("/api/config");
         const j = await r.json().catch(() => ({}));
         const th = j?.data?.strategies?.SIGNAL_CONFIRMATION_THRESHOLD;
-        if (typeof th === 'number') setSignalThreshold(th);
+        if (typeof th === "number") setSignalThreshold(th);
       } catch {}
       try {
-        const r2 = await apiFetch('/api/hedge/percent');
+        const r2 = await apiFetch("/api/hedge/percent");
         const j2 = await r2.json().catch(() => ({}));
         const hp = j2?.data?.hedgePercent ?? j2?.hedgePercent ?? j2?.percent;
-        if (typeof hp === 'number') setHedgePercent(hp);
+        if (typeof hp === "number") setHedgePercent(hp);
       } catch {}
     })();
   }, []);
@@ -339,16 +353,26 @@ export default function StrategiesSignals() {
     thresholdTimer.current = window.setTimeout(async () => {
       setBuilderSaving((s) => ({ ...s, threshold: true }));
       try {
-        const r = await apiFetch('/api/config', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ config: { strategies: { SIGNAL_CONFIRMATION_THRESHOLD: val } }, actor: (user?.email || 'builder') }),
+        const r = await apiFetch("/api/config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            config: { strategies: { SIGNAL_CONFIRMATION_THRESHOLD: val } },
+            actor: user?.email || "builder",
+          }),
         });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j?.message || 'Failed to save threshold');
-        toast({ title: 'Updated', description: `SIGNAL_CONFIRMATION_THRESHOLD = ${val.toFixed(2)}` });
-      } catch (e:any) {
-        toast({ title: 'Error', description: e?.message || 'Save failed', variant: 'destructive' });
+        if (!r.ok) throw new Error(j?.message || "Failed to save threshold");
+        toast({
+          title: "Updated",
+          description: `SIGNAL_CONFIRMATION_THRESHOLD = ${val.toFixed(2)}`,
+        });
+      } catch (e: any) {
+        toast({
+          title: "Error",
+          description: e?.message || "Save failed",
+          variant: "destructive",
+        });
       } finally {
         setBuilderSaving((s) => ({ ...s, threshold: false }));
       }
@@ -361,16 +385,24 @@ export default function StrategiesSignals() {
     hedgeTimer.current = window.setTimeout(async () => {
       setBuilderSaving((s) => ({ ...s, hedge: true }));
       try {
-        const r = await apiFetch('/api/hedge/percent', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
+        const r = await apiFetch("/api/hedge/percent", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ hedgePercent: val }),
         });
         const j = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j?.message || j?.detail || 'Failed to save hedge');
-        toast({ title: 'Updated', description: `Hedge ratio = ${(val*100).toFixed(1)}%` });
-      } catch (e:any) {
-        toast({ title: 'Error', description: e?.message || 'Save failed', variant: 'destructive' });
+        if (!r.ok)
+          throw new Error(j?.message || j?.detail || "Failed to save hedge");
+        toast({
+          title: "Updated",
+          description: `Hedge ratio = ${(val * 100).toFixed(1)}%`,
+        });
+      } catch (e: any) {
+        toast({
+          title: "Error",
+          description: e?.message || "Save failed",
+          variant: "destructive",
+        });
       } finally {
         setBuilderSaving((s) => ({ ...s, hedge: false }));
       }
@@ -380,17 +412,24 @@ export default function StrategiesSignals() {
   const applyWeightsImmediate = async (next: Record<string, number>) => {
     setBuilderSaving((s) => ({ ...s, weights: true }));
     try {
-      const r = await apiFetch('/api/strategy/controller/reweight', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const r = await apiFetch("/api/strategy/controller/reweight", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ weights: next }),
       });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j?.detail || 'Failed to apply weights');
-      toast({ title: 'Weights applied', description: 'Strategy allocations updated' });
+      if (!r.ok) throw new Error(j?.detail || "Failed to apply weights");
+      toast({
+        title: "Weights applied",
+        description: "Strategy allocations updated",
+      });
       await loadRegistry();
-    } catch (e:any) {
-      toast({ title: 'Error', description: e?.message || 'Failed', variant: 'destructive' });
+    } catch (e: any) {
+      toast({
+        title: "Error",
+        description: e?.message || "Failed",
+        variant: "destructive",
+      });
     } finally {
       setBuilderSaving((s) => ({ ...s, weights: false }));
     }
@@ -441,11 +480,21 @@ export default function StrategiesSignals() {
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-muted-foreground">Value</div>
-                  <div className="text-sm font-medium">{signalThreshold.toFixed(2)}</div>
+                  <div className="text-sm font-medium">
+                    {signalThreshold.toFixed(2)}
+                  </div>
                 </div>
-                <Slider value={[signalThreshold]} min={0} max={1} step={0.01} onValueChange={(v) => applySignalThreshold(Number(v?.[0] ?? 0))} />
+                <Slider
+                  value={[signalThreshold]}
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  onValueChange={(v) =>
+                    applySignalThreshold(Number(v?.[0] ?? 0))
+                  }
+                />
                 <div className="text-xs text-muted-foreground">
-                  {builderSaving.threshold ? 'Saving…' : 'Auto-applied'}
+                  {builderSaving.threshold ? "Saving…" : "Auto-applied"}
                 </div>
               </CardContent>
             </Card>
@@ -458,11 +507,24 @@ export default function StrategiesSignals() {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-3">
                   <Label className="min-w-[110px]">Ratio</Label>
-                  <Input type="number" step="0.01" min="0" max="1" value={hedgePercent} onChange={(e)=> applyHedgePercent(Math.max(0, Math.min(1, Number(e.target.value))))} />
-                  <Badge variant="outline">{(hedgePercent*100).toFixed(1)}%</Badge>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="1"
+                    value={hedgePercent}
+                    onChange={(e) =>
+                      applyHedgePercent(
+                        Math.max(0, Math.min(1, Number(e.target.value))),
+                      )
+                    }
+                  />
+                  <Badge variant="outline">
+                    {(hedgePercent * 100).toFixed(1)}%
+                  </Badge>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  {builderSaving.hedge ? 'Saving…' : 'Auto-applied'}
+                  {builderSaving.hedge ? "Saving…" : "Auto-applied"}
                 </div>
               </CardContent>
             </Card>
@@ -483,13 +545,15 @@ export default function StrategiesSignals() {
                       </tr>
                     </thead>
                     <tbody>
-                      {registry.map((r)=> (
+                      {registry.map((r) => (
                         <tr key={r.name} className="border-t">
                           <td className="p-2 font-medium">{r.name}</td>
                           <td className="p-2 w-56">
                             <Select
-                              value={String((weights[r.name] ?? r.weight).toFixed(2))}
-                              onValueChange={(val)=>{
+                              value={String(
+                                (weights[r.name] ?? r.weight).toFixed(2),
+                              )}
+                              onValueChange={(val) => {
                                 const n = Number(val);
                                 const next = { ...weights, [r.name]: n };
                                 setWeights(next);
@@ -500,24 +564,38 @@ export default function StrategiesSignals() {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {Array.from({ length: 21 }).map((_, i)=> (i*0.05).toFixed(2)).map((v)=> (
-                                  <SelectItem key={v} value={v}>{v}</SelectItem>
-                                ))}
+                                {Array.from({ length: 21 })
+                                  .map((_, i) => (i * 0.05).toFixed(2))
+                                  .map((v) => (
+                                    <SelectItem key={v} value={v}>
+                                      {v}
+                                    </SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
                           </td>
                           <td className="p-2">
-                            <Badge variant={r.enabled ? 'outline':'destructive'}>{r.enabled ? 'enabled':'disabled'}</Badge>
+                            <Badge
+                              variant={r.enabled ? "outline" : "destructive"}
+                            >
+                              {r.enabled ? "enabled" : "disabled"}
+                            </Badge>
                           </td>
                         </tr>
                       ))}
-                      {registry.length===0 && (
-                        <tr><td className="p-2 text-muted-foreground" colSpan={3}>No strategies</td></tr>
+                      {registry.length === 0 && (
+                        <tr>
+                          <td className="p-2 text-muted-foreground" colSpan={3}>
+                            No strategies
+                          </td>
+                        </tr>
                       )}
                     </tbody>
                   </table>
                 </div>
-                <div className="text-xs text-muted-foreground mt-2">{builderSaving.weights ? 'Applying…' : ''}</div>
+                <div className="text-xs text-muted-foreground mt-2">
+                  {builderSaving.weights ? "Applying…" : ""}
+                </div>
               </CardContent>
             </Card>
 
@@ -530,44 +608,87 @@ export default function StrategiesSignals() {
               <CardContent className="space-y-3">
                 <div className="flex items-center gap-2">
                   <Button
-                    onClick={async ()=>{
-                      setBtError(null); setBtRunning(true); setBtCurve([]); setBtWinRate(null); setBtDrawdown(null);
+                    onClick={async () => {
+                      setBtError(null);
+                      setBtRunning(true);
+                      setBtCurve([]);
+                      setBtWinRate(null);
+                      setBtDrawdown(null);
                       try {
-                        const payload:any = { config: { threshold: signalThreshold, weights, hedge: hedgePercent } };
-                        let r = await apiFetch('/backtest/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+                        const payload: any = {
+                          config: {
+                            threshold: signalThreshold,
+                            weights,
+                            hedge: hedgePercent,
+                          },
+                        };
+                        let r = await apiFetch("/backtest/run", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(payload),
+                        });
                         if (r.status === 404) {
-                          r = await apiFetch('/api/strategies/backtest', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+                          r = await apiFetch("/api/strategies/backtest", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(payload),
+                          });
                         }
-                        const j = await r.json().catch(()=> ({}));
-                        if (!r.ok && r.status !== 202) throw new Error(j.detail || j.message || `HTTP ${r.status}`);
+                        const j = await r.json().catch(() => ({}));
+                        if (!r.ok && r.status !== 202)
+                          throw new Error(
+                            j.detail || j.message || `HTTP ${r.status}`,
+                          );
                         // Fetch latest report
-                        let report:any = null;
+                        let report: any = null;
                         try {
-                          const rr = await apiFetch('/api/reports/backtest?format=json');
-                          report = await rr.json().catch(()=> ({}));
+                          const rr = await apiFetch(
+                            "/api/reports/backtest?format=json",
+                          );
+                          report = await rr.json().catch(() => ({}));
                         } catch {}
                         const data = report?.data || report || {};
-                        const curve = Array.isArray(data?.equity) ? data.equity : (Array.isArray(data?.curve) ? data.curve : (Array.isArray(data?.series) ? data.series : []));
-                        const points = (curve || []).map((v:any, i:number)=> ({ idx:i, value: typeof v === 'number' ? v : (v.value ?? v.pnl ?? 0) }));
+                        const curve = Array.isArray(data?.equity)
+                          ? data.equity
+                          : Array.isArray(data?.curve)
+                            ? data.curve
+                            : Array.isArray(data?.series)
+                              ? data.series
+                              : [];
+                        const points = (curve || []).map(
+                          (v: any, i: number) => ({
+                            idx: i,
+                            value:
+                              typeof v === "number"
+                                ? v
+                                : (v.value ?? v.pnl ?? 0),
+                          }),
+                        );
                         setBtCurve(points);
                         const wr = Number(data?.win_rate ?? data?.winRate ?? 0);
                         setBtWinRate(isFinite(wr) ? wr : null);
-                        const dd = Number(data?.max_drawdown ?? data?.drawdown ?? 0);
+                        const dd = Number(
+                          data?.max_drawdown ?? data?.drawdown ?? 0,
+                        );
                         setBtDrawdown(isFinite(dd) ? dd : null);
-                      } catch (e:any) {
-                        setBtError(e?.message || 'Backtest failed');
+                      } catch (e: any) {
+                        setBtError(e?.message || "Backtest failed");
                       } finally {
                         setBtRunning(false);
                       }
                     }}
                     disabled={btRunning}
                   >
-                    {btRunning ? 'Running…' : 'Run Backtest'}
+                    {btRunning ? "Running…" : "Run Backtest"}
                   </Button>
-                  {btError && <div className="text-sm text-red-600">{btError}</div>}
+                  {btError && (
+                    <div className="text-sm text-red-600">{btError}</div>
+                  )}
                 </div>
 
-                {(btCurve.length>0 || btWinRate!==null || btDrawdown!==null) && (
+                {(btCurve.length > 0 ||
+                  btWinRate !== null ||
+                  btDrawdown !== null) && (
                   <div className="grid md:grid-cols-3 gap-3">
                     <div className="md:col-span-2">
                       <div className="h-48">
@@ -577,16 +698,30 @@ export default function StrategiesSignals() {
                             <XAxis dataKey="idx" />
                             <YAxis />
                             <RechartsTooltip />
-                            <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={false} />
+                            <Line
+                              type="monotone"
+                              dataKey="value"
+                              stroke="#2563eb"
+                              strokeWidth={2}
+                              dot={false}
+                            />
                           </RechartsLineChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
                     <div className="space-y-2">
                       <div className="text-sm">Win Rate</div>
-                      <div className="text-2xl font-semibold">{btWinRate!==null ? `${(btWinRate*100).toFixed(1)}%` : '—'}</div>
+                      <div className="text-2xl font-semibold">
+                        {btWinRate !== null
+                          ? `${(btWinRate * 100).toFixed(1)}%`
+                          : "—"}
+                      </div>
                       <div className="text-sm">Max Drawdown</div>
-                      <div className="text-2xl font-semibold">{btDrawdown!==null ? `${(btDrawdown*100).toFixed(1)}%` : '—'}</div>
+                      <div className="text-2xl font-semibold">
+                        {btDrawdown !== null
+                          ? `${(btDrawdown * 100).toFixed(1)}%`
+                          : "—"}
+                      </div>
                     </div>
                   </div>
                 )}
@@ -824,9 +959,12 @@ export default function StrategiesSignals() {
                         );
                         if (!ok) return;
                         try {
-                          const r = await apiFetch("/api/news/replay-failures", {
-                            method: "POST",
-                          });
+                          const r = await apiFetch(
+                            "/api/news/replay-failures",
+                            {
+                              method: "POST",
+                            },
+                          );
                           const j = await r.json();
                           if (!r.ok) throw new Error(j.detail || "Failed");
                           toast({

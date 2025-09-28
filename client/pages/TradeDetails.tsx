@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
@@ -11,7 +17,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import apiFetch from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
 import HelpTip from "@/components/ui/help-tip";
-import { RefreshCw, ArrowLeft, AlertTriangle, BarChart3, Gauge, Timer } from "lucide-react";
+import {
+  RefreshCw,
+  ArrowLeft,
+  AlertTriangle,
+  BarChart3,
+  Gauge,
+  Timer,
+} from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart as RechartsBarChart,
@@ -84,15 +97,17 @@ export default function TradeDetails() {
     setExecError(null);
     setExecData(null);
     try {
-      const r = await apiFetch(`/api/execution/latency?tradeId=${encodeURIComponent(id)}`);
+      const r = await apiFetch(
+        `/api/execution/latency?tradeId=${encodeURIComponent(id)}`,
+      );
       if (!r.ok) {
         const j = await r.json().catch(() => ({}));
         throw new Error(j.detail || `Latency HTTP ${r.status}`);
       }
       const j = await r.json();
       setExecData(j?.data || j || null);
-    } catch (e:any) {
-      setExecError(e?.message || 'Failed to load execution details');
+    } catch (e: any) {
+      setExecError(e?.message || "Failed to load execution details");
     } finally {
       setExecLoading(false);
     }
@@ -138,7 +153,9 @@ export default function TradeDetails() {
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={loadTrade} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
           {trade && (
@@ -159,7 +176,9 @@ export default function TradeDetails() {
       {trade && (
         <Card>
           <CardHeader>
-            <CardTitle className="inline-flex items-center gap-2">Overview</CardTitle>
+            <CardTitle className="inline-flex items-center gap-2">
+              Overview
+            </CardTitle>
             <CardDescription>Execution and costs</CardDescription>
           </CardHeader>
           <CardContent>
@@ -190,12 +209,16 @@ export default function TradeDetails() {
               </div>
               <div>
                 <div className="text-muted-foreground">Time</div>
-                <div className="font-medium">{new Date(trade.timestamp).toLocaleString()}</div>
+                <div className="font-medium">
+                  {new Date(trade.timestamp).toLocaleString()}
+                </div>
               </div>
             </div>
             {trade.rationale && (
               <div className="mt-4">
-                <div className="text-muted-foreground text-sm mb-1">Rationale</div>
+                <div className="text-muted-foreground text-sm mb-1">
+                  Rationale
+                </div>
                 <div className="text-sm">{trade.rationale}</div>
               </div>
             )}
@@ -207,13 +230,24 @@ export default function TradeDetails() {
       <Card>
         <CardHeader className="flex items-start justify-between">
           <div>
-            <CardTitle className="inline-flex items-center gap-2">Execution Details</CardTitle>
-            <CardDescription>Latency, slippage vs mid, and partial fills</CardDescription>
+            <CardTitle className="inline-flex items-center gap-2">
+              Execution Details
+            </CardTitle>
+            <CardDescription>
+              Latency, slippage vs mid, and partial fills
+            </CardDescription>
           </div>
           <div className="flex items-center gap-2">
             <HelpTip content="Pulled from /api/execution/latency?tradeId=...; shows end-to-end latency and per-fill slippage." />
-            <Button variant="outline" size="sm" onClick={fetchExecution} disabled={execLoading}>
-              <RefreshCw className={`h-4 w-4 ${execLoading ? 'animate-spin' : ''}`} />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchExecution}
+              disabled={execLoading}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${execLoading ? "animate-spin" : ""}`}
+              />
             </Button>
           </div>
         </CardHeader>
@@ -229,25 +263,35 @@ export default function TradeDetails() {
                   const src = execData || {};
                   const lat = Number(src.latency_ms ?? src.latency ?? 0);
                   if (lat) return lat.toFixed(0);
-                  const submit = new Date(src.submit_ts || src.submitted_at || 0).getTime();
-                  const fill = new Date(src.fill_ts || src.filled_at || 0).getTime();
-                  const diff = submit && fill ? (fill - submit) : 0;
-                  return diff ? String(diff) : '-';
+                  const submit = new Date(
+                    src.submit_ts || src.submitted_at || 0,
+                  ).getTime();
+                  const fill = new Date(
+                    src.fill_ts || src.filled_at || 0,
+                  ).getTime();
+                  const diff = submit && fill ? fill - submit : 0;
+                  return diff ? String(diff) : "-";
                 })()}
               </div>
             </div>
             <div>
               <div className="text-muted-foreground">Fills</div>
-              <div className="font-semibold text-base">{Array.isArray(execData?.fills) ? execData.fills.length : (execData?.fills_count ?? '-')}</div>
+              <div className="font-semibold text-base">
+                {Array.isArray(execData?.fills)
+                  ? execData.fills.length
+                  : (execData?.fills_count ?? "-")}
+              </div>
             </div>
             <div>
               <div className="text-muted-foreground">Avg Slippage (bps)</div>
               <div className="font-semibold text-base">
                 {(() => {
                   const src = execData || {};
-                  if (src.avg_slippage_bps !== undefined) return Number(src.avg_slippage_bps).toFixed(2);
-                  if (src.slippage_bps !== undefined) return Number(src.slippage_bps).toFixed(2);
-                  return trade?.slippage_bps ?? '-';
+                  if (src.avg_slippage_bps !== undefined)
+                    return Number(src.avg_slippage_bps).toFixed(2);
+                  if (src.slippage_bps !== undefined)
+                    return Number(src.slippage_bps).toFixed(2);
+                  return trade?.slippage_bps ?? "-";
                 })()}
               </div>
             </div>
@@ -255,26 +299,53 @@ export default function TradeDetails() {
 
           <div className="grid md:grid-cols-2 gap-4 mt-4">
             <div className="h-64">
-              <div className="text-sm font-medium mb-1">Slippage by Fill (bps)</div>
+              <div className="text-sm font-medium mb-1">
+                Slippage by Fill (bps)
+              </div>
               <div className="h-56">
                 {(() => {
                   const src = execData || {};
                   const fills = Array.isArray(src.fills) ? src.fills : [];
                   const mid = Number(src.mid_price ?? src.mid ?? 0) || null;
-                  const bars = fills.map((f:any, idx:number)=> {
+                  const bars = fills.map((f: any, idx: number) => {
                     const price = Number(f.price ?? f.fill_price ?? 0);
-                    const bps = mid ? ((price - mid) / mid) * 10000 : (typeof f.slippage_bps === 'number' ? f.slippage_bps : 0);
-                    return { name: `Fill ${idx+1}`, value: Math.abs(bps) };
+                    const bps = mid
+                      ? ((price - mid) / mid) * 10000
+                      : typeof f.slippage_bps === "number"
+                        ? f.slippage_bps
+                        : 0;
+                    return { name: `Fill ${idx + 1}`, value: Math.abs(bps) };
                   });
-                  const data = bars.length ? bars : (
-                    ((execData?.slippage_bps!==undefined) || (trade?.slippage_bps!==undefined))
-                      ? [{ name: 'Total', value: Math.abs(Number(execData?.slippage_bps ?? trade?.slippage_bps ?? 0)) }]
-                      : []
-                  );
-                  if (!data.length) return <div className="text-xs text-muted-foreground">No slippage data</div>;
+                  const data = bars.length
+                    ? bars
+                    : execData?.slippage_bps !== undefined ||
+                        trade?.slippage_bps !== undefined
+                      ? [
+                          {
+                            name: "Total",
+                            value: Math.abs(
+                              Number(
+                                execData?.slippage_bps ??
+                                  trade?.slippage_bps ??
+                                  0,
+                              ),
+                            ),
+                          },
+                        ]
+                      : [];
+                  if (!data.length)
+                    return (
+                      <div className="text-xs text-muted-foreground">
+                        No slippage data
+                      </div>
+                    );
                   return (
                     <ResponsiveContainer width="100%" height="100%">
-                      <RechartsBarChart data={data} layout="vertical" margin={{ left: 28 }}>
+                      <RechartsBarChart
+                        data={data}
+                        layout="vertical"
+                        margin={{ left: 28 }}
+                      >
                         <XAxis type="number" />
                         <YAxis dataKey="name" type="category" width={80} />
                         <RechartsTooltip />
@@ -289,23 +360,40 @@ export default function TradeDetails() {
               <div className="text-sm font-medium mb-1">Partial Fills</div>
               <div className="space-y-2 max-h-56 overflow-auto">
                 {(() => {
-                  const fills = Array.isArray(execData?.fills) ? execData!.fills : [];
-                  if (!fills.length) return <div className="text-xs text-muted-foreground">No partial fills reported</div>;
-                  const totalQty = fills.reduce((s:any,f:any)=> s + Number(f.qty ?? f.quantity ?? 0), 0) || 0;
-                  return fills.map((f:any, idx:number)=> {
+                  const fills = Array.isArray(execData?.fills)
+                    ? execData!.fills
+                    : [];
+                  if (!fills.length)
+                    return (
+                      <div className="text-xs text-muted-foreground">
+                        No partial fills reported
+                      </div>
+                    );
+                  const totalQty =
+                    fills.reduce(
+                      (s: any, f: any) => s + Number(f.qty ?? f.quantity ?? 0),
+                      0,
+                    ) || 0;
+                  return fills.map((f: any, idx: number) => {
                     const qty = Number(f.qty ?? f.quantity ?? 0);
                     const price = Number(f.price ?? f.fill_price ?? 0);
                     const ts = f.ts || f.time || f.timestamp;
-                    const pct = totalQty ? (qty/totalQty)*100 : 0;
+                    const pct = totalQty ? (qty / totalQty) * 100 : 0;
                     return (
                       <div key={idx} className="p-2 border rounded-md">
                         <div className="flex items-center justify-between text-xs">
-                          <div className="font-medium">Fill {idx+1}</div>
-                          <div className="text-muted-foreground">{ts ? new Date(ts).toLocaleTimeString() : ''}</div>
+                          <div className="font-medium">Fill {idx + 1}</div>
+                          <div className="text-muted-foreground">
+                            {ts ? new Date(ts).toLocaleTimeString() : ""}
+                          </div>
                         </div>
                         <div className="flex items-center justify-between text-xs mt-1">
-                          <div>Qty: <span className="font-medium">{qty}</span></div>
-                          <div>Price: <span className="font-medium">{price}</span></div>
+                          <div>
+                            Qty: <span className="font-medium">{qty}</span>
+                          </div>
+                          <div>
+                            Price: <span className="font-medium">{price}</span>
+                          </div>
                           <div>{pct.toFixed(1)}%</div>
                         </div>
                       </div>
@@ -325,25 +413,44 @@ export default function TradeDetails() {
               <CardTitle className="inline-flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" /> Model Explanation
               </CardTitle>
-              <CardDescription>SHAP/feature importances for this trade</CardDescription>
+              <CardDescription>
+                SHAP/feature importances for this trade
+              </CardDescription>
             </div>
             <HelpTip content="Fetch SHAP/feature importances for this trade. Endpoint: /ai/explain/{trade_id}." />
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-2">
-              <Label htmlFor="tradeId" className="text-sm">Trade ID</Label>
-              <Input id="tradeId" value={id || ""} readOnly className="max-w-sm" />
-              <Button variant="outline" size="sm" onClick={fetchExplain} disabled={explainLoading || !id}>
+              <Label htmlFor="tradeId" className="text-sm">
+                Trade ID
+              </Label>
+              <Input
+                id="tradeId"
+                value={id || ""}
+                readOnly
+                className="max-w-sm"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchExplain}
+                disabled={explainLoading || !id}
+              >
                 {explainLoading ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> Fetching…
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />{" "}
+                    Fetching…
                   </>
                 ) : (
                   "Fetch Explanation"
                 )}
               </Button>
               {explainData && (
-                <Button variant="ghost" size="sm" onClick={()=> setShowJson((v)=> !v)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowJson((v) => !v)}
+                >
                   {showJson ? "Hide JSON" : "Show JSON"}
                 </Button>
               )}
@@ -356,16 +463,38 @@ export default function TradeDetails() {
                 <div className="h-64">
                   {(() => {
                     const raw = explainData;
-                    const src = raw?.shap?.top_features || raw?.top_features || raw?.features || [];
+                    const src =
+                      raw?.shap?.top_features ||
+                      raw?.top_features ||
+                      raw?.features ||
+                      [];
                     const items = Array.isArray(src) ? src : [];
-                    const bars = items.map((f:any)=> ({
-                      name: f.feature || f.name || String(f[0]||""),
-                      value: typeof f.weight === "number" ? Math.abs(f.weight) : (typeof f.shap === "number" ? Math.abs(f.shap) : (typeof f.value === "number" ? Math.abs(f.value) : 0)),
-                    })).filter((x:any)=> x.name);
-                    if (!bars.length) return <div className="text-xs text-muted-foreground">No feature importance data</div>;
+                    const bars = items
+                      .map((f: any) => ({
+                        name: f.feature || f.name || String(f[0] || ""),
+                        value:
+                          typeof f.weight === "number"
+                            ? Math.abs(f.weight)
+                            : typeof f.shap === "number"
+                              ? Math.abs(f.shap)
+                              : typeof f.value === "number"
+                                ? Math.abs(f.value)
+                                : 0,
+                      }))
+                      .filter((x: any) => x.name);
+                    if (!bars.length)
+                      return (
+                        <div className="text-xs text-muted-foreground">
+                          No feature importance data
+                        </div>
+                      );
                     return (
                       <ResponsiveContainer width="100%" height="100%">
-                        <RechartsBarChart data={bars.slice(0, 12)} layout="vertical" margin={{ left: 24 }}>
+                        <RechartsBarChart
+                          data={bars.slice(0, 12)}
+                          layout="vertical"
+                          margin={{ left: 24 }}
+                        >
                           <XAxis type="number" />
                           <YAxis dataKey="name" type="category" width={140} />
                           <RechartsTooltip />
@@ -377,9 +506,13 @@ export default function TradeDetails() {
                 </div>
                 <div className="text-xs bg-background border rounded p-2 overflow-auto max-h-64">
                   {showJson ? (
-                    <pre className="whitespace-pre-wrap">{JSON.stringify(explainData, null, 2)}</pre>
+                    <pre className="whitespace-pre-wrap">
+                      {JSON.stringify(explainData, null, 2)}
+                    </pre>
                   ) : (
-                    <div className="text-muted-foreground">Toggle JSON to view raw explanation</div>
+                    <div className="text-muted-foreground">
+                      Toggle JSON to view raw explanation
+                    </div>
                   )}
                 </div>
               </div>
@@ -388,7 +521,7 @@ export default function TradeDetails() {
         </Card>
       )}
 
-      {(!trade && !loading && !error) && (
+      {!trade && !loading && !error && (
         <div className="text-sm text-muted-foreground">No trade found.</div>
       )}
     </div>

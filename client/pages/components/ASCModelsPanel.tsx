@@ -1,16 +1,43 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import apiFetch from "@/lib/apiClient";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
-import { RefreshCw, Brain, BarChart3, CheckCircle, AlertCircle, RotateCcw, Rocket } from "lucide-react";
+import {
+  RefreshCw,
+  Brain,
+  BarChart3,
+  CheckCircle,
+  AlertCircle,
+  RotateCcw,
+  Rocket,
+} from "lucide-react";
 
 interface ModelItem {
   modelId: string;
@@ -29,7 +56,11 @@ interface ModelItem {
   };
 }
 
-interface ProposalVote { founderId: string; approve: boolean; votedAt: string; }
+interface ProposalVote {
+  founderId: string;
+  approve: boolean;
+  votedAt: string;
+}
 interface ProposalItem {
   id: string;
   description: string;
@@ -66,8 +97,21 @@ export default function ASCModelsPanel() {
   const [rbToModelId, setRbToModelId] = useState<string | null>(null);
   const [rbFounderApproval, setRbFounderApproval] = useState(false);
 
-  const deployedModel = useMemo(() => models.find((m) => m.status === "deployed") || null, [models]);
-  const candidateModels = useMemo(() => models.filter((m) => (m.type === "rl_agent") && (m.status === "trained" || m.status === "shadow" || m.status === "deployed")), [models]);
+  const deployedModel = useMemo(
+    () => models.find((m) => m.status === "deployed") || null,
+    [models],
+  );
+  const candidateModels = useMemo(
+    () =>
+      models.filter(
+        (m) =>
+          m.type === "rl_agent" &&
+          (m.status === "trained" ||
+            m.status === "shadow" ||
+            m.status === "deployed"),
+      ),
+    [models],
+  );
 
   useEffect(() => {
     const boot = async () => {
@@ -112,10 +156,14 @@ export default function ASCModelsPanel() {
     const resp = await apiFetch(`/api/admin/proposals/${pid}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ proposalId: pid, description: `Deploy model ${model.name} (${model.modelId})` }),
+      body: JSON.stringify({
+        proposalId: pid,
+        description: `Deploy model ${model.name} (${model.modelId})`,
+      }),
     });
     const j = await resp.json();
-    if (!resp.ok || j.status !== "success") throw new Error(j.error || "Failed to create proposal");
+    if (!resp.ok || j.status !== "success")
+      throw new Error(j.error || "Failed to create proposal");
     await fetchProposals();
     return pid;
   };
@@ -128,7 +176,8 @@ export default function ASCModelsPanel() {
       body: JSON.stringify({ founderId, approve }),
     });
     const j = await resp.json();
-    if (!resp.ok || j.status !== "success") throw new Error(j.error || "Vote failed");
+    if (!resp.ok || j.status !== "success")
+      throw new Error(j.error || "Vote failed");
   };
 
   const onApprove = async (model: ModelItem) => {
@@ -137,9 +186,16 @@ export default function ASCModelsPanel() {
       const pid = await ensureProposalExists(model);
       await castVote(pid, true);
       await fetchProposals();
-      toast({ title: "Approval recorded", description: `${model.name} approval vote recorded.` });
+      toast({
+        title: "Approval recorded",
+        description: `${model.name} approval vote recorded.`,
+      });
     } catch (e: any) {
-      toast({ title: "Approve failed", description: e?.message || String(e), variant: "destructive" });
+      toast({
+        title: "Approve failed",
+        description: e?.message || String(e),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -151,9 +207,16 @@ export default function ASCModelsPanel() {
       const pid = await ensureProposalExists(model);
       await castVote(pid, false);
       await fetchProposals();
-      toast({ title: "Rejection recorded", description: `${model.name} rejection vote recorded.` });
+      toast({
+        title: "Rejection recorded",
+        description: `${model.name} rejection vote recorded.`,
+      });
     } catch (e: any) {
-      toast({ title: "Reject failed", description: e?.message || String(e), variant: "destructive" });
+      toast({
+        title: "Reject failed",
+        description: e?.message || String(e),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -167,7 +230,11 @@ export default function ASCModelsPanel() {
       const approvals = prop ? prop.votes.filter((v) => v.approve).length : 0;
       const need = prop?.requiredVotes ?? 3;
       if (approvals < need) {
-        toast({ title: "Quorum not met", description: `${approvals} of ${need} approvals.`, variant: "destructive" });
+        toast({
+          title: "Quorum not met",
+          description: `${approvals} of ${need} approvals.`,
+          variant: "destructive",
+        });
         return;
       }
       const r = await apiFetch(`/api/models/promote`, {
@@ -176,11 +243,19 @@ export default function ASCModelsPanel() {
         body: JSON.stringify({ modelId: model.modelId, founderApproval: true }),
       });
       const j = await r.json();
-      if (!r.ok || j.status !== "success") throw new Error(j.error || "Promote failed");
+      if (!r.ok || j.status !== "success")
+        throw new Error(j.error || "Promote failed");
       await fetchModels();
-      toast({ title: "Model promoted", description: `${model.name} is now production.` });
+      toast({
+        title: "Model promoted",
+        description: `${model.name} is now production.`,
+      });
     } catch (e: any) {
-      toast({ title: "Promote failed", description: e?.message || String(e), variant: "destructive" });
+      toast({
+        title: "Promote failed",
+        description: e?.message || String(e),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
@@ -200,21 +275,34 @@ export default function ASCModelsPanel() {
       const r = await apiFetch(`/api/models/rollback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fromModelId: rbFromModelId, toModelId: rbToModelId, founderApproval: true }),
+        body: JSON.stringify({
+          fromModelId: rbFromModelId,
+          toModelId: rbToModelId,
+          founderApproval: true,
+        }),
       });
       const j = await r.json();
-      if (!r.ok || j.status !== "success") throw new Error(j.error || "Rollback failed");
-      toast({ title: "Rollback complete", description: `Rolled back to model ${rbToModelId}.` });
+      if (!r.ok || j.status !== "success")
+        throw new Error(j.error || "Rollback failed");
+      toast({
+        title: "Rollback complete",
+        description: `Rolled back to model ${rbToModelId}.`,
+      });
       setRbOpen(false);
       await fetchModels();
     } catch (e: any) {
-      toast({ title: "Rollback failed", description: e?.message || String(e), variant: "destructive" });
+      toast({
+        title: "Rollback failed",
+        description: e?.message || String(e),
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const getProposalForModel = (m: ModelItem) => proposals.find((p) => p.id === modelProposalId(m.modelId));
+  const getProposalForModel = (m: ModelItem) =>
+    proposals.find((p) => p.id === modelProposalId(m.modelId));
   const getProgressPct = (p?: ProposalItem) => {
     if (!p) return 0;
     const approvals = p.votes.filter((v) => v.approve).length;
@@ -230,11 +318,18 @@ export default function ASCModelsPanel() {
               <CardTitle className="inline-flex items-center gap-2">
                 <Brain className="h-5 w-5" /> Candidate ASC Models
               </CardTitle>
-              <CardDescription>Review RL agent candidates, vote, and perform governance actions</CardDescription>
+              <CardDescription>
+                Review RL agent candidates, vote, and perform governance actions
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Select value={String(refreshMs)} onValueChange={(v)=> setRefreshMs(parseInt(v))}>
-                <SelectTrigger className="w-36"><SelectValue placeholder="Refresh" /></SelectTrigger>
+              <Select
+                value={String(refreshMs)}
+                onValueChange={(v) => setRefreshMs(parseInt(v))}
+              >
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Refresh" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="10000">10s auto-refresh</SelectItem>
                   <SelectItem value="15000">15s auto-refresh</SelectItem>
@@ -242,7 +337,11 @@ export default function ASCModelsPanel() {
                   <SelectItem value="60000">60s auto-refresh</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={()=> Promise.all([fetchModels(), fetchProposals()])} disabled={loading}>
+              <Button
+                variant="outline"
+                onClick={() => Promise.all([fetchModels(), fetchProposals()])}
+                disabled={loading}
+              >
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
             </div>
@@ -259,22 +358,42 @@ export default function ASCModelsPanel() {
               ) : (
                 candidateModels.map((m) => {
                   const p = getProposalForModel(m);
-                  const approvals = p ? p.votes.filter((v) => v.approve).length : 0;
+                  const approvals = p
+                    ? p.votes.filter((v) => v.approve).length
+                    : 0;
                   const need = p?.requiredVotes ?? 3;
                   return (
-                    <div key={m.modelId} className="border rounded-lg p-4 space-y-3">
+                    <div
+                      key={m.modelId}
+                      className="border rounded-lg p-4 space-y-3"
+                    >
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium">{m.name}</div>
-                          <div className="text-xs text-muted-foreground">v{m.version} • {m.modelId}</div>
+                          <div className="text-xs text-muted-foreground">
+                            v{m.version} • {m.modelId}
+                          </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Badge className={m.status === 'deployed' ? 'bg-green-100 text-green-700' : m.status === 'shadow' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700'}>
+                          <Badge
+                            className={
+                              m.status === "deployed"
+                                ? "bg-green-100 text-green-700"
+                                : m.status === "shadow"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : "bg-gray-100 text-gray-700"
+                            }
+                          >
                             {m.status}
                           </Badge>
-                          {m.status === 'trained' && (
-                            <Button size="sm" onClick={()=> onPromoteIfApproved(m)} disabled={loading}>
-                              <Rocket className="h-3 w-3 mr-1" /> Promote (requires quorum)
+                          {m.status === "trained" && (
+                            <Button
+                              size="sm"
+                              onClick={() => onPromoteIfApproved(m)}
+                              disabled={loading}
+                            >
+                              <Rocket className="h-3 w-3 mr-1" /> Promote
+                              (requires quorum)
                             </Button>
                           )}
                         </div>
@@ -283,44 +402,86 @@ export default function ASCModelsPanel() {
                       {/* Metrics */}
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div>
-                          <p className="text-xs text-muted-foreground">Sharpe</p>
-                          <p className="text-sm font-medium">{m.performance?.sharpeRatio?.toFixed(2) ?? "--"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sharpe
+                          </p>
+                          <p className="text-sm font-medium">
+                            {m.performance?.sharpeRatio?.toFixed(2) ?? "--"}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Win Rate</p>
-                          <p className="text-sm font-medium">{formatPct(m.performance?.winRate)}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Win Rate
+                          </p>
+                          <p className="text-sm font-medium">
+                            {formatPct(m.performance?.winRate)}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Max DD</p>
-                          <p className="text-sm font-medium text-destructive">{formatPct(Math.abs(m.performance?.maxDrawdown ?? 0))}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Max DD
+                          </p>
+                          <p className="text-sm font-medium text-destructive">
+                            {formatPct(
+                              Math.abs(m.performance?.maxDrawdown ?? 0),
+                            )}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Profit Factor</p>
-                          <p className="text-sm font-medium">{m.performance?.profitFactor?.toFixed(2) ?? "--"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Profit Factor
+                          </p>
+                          <p className="text-sm font-medium">
+                            {m.performance?.profitFactor?.toFixed(2) ?? "--"}
+                          </p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Sortino</p>
-                          <p className="text-sm font-medium">{m.performance?.sortino?.toFixed(2) ?? "--"}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Sortino
+                          </p>
+                          <p className="text-sm font-medium">
+                            {m.performance?.sortino?.toFixed(2) ?? "--"}
+                          </p>
                         </div>
                       </div>
 
                       {/* Quorum */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{approvals}/{need} approvals</span>
+                        <span>
+                          {approvals}/{need} approvals
+                        </span>
                         <div className="w-32 bg-muted rounded-full h-1">
-                          <div className="bg-primary h-1 rounded-full transition-all" style={{ width: `${getProgressPct(p)}%` }} />
+                          <div
+                            className="bg-primary h-1 rounded-full transition-all"
+                            style={{ width: `${getProgressPct(p)}%` }}
+                          />
                         </div>
                       </div>
 
                       {/* Actions */}
                       <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
-                        <Button size="sm" variant="outline" onClick={() => onApprove(m)} disabled={loading}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onApprove(m)}
+                          disabled={loading}
+                        >
                           <CheckCircle className="h-3 w-3 mr-1" /> Approve
                         </Button>
-                        <Button size="sm" variant="destructive" onClick={() => onReject(m)} disabled={loading}>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => onReject(m)}
+                          disabled={loading}
+                        >
                           <AlertCircle className="h-3 w-3 mr-1" /> Reject
                         </Button>
-                        <Button size="sm" variant="outline" onClick={() => openRollback(m.modelId)} disabled={loading || !deployedModel}>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openRollback(m.modelId)}
+                          disabled={loading || !deployedModel}
+                        >
                           <RotateCcw className="h-3 w-3 mr-1" /> Rollback
                         </Button>
                       </div>
@@ -338,32 +499,51 @@ export default function ASCModelsPanel() {
           <DialogHeader>
             <DialogTitle>Rollback Production Model</DialogTitle>
             <DialogDescription>
-              Select the target model to rollback to. Current production will be archived.
+              Select the target model to rollback to. Current production will be
+              archived.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
               <Label>Current (from)</Label>
-              <div className="text-sm text-muted-foreground">{rbFromModelId || "None"}</div>
+              <div className="text-sm text-muted-foreground">
+                {rbFromModelId || "None"}
+              </div>
             </div>
             <div>
               <Label>Rollback target (to)</Label>
-              <Select value={rbToModelId || undefined} onValueChange={setRbToModelId}>
-                <SelectTrigger><SelectValue placeholder="Select model" /></SelectTrigger>
+              <Select
+                value={rbToModelId || undefined}
+                onValueChange={setRbToModelId}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select model" />
+                </SelectTrigger>
                 <SelectContent>
-                  {candidateModels.map((m)=> (
-                    <SelectItem key={m.modelId} value={m.modelId}>{m.name} (v{m.version})</SelectItem>
+                  {candidateModels.map((m) => (
+                    <SelectItem key={m.modelId} value={m.modelId}>
+                      {m.name} (v{m.version})
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-center space-x-2">
-              <Checkbox id="rb_approval" checked={rbFounderApproval} onCheckedChange={setRbFounderApproval} />
+              <Checkbox
+                id="rb_approval"
+                checked={rbFounderApproval}
+                onCheckedChange={setRbFounderApproval}
+              />
               <Label htmlFor="rb_approval">I have founder approval</Label>
             </div>
           </div>
           <DialogFooter>
-            <Button onClick={doRollback} disabled={!rbToModelId || !rbFounderApproval || loading}>Confirm Rollback</Button>
+            <Button
+              onClick={doRollback}
+              disabled={!rbToModelId || !rbFounderApproval || loading}
+            >
+              Confirm Rollback
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

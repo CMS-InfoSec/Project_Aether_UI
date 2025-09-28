@@ -474,18 +474,78 @@ export default function Governance() {
         className="space-y-6"
       >
         <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
-          <TabsTrigger value="proposals" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Proposals</TabsTrigger>
-          <TabsTrigger value="voting" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Voting</TabsTrigger>
-          <TabsTrigger value="deploy" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Deploy</TabsTrigger>
-          <TabsTrigger value="asc-models" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">ASC Models</TabsTrigger>
-          <TabsTrigger value="compliance" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Compliance & Audit</TabsTrigger>
-          <TabsTrigger value="compliance-forecast" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Compliance Forecast</TabsTrigger>
-          <TabsTrigger value="federated" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Federated Learning</TabsTrigger>
-          <TabsTrigger value="regulatory-reports" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Regulatory Reports</TabsTrigger>
-          <TabsTrigger value="model-lineage" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Lineage</TabsTrigger>
-          <TabsTrigger value="model-comparison" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Comparison</TabsTrigger>
-          <TabsTrigger value="onchain" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">On-Chain Governance</TabsTrigger>
-          <TabsTrigger value="feedback" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Feedback</TabsTrigger>
+          <TabsTrigger
+            value="proposals"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Proposals
+          </TabsTrigger>
+          <TabsTrigger
+            value="voting"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Voting
+          </TabsTrigger>
+          <TabsTrigger
+            value="deploy"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Deploy
+          </TabsTrigger>
+          <TabsTrigger
+            value="asc-models"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            ASC Models
+          </TabsTrigger>
+          <TabsTrigger
+            value="compliance"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Compliance & Audit
+          </TabsTrigger>
+          <TabsTrigger
+            value="compliance-forecast"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Compliance Forecast
+          </TabsTrigger>
+          <TabsTrigger
+            value="federated"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Federated Learning
+          </TabsTrigger>
+          <TabsTrigger
+            value="regulatory-reports"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Regulatory Reports
+          </TabsTrigger>
+          <TabsTrigger
+            value="model-lineage"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Model Lineage
+          </TabsTrigger>
+          <TabsTrigger
+            value="model-comparison"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Model Comparison
+          </TabsTrigger>
+          <TabsTrigger
+            value="onchain"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            On-Chain Governance
+          </TabsTrigger>
+          <TabsTrigger
+            value="feedback"
+            className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1"
+          >
+            Feedback
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="proposals" className="space-y-6">

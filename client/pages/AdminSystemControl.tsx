@@ -1,19 +1,25 @@
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
+} from "@/components/ui/alert-dialog";
 import {
   Play,
   Pause,
@@ -47,11 +53,11 @@ import {
   Wifi,
   WifiOff,
   TestTube,
-  Save
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import HelpTip from '@/components/ui/help-tip';
-import apiFetch from '@/lib/apiClient';
+  Save,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import HelpTip from "@/components/ui/help-tip";
+import apiFetch from "@/lib/apiClient";
 
 // Types
 interface SystemState {
@@ -77,88 +83,102 @@ interface AuditLogEntry {
   success: boolean;
 }
 
-const API_KEY = '';
+const API_KEY = "";
 
 export default function AdminSystemControl() {
   // System state
   const [systemState, setSystemState] = useState<SystemState>({
     isPaused: false,
-    mode: 'live',
-    killSwitchEnabled: false
+    mode: "live",
+    killSwitchEnabled: false,
   });
-  
+
   // Audit log
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
-  
+
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
-  
+
   // Error state
   const [error, setError] = useState<string | null>(null);
-  
+
   // Pause/Resume form
-  const [pauseActor, setPauseActor] = useState('admin@example.com');
-  const [pauseReason, setPauseReason] = useState('');
-  const [resumeActor, setResumeActor] = useState('admin@example.com');
-  const [resumeReason, setResumeReason] = useState('');
-  
+  const [pauseActor, setPauseActor] = useState("admin@example.com");
+  const [pauseReason, setPauseReason] = useState("");
+  const [resumeActor, setResumeActor] = useState("admin@example.com");
+  const [resumeReason, setResumeReason] = useState("");
+
   // Trading mode form
-  const [selectedMode, setSelectedMode] = useState('live');
-  const [modeActor, setModeActor] = useState('admin@example.com');
-  const [modeReason, setModeReason] = useState('');
-  
+  const [selectedMode, setSelectedMode] = useState("live");
+  const [modeActor, setModeActor] = useState("admin@example.com");
+  const [modeReason, setModeReason] = useState("");
+
   // Kill switch form
-  const [killSwitchActor, setKillSwitchActor] = useState('admin@example.com');
-  const [killSwitchReason, setKillSwitchReason] = useState('');
+  const [killSwitchActor, setKillSwitchActor] = useState("admin@example.com");
+  const [killSwitchReason, setKillSwitchReason] = useState("");
 
   // Backend connection state
   const [backendUrl, setBackendUrl] = useState(() => {
-    return localStorage.getItem('aether-backend-url') || window.location.origin;
+    return localStorage.getItem("aether-backend-url") || window.location.origin;
   });
-  const [connectionStatus, setConnectionStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'testing'>('unknown');
+  const [connectionStatus, setConnectionStatus] = useState<
+    "unknown" | "connected" | "disconnected" | "testing"
+  >("unknown");
   const [isTestingConnection, setIsTestingConnection] = useState(false);
 
   // API request helper with X-API-Key header
   const apiRequest = async (url: string, options: RequestInit = {}) => {
-    const fullUrl = url.startsWith('http') ? url : `${backendUrl.replace(/\/+$/, '')}${url}`;
-    const needsJson = !!options.body && !(options.headers as any)?.["Content-Type"];
-    const headers = needsJson ? { "Content-Type": "application/json", ...(options.headers || {}) } : options.headers;
-    const response = await apiFetch(fullUrl, { ...options, admin: true, headers });
-    if (response.status === 401) throw new Error('API key required');
-    if (response.status === 403) throw new Error('Insufficient permissions');
-    if (response.status >= 500) throw new Error('Server error. Please try again.');
+    const fullUrl = url.startsWith("http")
+      ? url
+      : `${backendUrl.replace(/\/+$/, "")}${url}`;
+    const needsJson =
+      !!options.body && !(options.headers as any)?.["Content-Type"];
+    const headers = needsJson
+      ? { "Content-Type": "application/json", ...(options.headers || {}) }
+      : options.headers;
+    const response = await apiFetch(fullUrl, {
+      ...options,
+      admin: true,
+      headers,
+    });
+    if (response.status === 401) throw new Error("API key required");
+    if (response.status === 403) throw new Error("Insufficient permissions");
+    if (response.status >= 500)
+      throw new Error("Server error. Please try again.");
     return response;
   };
 
   // Fetch system mode (backend exposes mode; pause/kill-switch status not queryable)
   const fetchSystemState = async () => {
     try {
-      const response = await apiRequest('/api/v1/system/mode');
-      const data = await response.json().catch(() => ({} as any));
+      const response = await apiRequest("/api/v1/system/mode");
+      const data = await response.json().catch(() => ({}) as any);
       if (response.ok) {
         const mode = data?.mode || systemState.mode;
         setSystemState((prev) => ({ ...prev, mode }));
         setSelectedMode(mode);
       }
     } catch (error) {
-      console.error('Failed to fetch system state:', error);
-      setError(error instanceof Error ? error.message : 'Failed to fetch system state');
+      console.error("Failed to fetch system state:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to fetch system state",
+      );
     }
   };
 
   // Fetch current mode
   const fetchCurrentMode = async () => {
     try {
-      const response = await apiRequest('/api/v1/system/mode');
-      const data = await response.json().catch(() => ({} as any));
+      const response = await apiRequest("/api/v1/system/mode");
+      const data = await response.json().catch(() => ({}) as any);
       if (response.ok) {
         const mode = data?.mode || systemState.mode;
-        setSystemState(prev => ({ ...prev, mode }));
+        setSystemState((prev) => ({ ...prev, mode }));
         setSelectedMode(mode);
       }
     } catch (error) {
-      console.error('Failed to fetch trading mode:', error);
+      console.error("Failed to fetch trading mode:", error);
     }
   };
 
@@ -167,16 +187,17 @@ export default function AdminSystemControl() {
   // Test backend connection
   const testBackendConnection = async () => {
     setIsTestingConnection(true);
-    setConnectionStatus('testing');
+    setConnectionStatus("testing");
 
     try {
-      const testUrl = backendUrl.replace(/\/+$/, '') + '/api/v1/system/health/live';
+      const testUrl =
+        backendUrl.replace(/\/+$/, "") + "/api/v1/system/health/live";
       const response = await apiRequest(testUrl, {
-        method: 'GET',
+        method: "GET",
       });
 
       if (response.ok) {
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
         toast({
           title: "Connection Successful",
           description: `Successfully connected to backend at ${backendUrl}`,
@@ -185,11 +206,14 @@ export default function AdminSystemControl() {
         throw new Error(`Server responded with status: ${response.status}`);
       }
     } catch (error) {
-      setConnectionStatus('disconnected');
+      setConnectionStatus("disconnected");
       toast({
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : "Failed to connect to backend server",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to connect to backend server",
+        variant: "destructive",
       });
     } finally {
       setIsTestingConnection(false);
@@ -198,10 +222,10 @@ export default function AdminSystemControl() {
 
   // Save backend URL
   const saveBackendUrl = () => {
-    const cleanUrl = backendUrl.replace(/\/+$/, ''); // Remove trailing slashes
+    const cleanUrl = backendUrl.replace(/\/+$/, ""); // Remove trailing slashes
     setBackendUrl(cleanUrl);
-    localStorage.setItem('aether-backend-url', cleanUrl);
-    setConnectionStatus('unknown'); // Reset connection status when URL changes
+    localStorage.setItem("aether-backend-url", cleanUrl);
+    setConnectionStatus("unknown"); // Reset connection status when URL changes
 
     toast({
       title: "Backend URL Saved",
@@ -216,14 +240,13 @@ export default function AdminSystemControl() {
       setError(null);
 
       try {
-        await Promise.all([
-          fetchSystemState(),
-          fetchCurrentMode()
-        ]);
-        setConnectionStatus('connected'); // If we can load data, we're connected
+        await Promise.all([fetchSystemState(), fetchCurrentMode()]);
+        setConnectionStatus("connected"); // If we can load data, we're connected
       } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to load data');
-        setConnectionStatus('disconnected');
+        setError(
+          error instanceof Error ? error.message : "Failed to load data",
+        );
+        setConnectionStatus("disconnected");
       } finally {
         setIsLoading(false);
       }
@@ -238,7 +261,7 @@ export default function AdminSystemControl() {
       toast({
         title: "Validation Error",
         description: "Actor field is required",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -247,38 +270,39 @@ export default function AdminSystemControl() {
       toast({
         title: "Validation Error",
         description: "Reason must be 200 characters or less",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/v1/system/pause', {
-        method: 'POST',
+      const response = await apiRequest("/api/v1/system/pause", {
+        method: "POST",
         body: JSON.stringify({
           actor: pauseActor,
-          reason: pauseReason || undefined
+          reason: pauseReason || undefined,
         }),
       });
 
       if (response.ok) {
-        setSystemState(prev => ({ ...prev, isPaused: true }));
+        setSystemState((prev) => ({ ...prev, isPaused: true }));
         toast({
           title: "Success",
           description: "System paused",
         });
-        setPauseReason('');
+        setPauseReason("");
         await Promise.all([fetchSystemState()]);
       } else {
-        const j = await response.json().catch(() => ({} as any));
-        throw new Error(j?.message || 'Failed');
+        const j = await response.json().catch(() => ({}) as any);
+        throw new Error(j?.message || "Failed");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to pause system",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to pause system",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -291,7 +315,7 @@ export default function AdminSystemControl() {
       toast({
         title: "Validation Error",
         description: "Actor field is required",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -300,38 +324,39 @@ export default function AdminSystemControl() {
       toast({
         title: "Validation Error",
         description: "Reason must be 200 characters or less",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/v1/system/resume', {
-        method: 'POST',
+      const response = await apiRequest("/api/v1/system/resume", {
+        method: "POST",
         body: JSON.stringify({
           actor: resumeActor,
-          reason: resumeReason || undefined
+          reason: resumeReason || undefined,
         }),
       });
 
       if (response.ok) {
-        setSystemState(prev => ({ ...prev, isPaused: false }));
+        setSystemState((prev) => ({ ...prev, isPaused: false }));
         toast({
           title: "Success",
           description: "System resumed",
         });
-        setResumeReason('');
+        setResumeReason("");
         await Promise.all([fetchSystemState()]);
       } else {
-        const j = await response.json().catch(() => ({} as any));
-        throw new Error(j?.message || 'Failed');
+        const j = await response.json().catch(() => ({}) as any);
+        throw new Error(j?.message || "Failed");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to resume system",
-        variant: "destructive"
+        description:
+          error instanceof Error ? error.message : "Failed to resume system",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -344,50 +369,53 @@ export default function AdminSystemControl() {
       toast({
         title: "Validation Error",
         description: "Actor field is required",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     // Require reason when moving to live
-    if (selectedMode.toLowerCase() === 'live' && !modeReason.trim()) {
+    if (selectedMode.toLowerCase() === "live" && !modeReason.trim()) {
       toast({
         title: "Validation Error",
         description: "Reason is required when switching to live mode",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/v1/system/mode', {
-        method: 'POST',
+      const response = await apiRequest("/api/v1/system/mode", {
+        method: "POST",
         body: JSON.stringify({
           mode: selectedMode,
           actor: modeActor,
-          reason: modeReason || undefined
+          reason: modeReason || undefined,
         }),
       });
 
-      const data = await response.json().catch(() => ({} as any));
+      const data = await response.json().catch(() => ({}) as any);
       if (response.ok) {
         const mode = data?.mode || selectedMode;
-        setSystemState(prev => ({ ...prev, mode }));
+        setSystemState((prev) => ({ ...prev, mode }));
         toast({
           title: "Success",
           description: `Trading mode set to ${mode}`,
         });
-        setModeReason('');
+        setModeReason("");
         await Promise.all([fetchSystemState()]);
       } else {
-        throw new Error(data?.message || 'Failed');
+        throw new Error(data?.message || "Failed");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update trading mode",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update trading mode",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -401,7 +429,7 @@ export default function AdminSystemControl() {
         toast({
           title: "Validation Error",
           description: "Actor is required when enabling kill switch",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
@@ -410,7 +438,7 @@ export default function AdminSystemControl() {
         toast({
           title: "Validation Error",
           description: "Reason is mandatory when enabling kill switch",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
@@ -419,7 +447,7 @@ export default function AdminSystemControl() {
         toast({
           title: "Validation Error",
           description: "Reason must be at least 10 characters",
-          variant: "destructive"
+          variant: "destructive",
         });
         return;
       }
@@ -427,35 +455,41 @@ export default function AdminSystemControl() {
 
     setIsProcessing(true);
     try {
-      const response = await apiRequest('/api/v1/admin/kill-switch', {
-        method: 'POST',
+      const response = await apiRequest("/api/v1/admin/kill-switch", {
+        method: "POST",
         body: JSON.stringify({
           enabled,
           actor: killSwitchActor,
-          reason: enabled ? killSwitchReason : undefined
+          reason: enabled ? killSwitchReason : undefined,
         }),
       });
 
-      const data = await response.json().catch(() => ({} as any));
+      const data = await response.json().catch(() => ({}) as any);
       if (response.ok) {
-        setSystemState(prev => ({ ...prev, killSwitchEnabled: !!data?.enabled }));
+        setSystemState((prev) => ({
+          ...prev,
+          killSwitchEnabled: !!data?.enabled,
+        }));
         toast({
           title: "Success",
-          description: `Kill switch ${data?.enabled ? 'enabled' : 'disabled'}`,
-          variant: data?.enabled ? "destructive" : "default"
+          description: `Kill switch ${data?.enabled ? "enabled" : "disabled"}`,
+          variant: data?.enabled ? "destructive" : "default",
         });
         if (!data?.enabled) {
-          setKillSwitchReason('');
+          setKillSwitchReason("");
         }
         await Promise.all([fetchSystemState()]);
       } else {
-        throw new Error(data?.message || 'Failed');
+        throw new Error(data?.message || "Failed");
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to toggle kill switch",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to toggle kill switch",
+        variant: "destructive",
       });
     } finally {
       setIsProcessing(false);
@@ -472,7 +506,7 @@ export default function AdminSystemControl() {
         </Badge>
       );
     }
-    
+
     if (systemState.isPaused) {
       return (
         <Badge variant="destructive" className="flex items-center space-x-1">
@@ -481,9 +515,12 @@ export default function AdminSystemControl() {
         </Badge>
       );
     }
-    
+
     return (
-      <Badge variant="default" className="bg-accent text-accent-foreground flex items-center space-x-1">
+      <Badge
+        variant="default"
+        className="bg-accent text-accent-foreground flex items-center space-x-1"
+      >
         <Activity className="h-3 w-3" />
         <span>ACTIVE</span>
       </Badge>
@@ -491,14 +528,14 @@ export default function AdminSystemControl() {
   };
 
   const getModeBadge = (mode: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'outline'> = {
-      'simulation': 'secondary',
-      'dry-run': 'outline',
-      'live': 'default'
+    const variants: Record<string, "default" | "secondary" | "outline"> = {
+      simulation: "secondary",
+      "dry-run": "outline",
+      live: "default",
     };
-    
+
     return (
-      <Badge variant={variants[mode.toLowerCase()] || 'secondary'}>
+      <Badge variant={variants[mode.toLowerCase()] || "secondary"}>
         {mode.toUpperCase()}
       </Badge>
     );
@@ -520,21 +557,24 @@ export default function AdminSystemControl() {
 
   const getConnectionBadge = () => {
     switch (connectionStatus) {
-      case 'connected':
+      case "connected":
         return (
-          <Badge variant="default" className="bg-green-100 text-green-800 border-green-200 flex items-center space-x-1">
+          <Badge
+            variant="default"
+            className="bg-green-100 text-green-800 border-green-200 flex items-center space-x-1"
+          >
             <Wifi className="h-3 w-3" />
             <span>CONNECTED</span>
           </Badge>
         );
-      case 'disconnected':
+      case "disconnected":
         return (
           <Badge variant="destructive" className="flex items-center space-x-1">
             <WifiOff className="h-3 w-3" />
             <span>DISCONNECTED</span>
           </Badge>
         );
-      case 'testing':
+      case "testing":
         return (
           <Badge variant="secondary" className="flex items-center space-x-1">
             <RefreshCw className="h-3 w-3 animate-spin" />
@@ -565,17 +605,26 @@ export default function AdminSystemControl() {
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
-            {error === 'API key required' && 'API key required.'}
-            {error === 'Insufficient permissions' && 'Insufficient permissions.'}
-            {error.includes('Server error') && (
+            {error === "API key required" && "API key required."}
+            {error === "Insufficient permissions" &&
+              "Insufficient permissions."}
+            {error.includes("Server error") && (
               <div className="space-y-2">
                 <div>{error}</div>
-                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
                   Retry
                 </Button>
               </div>
             )}
-            {!['API key required', 'Insufficient permissions'].includes(error) && !error.includes('Server error') && error}
+            {!["API key required", "Insufficient permissions"].includes(
+              error,
+            ) &&
+              !error.includes("Server error") &&
+              error}
           </AlertDescription>
         </Alert>
       </div>
@@ -587,11 +636,14 @@ export default function AdminSystemControl() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">System Control</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              System Control
+            </h1>
             <HelpTip content="Admin controls to pause/resume trading, switch trading modes, and trigger emergency stop (kill switch)." />
           </div>
           <p className="text-muted-foreground">
-            Pause/resume trading, change global trading mode, and manage emergency controls
+            Pause/resume trading, change global trading mode, and manage
+            emergency controls
           </p>
         </div>
         <Button variant="outline" onClick={() => window.location.reload()}>
@@ -618,7 +670,10 @@ export default function AdminSystemControl() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="md:col-span-2 space-y-3">
               <div>
-                <div className="flex items-center gap-2"><Label htmlFor="backendUrl">Backend Server URL</Label><HelpTip content="Full base URL of your control API, e.g., https://api.example.com" /></div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="backendUrl">Backend Server URL</Label>
+                  <HelpTip content="Full base URL of your control API, e.g., https://api.example.com" />
+                </div>
                 <Input
                   id="backendUrl"
                   placeholder="http://localhost:3001 or https://api.yourserver.com"
@@ -626,7 +681,8 @@ export default function AdminSystemControl() {
                   onChange={(e) => setBackendUrl(e.target.value)}
                 />
                 <div className="text-xs text-muted-foreground mt-1">
-                  Enter the complete URL including protocol (http:// or https://)
+                  Enter the complete URL including protocol (http:// or
+                  https://)
                 </div>
               </div>
               <div className="flex items-center space-x-2">
@@ -649,7 +705,10 @@ export default function AdminSystemControl() {
                 </Button>
                 <Button
                   onClick={saveBackendUrl}
-                  disabled={!backendUrl.trim() || backendUrl === localStorage.getItem('aether-backend-url')}
+                  disabled={
+                    !backendUrl.trim() ||
+                    backendUrl === localStorage.getItem("aether-backend-url")
+                  }
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save URL
@@ -658,14 +717,13 @@ export default function AdminSystemControl() {
             </div>
             <div className="flex items-center justify-center">
               <div className="text-center">
-                <div className="mb-2">
-                  {getConnectionBadge()}
-                </div>
+                <div className="mb-2">{getConnectionBadge()}</div>
                 <div className="text-sm text-muted-foreground">
-                  {connectionStatus === 'connected' && 'Backend is reachable'}
-                  {connectionStatus === 'disconnected' && 'Cannot reach backend'}
-                  {connectionStatus === 'testing' && 'Testing connection...'}
-                  {connectionStatus === 'unknown' && 'Connection not tested'}
+                  {connectionStatus === "connected" && "Backend is reachable"}
+                  {connectionStatus === "disconnected" &&
+                    "Cannot reach backend"}
+                  {connectionStatus === "testing" && "Testing connection..."}
+                  {connectionStatus === "unknown" && "Connection not tested"}
                 </div>
               </div>
             </div>
@@ -688,17 +746,25 @@ export default function AdminSystemControl() {
           <div className="grid gap-4 md:grid-cols-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium inline-flex items-center gap-1">Mode <HelpTip content="Trading mode: Simulation (paper), Dry-Run (no orders), or Live (real orders)." /></div>
-                <div className="text-sm text-muted-foreground">Current trading mode</div>
+                <div className="font-medium inline-flex items-center gap-1">
+                  Mode{" "}
+                  <HelpTip content="Trading mode: Simulation (paper), Dry-Run (no orders), or Live (real orders)." />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Current trading mode
+                </div>
               </div>
               {getModeBadge(systemState.mode)}
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium inline-flex items-center gap-1">Status <HelpTip content="Paused stops strategy execution; Active means trading logic can run." /></div>
+                <div className="font-medium inline-flex items-center gap-1">
+                  Status{" "}
+                  <HelpTip content="Paused stops strategy execution; Active means trading logic can run." />
+                </div>
                 <div className="text-sm text-muted-foreground">
-                  {systemState.isPaused ? 'System paused' : 'System active'}
+                  {systemState.isPaused ? "System paused" : "System active"}
                 </div>
               </div>
               {getStatusBadge()}
@@ -706,8 +772,13 @@ export default function AdminSystemControl() {
 
             <div className="flex items-center justify-between">
               <div>
-                <div className="font-medium inline-flex items-center gap-1">Kill Switch <HelpTip content="Emergency stop that immediately disables all trading. Requires justification to enable." /></div>
-                <div className="text-sm text-muted-foreground">Emergency control status</div>
+                <div className="font-medium inline-flex items-center gap-1">
+                  Kill Switch{" "}
+                  <HelpTip content="Emergency stop that immediately disables all trading. Requires justification to enable." />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Emergency control status
+                </div>
               </div>
               {getKillSwitchBadge()}
             </div>
@@ -716,7 +787,7 @@ export default function AdminSystemControl() {
       </Card>
 
       {/* Emergency alerts */}
-      {connectionStatus === 'disconnected' && (
+      {connectionStatus === "disconnected" && (
         <Alert variant="destructive">
           <WifiOff className="h-4 w-4" />
           <AlertDescription>
@@ -726,7 +797,8 @@ export default function AdminSystemControl() {
                 Unable to connect to the backend server at: {backendUrl}
               </div>
               <div className="text-sm">
-                Please verify the URL is correct and the server is running, then test the connection.
+                Please verify the URL is correct and the server is running, then
+                test the connection.
               </div>
             </div>
           </AlertDescription>
@@ -738,12 +810,19 @@ export default function AdminSystemControl() {
           <Skull className="h-4 w-4" />
           <AlertDescription>
             <div className="space-y-1">
-              <div className="font-semibold">EMERGENCY KILL SWITCH ACTIVATED</div>
+              <div className="font-semibold">
+                EMERGENCY KILL SWITCH ACTIVATED
+              </div>
               <div className="text-sm">
-                Activated by {systemState.killSwitchBy} at {systemState.killSwitchAt ? new Date(systemState.killSwitchAt).toLocaleString() : 'Unknown time'}
+                Activated by {systemState.killSwitchBy} at{" "}
+                {systemState.killSwitchAt
+                  ? new Date(systemState.killSwitchAt).toLocaleString()
+                  : "Unknown time"}
               </div>
               {systemState.killSwitchReason && (
-                <div className="text-sm">Reason: {systemState.killSwitchReason}</div>
+                <div className="text-sm">
+                  Reason: {systemState.killSwitchReason}
+                </div>
               )}
             </div>
           </AlertDescription>
@@ -757,10 +836,15 @@ export default function AdminSystemControl() {
             <div className="space-y-1">
               <div className="font-semibold">System is currently paused</div>
               <div className="text-sm">
-                Paused by {systemState.pausedBy} at {systemState.pausedAt ? new Date(systemState.pausedAt).toLocaleString() : 'Unknown time'}
+                Paused by {systemState.pausedBy} at{" "}
+                {systemState.pausedAt
+                  ? new Date(systemState.pausedAt).toLocaleString()
+                  : "Unknown time"}
               </div>
               {systemState.pausedReason && (
-                <div className="text-sm">Reason: {systemState.pausedReason}</div>
+                <div className="text-sm">
+                  Reason: {systemState.pausedReason}
+                </div>
               )}
             </div>
           </AlertDescription>
@@ -786,24 +870,38 @@ export default function AdminSystemControl() {
             {systemState.isPaused ? (
               <div className="space-y-3">
                 <div>
-                  <div className="flex items-center gap-2"><Label htmlFor="resumeActor">Actor (optional)</Label><HelpTip content="Who is performing this action (for audit trail)." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="resumeActor">Actor (optional)</Label>
+                    <HelpTip content="Who is performing this action (for audit trail)." />
+                  </div>
                   <Input
                     id="resumeActor"
                     placeholder="Your email or identifier"
                     value={resumeActor}
                     onChange={(e) => setResumeActor(e.target.value)}
-                    disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                    disabled={
+                      systemState.killSwitchEnabled ||
+                      connectionStatus === "disconnected"
+                    }
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2"><Label htmlFor="resumeReason">Reason (optional, max 200 chars)</Label><HelpTip content="Context for resuming trading helps reviewers understand why." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="resumeReason">
+                      Reason (optional, max 200 chars)
+                    </Label>
+                    <HelpTip content="Context for resuming trading helps reviewers understand why." />
+                  </div>
                   <Textarea
                     id="resumeReason"
                     placeholder="Reason for resuming the system"
                     value={resumeReason}
                     onChange={(e) => setResumeReason(e.target.value)}
                     maxLength={200}
-                    disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                    disabled={
+                      systemState.killSwitchEnabled ||
+                      connectionStatus === "disconnected"
+                    }
                   />
                   <div className="text-xs text-muted-foreground mt-1">
                     {resumeReason.length}/200 characters
@@ -811,7 +909,11 @@ export default function AdminSystemControl() {
                 </div>
                 <Button
                   onClick={handleResumeSystem}
-                  disabled={isProcessing || systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                  disabled={
+                    isProcessing ||
+                    systemState.killSwitchEnabled ||
+                    connectionStatus === "disconnected"
+                  }
                   className="w-full"
                 >
                   {isProcessing ? (
@@ -830,24 +932,32 @@ export default function AdminSystemControl() {
             ) : (
               <div className="space-y-3">
                 <div>
-                  <div className="flex items-center gap-2"><Label htmlFor="pauseActor">Actor (optional)</Label><HelpTip content="Who is pausing the system (for audit trail)." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="pauseActor">Actor (optional)</Label>
+                    <HelpTip content="Who is pausing the system (for audit trail)." />
+                  </div>
                   <Input
                     id="pauseActor"
                     placeholder="Your email or identifier"
                     value={pauseActor}
                     onChange={(e) => setPauseActor(e.target.value)}
-                    disabled={connectionStatus === 'disconnected'}
+                    disabled={connectionStatus === "disconnected"}
                   />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2"><Label htmlFor="pauseReason">Reason (optional, max 200 chars)</Label><HelpTip content="Why the system is being paused; add details for future review." /></div>
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="pauseReason">
+                      Reason (optional, max 200 chars)
+                    </Label>
+                    <HelpTip content="Why the system is being paused; add details for future review." />
+                  </div>
                   <Textarea
                     id="pauseReason"
                     placeholder="Reason for pausing the system"
                     value={pauseReason}
                     onChange={(e) => setPauseReason(e.target.value)}
                     maxLength={200}
-                    disabled={connectionStatus === 'disconnected'}
+                    disabled={connectionStatus === "disconnected"}
                   />
                   <div className="text-xs text-muted-foreground mt-1">
                     {pauseReason.length}/200 characters
@@ -856,7 +966,7 @@ export default function AdminSystemControl() {
                 <Button
                   variant="destructive"
                   onClick={handlePauseSystem}
-                  disabled={isProcessing || connectionStatus === 'disconnected'}
+                  disabled={isProcessing || connectionStatus === "disconnected"}
                   className="w-full"
                 >
                   {isProcessing ? (
@@ -874,11 +984,12 @@ export default function AdminSystemControl() {
               </div>
             )}
 
-            {connectionStatus === 'disconnected' && (
+            {connectionStatus === "disconnected" && (
               <Alert variant="destructive">
                 <WifiOff className="h-4 w-4" />
                 <AlertDescription>
-                  Pause/Resume controls disabled: Backend server is not connected.
+                  Pause/Resume controls disabled: Backend server is not
+                  connected.
                 </AlertDescription>
               </Alert>
             )}
@@ -895,17 +1006,21 @@ export default function AdminSystemControl() {
               </CardTitle>
               <HelpTip content="Switch between Simulation (paper), Dry-Run (no orders), and Live (real orders). Live requires a reason." />
             </div>
-            <CardDescription>
-              Change the global trading mode
-            </CardDescription>
+            <CardDescription>Change the global trading mode</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <div className="flex items-center gap-2"><Label htmlFor="modeSelect">Mode Selector</Label><HelpTip content="Choose the environment in which strategies operate." /></div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="modeSelect">Mode Selector</Label>
+                <HelpTip content="Choose the environment in which strategies operate." />
+              </div>
               <Select
                 value={selectedMode}
                 onValueChange={setSelectedMode}
-                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                disabled={
+                  systemState.killSwitchEnabled ||
+                  connectionStatus === "disconnected"
+                }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select trading mode" />
@@ -919,19 +1034,29 @@ export default function AdminSystemControl() {
             </div>
 
             <div>
-              <div className="flex items-center gap-2"><Label htmlFor="modeActor">Actor (optional)</Label><HelpTip content="Who is changing the mode (captured in audit)." /></div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="modeActor">Actor (optional)</Label>
+                <HelpTip content="Who is changing the mode (captured in audit)." />
+              </div>
               <Input
                 id="modeActor"
                 placeholder="Your email or identifier"
                 value={modeActor}
                 onChange={(e) => setModeActor(e.target.value)}
-                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                disabled={
+                  systemState.killSwitchEnabled ||
+                  connectionStatus === "disconnected"
+                }
               />
             </div>
 
             <div>
               <div className="flex items-center gap-2">
-                <Label htmlFor="modeReason">Reason {selectedMode.toLowerCase() === 'live' && '(required for live mode)'}</Label>
+                <Label htmlFor="modeReason">
+                  Reason{" "}
+                  {selectedMode.toLowerCase() === "live" &&
+                    "(required for live mode)"}
+                </Label>
                 <HelpTip content="Document why the mode is changing; mandatory when switching to Live to ensure accountability." />
               </div>
               <Textarea
@@ -939,20 +1064,24 @@ export default function AdminSystemControl() {
                 placeholder="Reason for changing trading mode"
                 value={modeReason}
                 onChange={(e) => setModeReason(e.target.value)}
-                disabled={systemState.killSwitchEnabled || connectionStatus === 'disconnected'}
+                disabled={
+                  systemState.killSwitchEnabled ||
+                  connectionStatus === "disconnected"
+                }
               />
             </div>
 
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   disabled={
                     isProcessing ||
                     systemState.killSwitchEnabled ||
-                    connectionStatus === 'disconnected' ||
+                    connectionStatus === "disconnected" ||
                     selectedMode === systemState.mode ||
-                    (selectedMode.toLowerCase() === 'live' && !modeReason.trim())
+                    (selectedMode.toLowerCase() === "live" &&
+                      !modeReason.trim())
                   }
                 >
                   <Settings className="h-4 w-4 mr-2" />
@@ -961,14 +1090,19 @@ export default function AdminSystemControl() {
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
-                  <AlertDialogTitle>Confirm Trading Mode Change</AlertDialogTitle>
+                  <AlertDialogTitle>
+                    Confirm Trading Mode Change
+                  </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Change trading mode from <strong>{systemState.mode.toUpperCase()}</strong> to <strong>{selectedMode.toUpperCase()}</strong>?
+                    Change trading mode from{" "}
+                    <strong>{systemState.mode.toUpperCase()}</strong> to{" "}
+                    <strong>{selectedMode.toUpperCase()}</strong>?
                   </AlertDialogDescription>
-                  {selectedMode.toLowerCase() === 'live' && (
+                  {selectedMode.toLowerCase() === "live" && (
                     <div className="mt-2 p-2 bg-yellow-100 rounded border border-yellow-300">
                       <AlertTriangle className="h-4 w-4 inline mr-1" />
-                      <strong>Warning:</strong> Switching to live mode will enable real trading.
+                      <strong>Warning:</strong> Switching to live mode will
+                      enable real trading.
                     </div>
                   )}
                 </AlertDialogHeader>
@@ -981,7 +1115,7 @@ export default function AdminSystemControl() {
               </AlertDialogContent>
             </AlertDialog>
 
-            {connectionStatus === 'disconnected' && (
+            {connectionStatus === "disconnected" && (
               <Alert variant="destructive">
                 <WifiOff className="h-4 w-4" />
                 <AlertDescription>
@@ -990,7 +1124,7 @@ export default function AdminSystemControl() {
               </Alert>
             )}
 
-            {systemState.isPaused && connectionStatus !== 'disconnected' && (
+            {systemState.isPaused && connectionStatus !== "disconnected" && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
@@ -1013,44 +1147,60 @@ export default function AdminSystemControl() {
             <HelpTip content="Emergency stop that blocks all trading instantly. Enabling requires an actor and a sufficiently detailed reason." />
           </div>
           <CardDescription>
-            Immediately halt all trading operations. Use only in emergency situations.
+            Immediately halt all trading operations. Use only in emergency
+            situations.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
             <div>
-              <div className="font-medium inline-flex items-center gap-1">Kill Switch Status <HelpTip content="Shows whether the emergency stop is currently active." /></div>
+              <div className="font-medium inline-flex items-center gap-1">
+                Kill Switch Status{" "}
+                <HelpTip content="Shows whether the emergency stop is currently active." />
+              </div>
               <div className="text-sm text-muted-foreground">
-                {systemState.killSwitchEnabled ? 'All trading disabled' : 'Trading allowed'}
+                {systemState.killSwitchEnabled
+                  ? "All trading disabled"
+                  : "Trading allowed"}
               </div>
             </div>
             <Switch
               checked={systemState.killSwitchEnabled}
               onCheckedChange={handleKillSwitchToggle}
-              disabled={isProcessing || connectionStatus === 'disconnected'}
+              disabled={isProcessing || connectionStatus === "disconnected"}
             />
           </div>
 
           {!systemState.killSwitchEnabled && (
             <div className="space-y-3">
               <div>
-                <div className="flex items-center gap-2"><Label htmlFor="killSwitchActor">Actor (required for enabling)</Label><HelpTip content="Who is enabling the kill switch (mandatory for audit)." /></div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="killSwitchActor">
+                    Actor (required for enabling)
+                  </Label>
+                  <HelpTip content="Who is enabling the kill switch (mandatory for audit)." />
+                </div>
                 <Input
                   id="killSwitchActor"
                   placeholder="Your email or identifier"
                   value={killSwitchActor}
                   onChange={(e) => setKillSwitchActor(e.target.value)}
-                  disabled={connectionStatus === 'disconnected'}
+                  disabled={connectionStatus === "disconnected"}
                 />
               </div>
               <div>
-                <div className="flex items-center gap-2"><Label htmlFor="killSwitchReason">Reason (mandatory when enabling, min 10 chars)</Label><HelpTip content="Explain the emergency clearly; minimum 10 characters to avoid vague entries." /></div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="killSwitchReason">
+                    Reason (mandatory when enabling, min 10 chars)
+                  </Label>
+                  <HelpTip content="Explain the emergency clearly; minimum 10 characters to avoid vague entries." />
+                </div>
                 <Textarea
                   id="killSwitchReason"
                   placeholder="Emergency reason for activating kill switch"
                   value={killSwitchReason}
                   onChange={(e) => setKillSwitchReason(e.target.value)}
-                  disabled={connectionStatus === 'disconnected'}
+                  disabled={connectionStatus === "disconnected"}
                 />
                 <div className="text-xs text-muted-foreground mt-1">
                   {killSwitchReason.length} characters (minimum 10 required)
@@ -1059,7 +1209,7 @@ export default function AdminSystemControl() {
             </div>
           )}
 
-          {connectionStatus === 'disconnected' && (
+          {connectionStatus === "disconnected" && (
             <Alert variant="destructive">
               <WifiOff className="h-4 w-4" />
               <AlertDescription>
@@ -1069,7 +1219,6 @@ export default function AdminSystemControl() {
           )}
         </CardContent>
       </Card>
-
     </div>
   );
 }

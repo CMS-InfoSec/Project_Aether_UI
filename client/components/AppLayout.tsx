@@ -194,9 +194,10 @@ export default function AppLayout() {
         }
         const s = await apiRequest("/api/v1/system/health/ready");
         if (s.ok) {
-          const j = await s.json().catch(() => ({} as any));
+          const j = await s.json().catch(() => ({}) as any);
           if (!cancelled) {
-            const ok = (j && (j.ok === true || j.data?.ok === true)) ? true : false;
+            const ok =
+              j && (j.ok === true || j.data?.ok === true) ? true : false;
             setStatusText(ok ? "Ready" : "Degraded");
             setKillSwitch(false);
           }
@@ -604,14 +605,18 @@ export default function AppLayout() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <Label htmlFor="adminApiKey">Admin API Key (X-API-Key)</Label>
+                          <Label htmlFor="adminApiKey">
+                            Admin API Key (X-API-Key)
+                          </Label>
                           <HelpTip content="Optional key for admin/system endpoints. Stored locally and sent as X-API-Key when needed." />
                         </div>
                         <Input
                           id="adminApiKey"
                           type="password"
                           placeholder="Enter admin API key"
-                          defaultValue={localStorage.getItem("aether-api-key") || ""}
+                          defaultValue={
+                            localStorage.getItem("aether-api-key") || ""
+                          }
                         />
                       </div>
                       <div className="flex items-center space-x-2">
@@ -633,7 +638,8 @@ export default function AppLayout() {
                             }
                             try {
                               const url =
-                                base.replace(/\/+$/, "") + "/api/v1/system/health/live";
+                                base.replace(/\/+$/, "") +
+                                "/api/v1/system/health/live";
                               const s = performance.now();
                               const r = await apiFetch(url, { admin: true });
                               const latency = Math.round(performance.now() - s);
@@ -688,7 +694,8 @@ export default function AppLayout() {
                             );
                             if (ws) localStorage.setItem("aether-ws-url", ws);
                             else localStorage.removeItem("aether-ws-url");
-                            if (key) localStorage.setItem("aether-api-key", key);
+                            if (key)
+                              localStorage.setItem("aether-api-key", key);
                             else localStorage.removeItem("aether-api-key");
                             toast({
                               title: "Saved",

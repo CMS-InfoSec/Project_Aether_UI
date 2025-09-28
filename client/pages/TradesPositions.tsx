@@ -97,7 +97,12 @@ interface Trade {
 }
 
 // Explainability state for trade-level explanation
-interface TradeExplainState { loading: boolean; error: string | null; data: any | null; showJson: boolean; }
+interface TradeExplainState {
+  loading: boolean;
+  error: string | null;
+  data: any | null;
+  showJson: boolean;
+}
 
 interface Position {
   id: string;
@@ -291,7 +296,7 @@ export default function TradesPositions() {
         },
         body: JSON.stringify({
           symbol,
-          trade_id: tradeId
+          trade_id: tradeId,
         }),
       });
 
@@ -490,7 +495,8 @@ export default function TradesPositions() {
       ws.onmessage = (evt) => {
         try {
           const msg = JSON.parse(evt.data);
-          const trade = msg?.type === "trade" ? (msg.payload as Trade) : (msg as Trade);
+          const trade =
+            msg?.type === "trade" ? (msg.payload as Trade) : (msg as Trade);
           if (trade && trade.id) {
             setTrades((prev) => {
               const mapped = new Map(prev.map((t) => [t.id, t]));
@@ -656,7 +662,12 @@ export default function TradesPositions() {
   };
 
   const [tradeExplainId, setTradeExplainId] = useState<string>("");
-  const [tradeExplain, setTradeExplain] = useState<TradeExplainState>({ loading:false, error:null, data:null, showJson:false });
+  const [tradeExplain, setTradeExplain] = useState<TradeExplainState>({
+    loading: false,
+    error: null,
+    data: null,
+    showJson: false,
+  });
   const [explainOpen, setExplainOpen] = useState<boolean>(false);
 
   const totalPages = Math.ceil(
@@ -921,7 +932,9 @@ export default function TradesPositions() {
                         }
                         const j = await res.json();
                         setDecision(j);
-                        setExecSide((j.action || j.recommended || "buy") as any);
+                        setExecSide(
+                          (j.action || j.recommended || "buy") as any,
+                        );
                         setExecSize(size);
                       } catch (e: any) {
                         toast({
@@ -1034,7 +1047,10 @@ export default function TradesPositions() {
                     />
                   </div>
                   <Button
-                    disabled={consoleLoading || !((decision?.symbol || symbol) && execSize > 0)}
+                    disabled={
+                      consoleLoading ||
+                      !((decision?.symbol || symbol) && execSize > 0)
+                    }
                     onClick={() => setConfirmOpen(true)}
                   >
                     Execute Trade
@@ -1081,7 +1097,7 @@ export default function TradesPositions() {
                                     "Content-Type": "application/json",
                                   },
                                   body: JSON.stringify({
-                                    symbol: (decision?.symbol || symbol),
+                                    symbol: decision?.symbol || symbol,
                                     action: execSide,
                                     amount: execSize,
                                   }),
@@ -1098,7 +1114,9 @@ export default function TradesPositions() {
                               const j = await res.json();
                               toast({
                                 title: "Order accepted",
-                                description: j.id ? `Execution ${j.id}` : "Execution submitted",
+                                description: j.id
+                                  ? `Execution ${j.id}`
+                                  : "Execution submitted",
                               });
                               fetchTrades(1);
                             } catch (e: any) {
@@ -1363,78 +1381,170 @@ export default function TradesPositions() {
                 {isAdmin && (
                   <div className="mb-4 p-3 border rounded-md bg-muted/30">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="font-medium">Model Explanation (Admin)</div>
+                      <div className="font-medium">
+                        Model Explanation (Admin)
+                      </div>
                       <div className="flex items-center gap-2">
                         <HelpTip content="Fetch SHAP/feature importances for a trade. Endpoint: /ai/explain/{trade_id}." />
-                        <Button variant="outline" size="sm" onClick={()=> setExplainOpen((v)=> !v)}>{explainOpen ? 'Hide' : 'Show'}</Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setExplainOpen((v) => !v)}
+                        >
+                          {explainOpen ? "Hide" : "Show"}
+                        </Button>
                       </div>
                     </div>
                     {explainOpen && (
                       <>
                         <div className="flex items-center gap-2">
-                          <Input placeholder="Enter trade ID" value={tradeExplainId} onChange={(e)=> setTradeExplainId(e.target.value)} className="max-w-sm" />
+                          <Input
+                            placeholder="Enter trade ID"
+                            value={tradeExplainId}
+                            onChange={(e) => setTradeExplainId(e.target.value)}
+                            className="max-w-sm"
+                          />
                           <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async ()=>{
-                          if (!tradeExplainId.trim()) { setTradeExplain((s)=> ({...s, error:'Trade ID required'})); return; }
-                          setTradeExplain({ loading:true, error:null, data:null, showJson:false });
-                          try {
-                            const r = await apiFetch(`/ai/explain/${encodeURIComponent(tradeExplainId.trim())}`);
-                            if (!r.ok) {
-                              const j = await r.json().catch(()=> ({}));
-                              throw new Error(j.detail || `Explain HTTP ${r.status}`);
-                            }
-                            const j = await r.json();
-                            setTradeExplain({ loading:false, error:null, data:j, showJson:false });
-                          } catch(e:any) {
-                            setTradeExplain({ loading:false, error: e?.message || 'Failed to load explanation', data:null, showJson:false });
-                          }
-                        }}
-                      >
-                        Fetch Explanation
-                      </Button>
-                      {tradeExplain.data && (
-                        <Button variant="ghost" size="sm" onClick={()=> setTradeExplain((s)=> ({...s, showJson: !s.showJson}))}>
-                          {tradeExplain.showJson ? 'Hide JSON' : 'Show JSON'}
-                        </Button>
-                      )}
-                    </div>
-                    {tradeExplain.loading && (<div className="text-sm text-muted-foreground mt-2">Loading…</div>)}
-                    {tradeExplain.error && (<div className="text-sm text-red-600 mt-2">{tradeExplain.error}</div>)}
-                    {tradeExplain.data && (
-                      <div className="grid md:grid-cols-2 gap-3 mt-3">
-                        <div className="h-56">
-                          {(() => {
-                            const raw = tradeExplain.data;
-                            const src = raw?.shap?.top_features || raw?.top_features || raw?.features || [];
-                            const items = Array.isArray(src) ? src : [];
-                            const bars = items.map((f:any)=> ({
-                              name: f.feature || f.name || String(f[0]||''),
-                              value: typeof f.weight === 'number' ? Math.abs(f.weight) : (typeof f.shap === 'number' ? Math.abs(f.shap) : (typeof f.value === 'number' ? Math.abs(f.value) : 0)),
-                            })).filter((x:any)=> x.name);
-                            if (!bars.length) return <div className="text-xs text-muted-foreground">No feature importance data</div>;
-                            return (
-                              <ResponsiveContainer width="100%" height="100%">
-                                <RechartsBarChart data={bars.slice(0,10)} layout="vertical" margin={{ left: 24 }}>
-                                  <XAxis type="number" />
-                                  <YAxis dataKey="name" type="category" width={120} />
-                                  <RechartsTooltip />
-                                  <Bar dataKey="value" fill="#2563eb" />
-                                </RechartsBarChart>
-                              </ResponsiveContainer>
-                            );
-                          })()}
-                        </div>
-                        <div className="text-xs bg-background border rounded p-2 overflow-auto max-h-56">
-                          {tradeExplain.showJson ? (
-                            <pre className="whitespace-pre-wrap">{JSON.stringify(tradeExplain.data, null, 2)}</pre>
-                          ) : (
-                            <div className="text-muted-foreground">Toggle JSON to view raw explanation</div>
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              if (!tradeExplainId.trim()) {
+                                setTradeExplain((s) => ({
+                                  ...s,
+                                  error: "Trade ID required",
+                                }));
+                                return;
+                              }
+                              setTradeExplain({
+                                loading: true,
+                                error: null,
+                                data: null,
+                                showJson: false,
+                              });
+                              try {
+                                const r = await apiFetch(
+                                  `/ai/explain/${encodeURIComponent(tradeExplainId.trim())}`,
+                                );
+                                if (!r.ok) {
+                                  const j = await r.json().catch(() => ({}));
+                                  throw new Error(
+                                    j.detail || `Explain HTTP ${r.status}`,
+                                  );
+                                }
+                                const j = await r.json();
+                                setTradeExplain({
+                                  loading: false,
+                                  error: null,
+                                  data: j,
+                                  showJson: false,
+                                });
+                              } catch (e: any) {
+                                setTradeExplain({
+                                  loading: false,
+                                  error:
+                                    e?.message || "Failed to load explanation",
+                                  data: null,
+                                  showJson: false,
+                                });
+                              }
+                            }}
+                          >
+                            Fetch Explanation
+                          </Button>
+                          {tradeExplain.data && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setTradeExplain((s) => ({
+                                  ...s,
+                                  showJson: !s.showJson,
+                                }))
+                              }
+                            >
+                              {tradeExplain.showJson
+                                ? "Hide JSON"
+                                : "Show JSON"}
+                            </Button>
                           )}
                         </div>
-                      </div>
-                    )}
+                        {tradeExplain.loading && (
+                          <div className="text-sm text-muted-foreground mt-2">
+                            Loading…
+                          </div>
+                        )}
+                        {tradeExplain.error && (
+                          <div className="text-sm text-red-600 mt-2">
+                            {tradeExplain.error}
+                          </div>
+                        )}
+                        {tradeExplain.data && (
+                          <div className="grid md:grid-cols-2 gap-3 mt-3">
+                            <div className="h-56">
+                              {(() => {
+                                const raw = tradeExplain.data;
+                                const src =
+                                  raw?.shap?.top_features ||
+                                  raw?.top_features ||
+                                  raw?.features ||
+                                  [];
+                                const items = Array.isArray(src) ? src : [];
+                                const bars = items
+                                  .map((f: any) => ({
+                                    name:
+                                      f.feature || f.name || String(f[0] || ""),
+                                    value:
+                                      typeof f.weight === "number"
+                                        ? Math.abs(f.weight)
+                                        : typeof f.shap === "number"
+                                          ? Math.abs(f.shap)
+                                          : typeof f.value === "number"
+                                            ? Math.abs(f.value)
+                                            : 0,
+                                  }))
+                                  .filter((x: any) => x.name);
+                                if (!bars.length)
+                                  return (
+                                    <div className="text-xs text-muted-foreground">
+                                      No feature importance data
+                                    </div>
+                                  );
+                                return (
+                                  <ResponsiveContainer
+                                    width="100%"
+                                    height="100%"
+                                  >
+                                    <RechartsBarChart
+                                      data={bars.slice(0, 10)}
+                                      layout="vertical"
+                                      margin={{ left: 24 }}
+                                    >
+                                      <XAxis type="number" />
+                                      <YAxis
+                                        dataKey="name"
+                                        type="category"
+                                        width={120}
+                                      />
+                                      <RechartsTooltip />
+                                      <Bar dataKey="value" fill="#2563eb" />
+                                    </RechartsBarChart>
+                                  </ResponsiveContainer>
+                                );
+                              })()}
+                            </div>
+                            <div className="text-xs bg-background border rounded p-2 overflow-auto max-h-56">
+                              {tradeExplain.showJson ? (
+                                <pre className="whitespace-pre-wrap">
+                                  {JSON.stringify(tradeExplain.data, null, 2)}
+                                </pre>
+                              ) : (
+                                <div className="text-muted-foreground">
+                                  Toggle JSON to view raw explanation
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

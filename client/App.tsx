@@ -6,7 +6,13 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 import { useState, useEffect } from "react";
 
 // Pages
@@ -79,7 +85,7 @@ const AppRouter = () => {
       if (response.status === 404) {
         setFoundersExist(true);
       } else if (response.ok) {
-        const data = await response.json().catch(() => ({} as any));
+        const data = await response.json().catch(() => ({}) as any);
         console.log("Bootstrap status:", data);
         setFoundersExist(!!data.foundersExist);
       } else {
@@ -192,7 +198,14 @@ const AppRouter = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Signup />} />
-      <Route path="/reset/confirm" element={<ErrorBoundary><ResetConfirm /></ErrorBoundary>} />
+      <Route
+        path="/reset/confirm"
+        element={
+          <ErrorBoundary>
+            <ResetConfirm />
+          </ErrorBoundary>
+        }
+      />
       <Route path="/" element={<AppLayout />}>
         {/* Default redirect to dashboard */}
         <Route

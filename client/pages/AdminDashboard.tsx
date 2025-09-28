@@ -542,21 +542,31 @@ export default function AdminDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const allowedTabs = new Set(["controls","governance","plugins","review","config","feedback","portfolio","automation","reports"]);
+  const allowedTabs = new Set([
+    "controls",
+    "governance",
+    "plugins",
+    "review",
+    "config",
+    "feedback",
+    "portfolio",
+    "automation",
+    "reports",
+  ]);
   const [tab, setTab] = useState<string>(() => {
-    const t = searchParams.get('tab') || 'controls';
-    return allowedTabs.has(t) ? t : 'controls';
+    const t = searchParams.get("tab") || "controls";
+    return allowedTabs.has(t) ? t : "controls";
   });
 
   useEffect(() => {
-    const t = searchParams.get('tab') || 'controls';
+    const t = searchParams.get("tab") || "controls";
     if (allowedTabs.has(t) && t !== tab) setTab(t);
   }, [location.search]);
 
   const onChangeTab = (value: string) => {
     setTab(value);
     const params = new URLSearchParams(location.search);
-    params.set('tab', value);
+    params.set("tab", value);
     navigate({ search: params.toString() }, { replace: true });
   };
 
@@ -565,7 +575,9 @@ export default function AdminDashboard() {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Admin Dashboard
+            </h1>
             <HelpTip content="Admin home for controls, governance, reporting, and alerts. Use tabs to navigate tools." />
           </div>
           <p className="text-muted-foreground">
@@ -594,15 +606,60 @@ export default function AdminDashboard() {
 
       <Tabs value={tab} onValueChange={onChangeTab} className="space-y-6">
         <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
-          <TabsTrigger value="controls"><span className="inline-flex items-center gap-1">Controls <HelpTip content="Pause/resume trading, change modes, and access the kill switch." /></span></TabsTrigger>
-          <TabsTrigger value="governance"><span className="inline-flex items-center gap-1">Governance <HelpTip content="Review proposals and governance decisions affecting the system." /></span></TabsTrigger>
-          <TabsTrigger value="plugins"><span className="inline-flex items-center gap-1">Plugins <HelpTip content="Manage strategy plugins and extensions." /></span></TabsTrigger>
-          <TabsTrigger value="review"><span className="inline-flex items-center gap-1">Strategy Review <HelpTip content="Approve or reject strategy changes and promotions." /></span></TabsTrigger>
-          <TabsTrigger value="config"><span className="inline-flex items-center gap-1">Config <HelpTip content="Inspect and update system configuration safely." /></span></TabsTrigger>
-          <TabsTrigger value="feedback"><span className="inline-flex items-center gap-1">Feedback <HelpTip content="View and triage user/admin feedback for improvements." /></span></TabsTrigger>
-          <TabsTrigger value="portfolio"><span className="inline-flex items-center gap-1">Portfolio <HelpTip content="Portfolio monitoring and management tools." /></span></TabsTrigger>
-          <TabsTrigger value="automation"><span className="inline-flex items-center gap-1">Automation <HelpTip content="Automation and social integrations to streamline workflows." /></span></TabsTrigger>
-          <TabsTrigger value="reports"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Performance dashboards, analytics, and notifications." /></span></TabsTrigger>
+          <TabsTrigger value="controls">
+            <span className="inline-flex items-center gap-1">
+              Controls{" "}
+              <HelpTip content="Pause/resume trading, change modes, and access the kill switch." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="governance">
+            <span className="inline-flex items-center gap-1">
+              Governance{" "}
+              <HelpTip content="Review proposals and governance decisions affecting the system." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="plugins">
+            <span className="inline-flex items-center gap-1">
+              Plugins{" "}
+              <HelpTip content="Manage strategy plugins and extensions." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="review">
+            <span className="inline-flex items-center gap-1">
+              Strategy Review{" "}
+              <HelpTip content="Approve or reject strategy changes and promotions." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="config">
+            <span className="inline-flex items-center gap-1">
+              Config{" "}
+              <HelpTip content="Inspect and update system configuration safely." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="feedback">
+            <span className="inline-flex items-center gap-1">
+              Feedback{" "}
+              <HelpTip content="View and triage user/admin feedback for improvements." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="portfolio">
+            <span className="inline-flex items-center gap-1">
+              Portfolio{" "}
+              <HelpTip content="Portfolio monitoring and management tools." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="automation">
+            <span className="inline-flex items-center gap-1">
+              Automation{" "}
+              <HelpTip content="Automation and social integrations to streamline workflows." />
+            </span>
+          </TabsTrigger>
+          <TabsTrigger value="reports">
+            <span className="inline-flex items-center gap-1">
+              Reports{" "}
+              <HelpTip content="Performance dashboards, analytics, and notifications." />
+            </span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="controls" className="space-y-6">
@@ -612,8 +669,18 @@ export default function AdminDashboard() {
         <TabsContent value="governance" className="space-y-6">
           <Tabs defaultValue="proposals">
             <TabsList className="mb-4">
-              <TabsTrigger value="proposals"><span className="inline-flex items-center gap-1">Proposals <HelpTip content="Review, vote, and track governance proposals and outcomes." /></span></TabsTrigger>
-              <TabsTrigger value="plugins"><span className="inline-flex items-center gap-1">Strategy Plugins <HelpTip content="Manage external strategy modules: enable, configure, and validate." /></span></TabsTrigger>
+              <TabsTrigger value="proposals">
+                <span className="inline-flex items-center gap-1">
+                  Proposals{" "}
+                  <HelpTip content="Review, vote, and track governance proposals and outcomes." />
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="plugins">
+                <span className="inline-flex items-center gap-1">
+                  Strategy Plugins{" "}
+                  <HelpTip content="Manage external strategy modules: enable, configure, and validate." />
+                </span>
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="proposals">
               <Governance />
@@ -764,12 +831,35 @@ export default function AdminDashboard() {
           {/* Reports inner tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
-              <TabsTrigger value="overview"><span className="inline-flex items-center gap-1">Overview <HelpTip content="Key metrics and charts at a glance." /></span></TabsTrigger>
-              <TabsTrigger value="reporting"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Detailed daily and weekly reports." /></span></TabsTrigger>
-              <TabsTrigger value="per-asset"><span className="inline-flex items-center gap-1">Per-Asset <HelpTip content="Deep dive into each asset's metrics." /></span></TabsTrigger>
-              <TabsTrigger value="data-quality"><span className="inline-flex items-center gap-1">Data Quality <HelpTip content="Monitor anomalies in market data feeds and ingestion." /></span></TabsTrigger>
+              <TabsTrigger value="overview">
+                <span className="inline-flex items-center gap-1">
+                  Overview{" "}
+                  <HelpTip content="Key metrics and charts at a glance." />
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="reporting">
+                <span className="inline-flex items-center gap-1">
+                  Reports{" "}
+                  <HelpTip content="Detailed daily and weekly reports." />
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="per-asset">
+                <span className="inline-flex items-center gap-1">
+                  Per-Asset{" "}
+                  <HelpTip content="Deep dive into each asset's metrics." />
+                </span>
+              </TabsTrigger>
+              <TabsTrigger value="data-quality">
+                <span className="inline-flex items-center gap-1">
+                  Data Quality{" "}
+                  <HelpTip content="Monitor anomalies in market data feeds and ingestion." />
+                </span>
+              </TabsTrigger>
               <TabsTrigger value="notifications" className="relative">
-                <span className="inline-flex items-center gap-1">Notifications <HelpTip content="System alerts and messages; unread count shown." /></span>
+                <span className="inline-flex items-center gap-1">
+                  Notifications{" "}
+                  <HelpTip content="System alerts and messages; unread count shown." />
+                </span>
                 {notificationData?.summary.unread > 0 && (
                   <Badge className="ml-2 h-5 w-5 rounded-full p-0 text-xs">
                     {notificationData.summary.unread}
@@ -1022,7 +1112,8 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Total Return <HelpTip content="Absolute profit/loss in currency over the selected period." />
+                                Total Return{" "}
+                                <HelpTip content="Absolute profit/loss in currency over the selected period." />
                               </p>
                               <p className="text-lg font-semibold text-accent">
                                 {formatCurrency(dailyReport.totalReturn)}
@@ -1030,7 +1121,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Performance <HelpTip content="Percentage return over the selected period." />
+                                Performance{" "}
+                                <HelpTip content="Percentage return over the selected period." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {formatPercentage(dailyReport.avgPerformance)}
@@ -1038,7 +1130,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Sharpe Ratio <HelpTip content="Risk-adjusted return: (return − risk‑free rate) ÷ volatility. Values >1 are generally good." />
+                                Sharpe Ratio{" "}
+                                <HelpTip content="Risk-adjusted return: (return − risk‑free rate) ÷ volatility. Values >1 are generally good." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {dailyReport.riskMetrics.sharpeRatio.toFixed(2)}
@@ -1046,7 +1139,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Max Drawdown <HelpTip content="Largest peak‑to‑trough decline over the period. Lower magnitude indicates better capital preservation." />
+                                Max Drawdown{" "}
+                                <HelpTip content="Largest peak‑to‑trough decline over the period. Lower magnitude indicates better capital preservation." />
                               </p>
                               <p className="text-lg font-semibold text-destructive">
                                 {formatPercentage(
@@ -1126,7 +1220,8 @@ export default function AdminDashboard() {
                           <div className="grid grid-cols-2 gap-4">
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Weekly Return <HelpTip content="Total P/L in currency over the last 7 days." />
+                                Weekly Return{" "}
+                                <HelpTip content="Total P/L in currency over the last 7 days." />
                               </p>
                               <p className="text-lg font-semibold text-accent">
                                 {formatCurrency(weeklyReport.weeklyReturn)}
@@ -1134,7 +1229,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Win Rate <HelpTip content="Portion of trades that were profitable (wins ÷ total trades)." />
+                                Win Rate{" "}
+                                <HelpTip content="Portion of trades that were profitable (wins ÷ total trades)." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {formatPercentage(weeklyReport.winRate * 100)}
@@ -1142,7 +1238,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Total Trades <HelpTip content="Number of executed trades during the week." />
+                                Total Trades{" "}
+                                <HelpTip content="Number of executed trades during the week." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {weeklyReport.totalTrades}
@@ -1150,7 +1247,8 @@ export default function AdminDashboard() {
                             </div>
                             <div>
                               <p className="text-sm font-medium text-muted-foreground inline-flex items-center gap-1">
-                                Avg Hold Time <HelpTip content="Average time positions were held before closing." />
+                                Avg Hold Time{" "}
+                                <HelpTip content="Average time positions were held before closing." />
                               </p>
                               <p className="text-lg font-semibold">
                                 {weeklyReport.avgHoldTime.toFixed(1)}h
@@ -1160,7 +1258,8 @@ export default function AdminDashboard() {
                           <div className="pt-2 border-t space-y-1">
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground inline-flex items-center gap-1">
-                                Information Ratio <HelpTip content="Excess return vs benchmark per unit of tracking error (std. dev. of active returns)." />
+                                Information Ratio{" "}
+                                <HelpTip content="Excess return vs benchmark per unit of tracking error (std. dev. of active returns)." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.informationRatio.toFixed(
@@ -1170,7 +1269,8 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground inline-flex items-center gap-1">
-                                Calmar Ratio <HelpTip content="Return divided by maximum drawdown; higher indicates better drawdown-adjusted performance." />
+                                Calmar Ratio{" "}
+                                <HelpTip content="Return divided by maximum drawdown; higher indicates better drawdown-adjusted performance." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.calmarRatio.toFixed(
@@ -1180,7 +1280,8 @@ export default function AdminDashboard() {
                             </div>
                             <div className="flex items-center justify-between text-sm">
                               <span className="text-muted-foreground inline-flex items-center gap-1">
-                                Sortino Ratio <HelpTip content="Like Sharpe but only penalizes downside (bad) volatility." />
+                                Sortino Ratio{" "}
+                                <HelpTip content="Like Sharpe but only penalizes downside (bad) volatility." />
                               </span>
                               <span>
                                 {weeklyReport.performanceMetrics.sortinoRatio.toFixed(
@@ -1399,15 +1500,60 @@ export default function AdminDashboard() {
                           <table className="w-full">
                             <thead>
                               <tr className="border-b">
-                                <th className="text-left p-2"><div className="inline-flex items-center gap-1">Asset <HelpTip content="Ticker and asset name." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Price <HelpTip content="Latest traded price." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Daily % <HelpTip content="Price percent change since yesterday." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Weekly % <HelpTip content="Price percent change over the last 7 days." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Monthly % <HelpTip content="Return percent over the past month." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Allocation <HelpTip content="Percent of portfolio invested in the asset." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Volatility <HelpTip content="Return variability; higher means more risk." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Sharpe <HelpTip content="Risk-adjusted return: (return − risk‑free) ÷ volatility." /></div></th>
-                                <th className="text-right p-2"><div className="inline-flex items-center gap-1 justify-end">Trades <HelpTip content="Number of trades used to compute these metrics." /></div></th>
+                                <th className="text-left p-2">
+                                  <div className="inline-flex items-center gap-1">
+                                    Asset{" "}
+                                    <HelpTip content="Ticker and asset name." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Price{" "}
+                                    <HelpTip content="Latest traded price." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Daily %{" "}
+                                    <HelpTip content="Price percent change since yesterday." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Weekly %{" "}
+                                    <HelpTip content="Price percent change over the last 7 days." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Monthly %{" "}
+                                    <HelpTip content="Return percent over the past month." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Allocation{" "}
+                                    <HelpTip content="Percent of portfolio invested in the asset." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Volatility{" "}
+                                    <HelpTip content="Return variability; higher means more risk." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Sharpe{" "}
+                                    <HelpTip content="Risk-adjusted return: (return − risk‑free) ÷ volatility." />
+                                  </div>
+                                </th>
+                                <th className="text-right p-2">
+                                  <div className="inline-flex items-center gap-1 justify-end">
+                                    Trades{" "}
+                                    <HelpTip content="Number of trades used to compute these metrics." />
+                                  </div>
+                                </th>
                               </tr>
                             </thead>
                             <tbody>
@@ -1498,7 +1644,7 @@ export default function AdminDashboard() {
                         </CardDescription>
                       </div>
                       <div className="flex items-center space-x-2">
-                                                <Button
+                        <Button
                           variant="outline"
                           size="sm"
                           onClick={loadNotifications}

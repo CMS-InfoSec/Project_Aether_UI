@@ -39,7 +39,9 @@ function shouldAddAdminKey(url: string, init?: ApiFetchInit): boolean {
   try {
     const u = new URL(url);
     // Admin-like namespaces including models, and handle optional /v1 prefix
-    return /\/api(?:\/v1)?\/(admin|system|governance|automation|models)\b/.test(u.pathname);
+    return /\/api(?:\/v1)?\/(admin|system|governance|automation|models)\b/.test(
+      u.pathname,
+    );
   } catch {
     return false;
   }
@@ -65,8 +67,13 @@ export async function apiFetch(
   // Rewrite /api/... to /api/v1/... when targeting same-origin backend
   try {
     const u = new URL(urlStr, base);
-    const sameOrigin = !/^https?:/i.test(urlStr) || u.origin === new URL(base).origin;
-    if (sameOrigin && /\/api\//.test(u.pathname) && !/\/api\/v1\//.test(u.pathname)) {
+    const sameOrigin =
+      !/^https?:/i.test(urlStr) || u.origin === new URL(base).origin;
+    if (
+      sameOrigin &&
+      /\/api\//.test(u.pathname) &&
+      !/\/api\/v1\//.test(u.pathname)
+    ) {
       u.pathname = u.pathname.replace(/\/api\//, "/api/v1/");
       urlStr = u.toString();
     }
@@ -81,7 +88,8 @@ export async function apiFetch(
   );
 
   // Attach Authorization unless disabled
-  let access = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
+  let access =
+    typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
   if (!access && typeof window !== "undefined") {
     access = sessionStorage.getItem("access_token");
   }
@@ -92,8 +100,13 @@ export async function apiFetch(
   // Add admin key when needed (from env/config only)
   if (shouldAddAdminKey(urlStr, init) && !headers.has("X-API-Key")) {
     let envKey: string | undefined = undefined;
-    try { envKey = (import.meta as any)?.env?.VITE_API_KEY; } catch {}
-    const cfgKey = typeof window !== "undefined" ? localStorage.getItem("aether-api-key") || undefined : undefined;
+    try {
+      envKey = (import.meta as any)?.env?.VITE_API_KEY;
+    } catch {}
+    const cfgKey =
+      typeof window !== "undefined"
+        ? localStorage.getItem("aether-api-key") || undefined
+        : undefined;
     const apiKey = envKey || cfgKey;
     if (apiKey) headers.set("X-API-Key", apiKey);
   }
@@ -109,7 +122,7 @@ export async function apiFetch(
         xhr.timeout = 15000;
 
         // Set headers
-        const hdrs = new Headers(init?.headers as HeadersInit || headers);
+        const hdrs = new Headers((init?.headers as HeadersInit) || headers);
         hdrs.forEach((value, key) => xhr.setRequestHeader(key, value));
 
         if (init && init.credentials === "include") {
@@ -137,7 +150,10 @@ export async function apiFetch(
           const bodyAllowed = !nullBodyStatuses.has(status);
           let response: Response;
           if (bodyAllowed) {
-            const body = xhr.response instanceof Blob ? xhr.response : new Blob([xhr.response]);
+            const body =
+              xhr.response instanceof Blob
+                ? xhr.response
+                : new Blob([xhr.response]);
             response = new Response(body, {
               status,
               statusText,
@@ -154,7 +170,8 @@ export async function apiFetch(
         };
 
         xhr.onerror = () => reject(new TypeError("Network request failed"));
-        xhr.ontimeout = () => reject(new TypeError("Network request timed out"));
+        xhr.ontimeout = () =>
+          reject(new TypeError("Network request timed out"));
 
         // Send body
         if (init && init.body) {
@@ -172,7 +189,8 @@ export async function apiFetch(
   const doFetch = async (): Promise<Response> => {
     // If window.fetch is present but appears to be patched by third-party scripts (like FullStory),
     // prefer the XHR fallback. We detect a native fetch by checking its source string for "[native code]".
-    const hasWindowFetch = typeof window !== "undefined" && (window as any).fetch;
+    const hasWindowFetch =
+      typeof window !== "undefined" && (window as any).fetch;
     let fetchImpl: any = null;
 
     if (hasWindowFetch) {
@@ -221,8 +239,12 @@ export async function apiFetch(
         const ok = await tokenRefresher();
         if (ok) {
           // Update Authorization header with the latest token
-          let newAccess = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
-          if (!newAccess && typeof window !== "undefined") newAccess = sessionStorage.getItem("access_token");
+          let newAccess =
+            typeof window !== "undefined"
+              ? localStorage.getItem("access_token")
+              : null;
+          if (!newAccess && typeof window !== "undefined")
+            newAccess = sessionStorage.getItem("access_token");
           if (newAccess) headers.set("Authorization", `Bearer ${newAccess}`);
           res = await apiFetch(urlStr, { ...(init || {}), _retried: true });
         }
