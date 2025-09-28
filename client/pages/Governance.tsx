@@ -60,6 +60,7 @@ import { toast } from "@/hooks/use-toast";
 import ASCModelsPanel from "./components/ASCModelsPanel";
 import ComplianceAuditTab from "./components/ComplianceAuditTab";
 import ModelLineagePanel from "./components/ModelLineagePanel";
+import ModelComparisonTab from "./components/ModelComparisonTab";
 import RegulatoryReportsTab from "./components/RegulatoryReportsTab";
 
 // Types
@@ -469,7 +470,7 @@ export default function Governance() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-8">
+        <TabsList className="grid w-full grid-cols-9">
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
           <TabsTrigger value="voting">Voting</TabsTrigger>
           <TabsTrigger value="deploy">Deploy</TabsTrigger>
@@ -477,6 +478,7 @@ export default function Governance() {
           <TabsTrigger value="compliance">Compliance & Audit</TabsTrigger>
           <TabsTrigger value="regulatory-reports">Regulatory Reports</TabsTrigger>
           <TabsTrigger value="model-lineage">Model Lineage</TabsTrigger>
+          <TabsTrigger value="model-comparison">Model Comparison</TabsTrigger>
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
         </TabsList>
 
@@ -772,6 +774,10 @@ export default function Governance() {
 
         <TabsContent value="model-lineage" className="space-y-6">
           <ModelLineagePanel />
+        </TabsContent>
+
+        <TabsContent value="model-comparison" className="space-y-6">
+          <ModelComparisonTab />
         </TabsContent>
 
         <TabsContent value="feedback" className="space-y-6">
