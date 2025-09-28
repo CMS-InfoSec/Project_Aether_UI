@@ -48,6 +48,10 @@ export default function TradeDetails() {
   const [explainData, setExplainData] = useState<any | null>(null);
   const [showJson, setShowJson] = useState(false);
 
+  const [execLoading, setExecLoading] = useState(false);
+  const [execError, setExecError] = useState<string | null>(null);
+  const [execData, setExecData] = useState<any | null>(null);
+
   const loadTrade = async () => {
     if (!id) return;
     setLoading(true);
