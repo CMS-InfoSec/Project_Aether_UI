@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import HelpTip from "@/components/ui/help-tip";
 import apiFetch from "@/lib/apiClient";
 import { AlertTriangle, Activity, RefreshCw } from "lucide-react";
+import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid } from "recharts";
 
 interface BreachItem {
   id?: string;
@@ -47,6 +48,7 @@ export default function RiskMonitoringPanel() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<number | null>(null);
+  const [perf, setPerf] = useState<Array<{ date: string; returns: number }>>([]);
   const timerRef = useRef<number | null>(null);
 
   const load = async () => {
@@ -56,7 +58,10 @@ export default function RiskMonitoringPanel() {
       // Breaches
       let breachesData: any = null;
       try {
-        const r = await apiFetch("/api/risk/breaches");
+        let r = await apiFetch("/risk/breaches");
+        if (!r.ok) {
+          r = await apiFetch("/api/risk/breaches");
+        }
         if (r.ok) {
           breachesData = await r.json().catch(() => null);
         } else if (r.status !== 404) {
@@ -64,7 +69,6 @@ export default function RiskMonitoringPanel() {
           throw new Error(j?.detail || `Risk breaches HTTP ${r.status}`);
         }
       } catch (e: any) {
-        // If endpoint missing, silently ignore to avoid blocking metrics
         if (String(e?.message || "").includes("Risk breaches")) setError(e.message);
       }
       const items: BreachItem[] = Array.isArray(breachesData)
@@ -88,6 +92,16 @@ export default function RiskMonitoringPanel() {
       }
       if (!metricsText) throw new Error("Metrics endpoint unavailable");
       setPromText(metricsText);
+
+      // Mini performance chart (recent returns)
+      try {
+        const r = await apiFetch("/api/reports/daily");
+        const j = await r.json().catch(()=> ({} as any));
+        const dr = Array.isArray(j?.data?.dailyReturnsData) ? j.data.dailyReturnsData : (Array.isArray(j?.dailyReturnsData) ? j.dailyReturnsData : []);
+        const rows = dr.map((d:any)=> ({ date: d.date, returns: Number(d.returns)||0 }));
+        setPerf(rows.slice(-20));
+      } catch {}
+
       setLastUpdated(Date.now());
     } catch (e: any) {
       setError(e?.message || "Failed to load risk data");
@@ -124,6 +138,12 @@ export default function RiskMonitoringPanel() {
   const fmtNum = (v?: number) => (v === undefined ? "N/A" : v.toFixed(2));
   const fmtCur = (v?: number) => (v === undefined ? "N/A" : new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v));
 
+  const badgeFor = (ok: boolean, warn?: boolean) => (
+    <Badge variant={ok ? "outline" : warn ? "secondary" : "destructive"}>
+      {ok ? "OK" : warn ? "Warn" : "Breach"}
+    </Badge>
+  );
+
   return (
     <Card>
       <CardHeader className="flex items-start justify-between">
@@ -151,25 +171,37 @@ export default function RiskMonitoringPanel() {
             <div className="text-sm text-muted-foreground flex items-center justify-between">
               Drawdown <HelpTip content="Maximum drawdown observed; negative values indicate decline from peak." />
             </div>
-            <div className={`text-2xl font-semibold ${typeof drawdown === 'number' && drawdown < 0 ? 'text-destructive' : ''}`}>{fmtPct(drawdown)}</div>
+            <div className="flex items-center justify-between">
+              <div className={`text-2xl font-semibold ${typeof drawdown === 'number' && drawdown < 0 ? 'text-destructive' : ''}`}>{fmtPct(drawdown)}</div>
+              {badgeFor(typeof drawdown !== 'number' ? true : drawdown > -0.05, typeof drawdown === 'number' ? drawdown <= -0.05 && drawdown > -0.1 : false)}
+            </div>
           </div>
           <div className="p-3 border rounded-lg">
             <div className="text-sm text-muted-foreground flex items-center justify-between">
               Sharpe Ratio <HelpTip content="Risk-adjusted return; higher is better." />
             </div>
-            <div className="text-2xl font-semibold">{fmtNum(sharpe)}</div>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-semibold">{fmtNum(sharpe)}</div>
+              {badgeFor(typeof sharpe !== 'number' ? true : sharpe >= 1, typeof sharpe === 'number' ? sharpe < 1 && sharpe >= 0.5 : false)}
+            </div>
           </div>
           <div className="p-3 border rounded-lg">
             <div className="text-sm text-muted-foreground flex items-center justify-between">
-              Hedge Ratio <HelpTip content="Portion of portfolio hedged (e.g., USDT/short exposure)." />
+              Hedge Ratio <HelpTip content="Portion of portfolio hedged (e.g., USDT/short exposure). Target 20%–60%." />
             </div>
-            <div className="text-2xl font-semibold">{fmtPct(hedge)}</div>
+            <div className="flex items-center justify-between">
+              <div className="text-2xl font-semibold">{fmtPct(hedge)}</div>
+              {badgeFor(typeof hedge !== 'number' ? true : (hedge >= 0.2 && hedge <= 0.6), typeof hedge === 'number' ? (hedge >= 0.1 && hedge < 0.2) || (hedge > 0.6 && hedge <= 0.8) : false)}
+            </div>
           </div>
           <div className="p-3 border rounded-lg">
             <div className="text-sm text-muted-foreground flex items-center justify-between">
               P&L <HelpTip content="Aggregate profit and loss." />
             </div>
-            <div className={`text-2xl font-semibold ${typeof pnl === 'number' ? (pnl >= 0 ? 'text-accent' : 'text-destructive') : ''}`}>{fmtCur(pnl)}</div>
+            <div className="flex items-center justify-between">
+              <div className={`text-2xl font-semibold ${typeof pnl === 'number' ? (pnl >= 0 ? 'text-accent' : 'text-destructive') : ''}`}>{fmtCur(pnl)}</div>
+              {badgeFor(typeof pnl !== 'number' ? true : pnl >= 0)}
+            </div>
           </div>
         </div>
 
@@ -194,6 +226,28 @@ export default function RiskMonitoringPanel() {
                   <div className="text-xs text-muted-foreground mt-1">{new Date(b.timestamp).toLocaleString()}</div>
                 </div>
               ))
+            )}
+          </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm font-medium">Recent Performance</div>
+            <HelpTip content="Sparkline of recent portfolio returns (last ~20 points)." />
+          </div>
+          <div className="h-32">
+            {perf.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsLineChart data={perf}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="date" hide />
+                  <YAxis hide domain={["auto","auto"]} />
+                  <RechartsTooltip formatter={(v:any)=> [`${(Number(v)*100).toFixed(2)}%`, 'Return']} />
+                  <Line type="monotone" dataKey="returns" stroke="#0ea5e9" strokeWidth={2} dot={false} />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-xs text-muted-foreground">No performance data</div>
             )}
           </div>
         </div>
