@@ -41,6 +41,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
+import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 
 import { getJson, patchJson } from "@/lib/apiClient";
 
