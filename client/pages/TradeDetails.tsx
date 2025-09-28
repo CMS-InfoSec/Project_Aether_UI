@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import apiFetch from "@/lib/apiClient";
 import { toast } from "@/hooks/use-toast";
 import HelpTip from "@/components/ui/help-tip";
-import { RefreshCw, ArrowLeft, AlertTriangle, BarChart3 } from "lucide-react";
+import { RefreshCw, ArrowLeft, AlertTriangle, BarChart3, Gauge, Timer } from "lucide-react";
 import {
   ResponsiveContainer,
   BarChart as RechartsBarChart,
