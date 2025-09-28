@@ -70,6 +70,7 @@ import AdminFeedback from "./AdminFeedback";
 import AdminPortfolio from "./AdminPortfolio";
 import AdminAutomationSocial from "./AdminAutomationSocial";
 import AdminPushConsole from "./AdminPushConsole";
+import DataQualityTab from "./components/DataQualityTab";
 
 // Error Boundary Component
 class WidgetErrorBoundary extends React.Component<
@@ -762,10 +763,11 @@ export default function AdminDashboard() {
 
           {/* Reports inner tabs */}
           <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="overview"><span className="inline-flex items-center gap-1">Overview <HelpTip content="Key metrics and charts at a glance." /></span></TabsTrigger>
               <TabsTrigger value="reporting"><span className="inline-flex items-center gap-1">Reports <HelpTip content="Detailed daily and weekly reports." /></span></TabsTrigger>
               <TabsTrigger value="per-asset"><span className="inline-flex items-center gap-1">Per-Asset <HelpTip content="Deep dive into each asset's metrics." /></span></TabsTrigger>
+              <TabsTrigger value="data-quality"><span className="inline-flex items-center gap-1">Data Quality <HelpTip content="Monitor anomalies in market data feeds and ingestion." /></span></TabsTrigger>
               <TabsTrigger value="notifications" className="relative">
                 <span className="inline-flex items-center gap-1">Notifications <HelpTip content="System alerts and messages; unread count shown." /></span>
                 {notificationData?.summary.unread > 0 && (
@@ -1468,6 +1470,11 @@ export default function AdminDashboard() {
                   <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               )}
+            </TabsContent>
+
+            <TabsContent value="data-quality" className="space-y-6">
+              {/* Data Quality Tab Component */}
+              <DataQualityTab />
             </TabsContent>
 
             <TabsContent value="notifications" className="space-y-6">
