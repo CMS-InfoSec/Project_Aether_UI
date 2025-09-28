@@ -73,6 +73,11 @@ export default function TradeDetails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
+    if (id) fetchExecution();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
   const fetchExplain = async () => {
     if (!id) return;
     setExplainLoading(true);
