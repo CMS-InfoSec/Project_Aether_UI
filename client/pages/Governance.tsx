@@ -58,6 +58,7 @@ import {
 import { useState, useEffect } from "react";
 import { toast } from "@/hooks/use-toast";
 import ASCModelsPanel from "./components/ASCModelsPanel";
+import ComplianceAuditTab from "./components/ComplianceAuditTab";
 
 // Types
 interface Proposal {
