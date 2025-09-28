@@ -657,6 +657,7 @@ export default function TradesPositions() {
 
   const [tradeExplainId, setTradeExplainId] = useState<string>("");
   const [tradeExplain, setTradeExplain] = useState<TradeExplainState>({ loading:false, error:null, data:null, showJson:false });
+  const [explainOpen, setExplainOpen] = useState<boolean>(false);
 
   const totalPages = Math.ceil(
     (activeTab === "trades" ? tradesTotal : positionsTotal) / itemsPerPage,
@@ -1363,11 +1364,16 @@ export default function TradesPositions() {
                   <div className="mb-4 p-3 border rounded-md bg-muted/30">
                     <div className="flex items-center justify-between mb-2">
                       <div className="font-medium">Model Explanation (Admin)</div>
-                      <HelpTip content="Fetch SHAP/feature importances for a trade. Endpoint: /ai/explain/{trade_id}." />
+                      <div className="flex items-center gap-2">
+                        <HelpTip content="Fetch SHAP/feature importances for a trade. Endpoint: /ai/explain/{trade_id}." />
+                        <Button variant="outline" size="sm" onClick={()=> setExplainOpen((v)=> !v)}>{explainOpen ? 'Hide' : 'Show'}</Button>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Input placeholder="Enter trade ID" value={tradeExplainId} onChange={(e)=> setTradeExplainId(e.target.value)} className="max-w-sm" />
-                      <Button
+                    {explainOpen && (
+                      <>
+                        <div className="flex items-center gap-2">
+                          <Input placeholder="Enter trade ID" value={tradeExplainId} onChange={(e)=> setTradeExplainId(e.target.value)} className="max-w-sm" />
+                          <Button
                         variant="outline"
                         size="sm"
                         onClick={async ()=>{
@@ -1428,6 +1434,8 @@ export default function TradesPositions() {
                           )}
                         </div>
                       </div>
+                    )}
+                      </>
                     )}
                   </div>
                 )}
