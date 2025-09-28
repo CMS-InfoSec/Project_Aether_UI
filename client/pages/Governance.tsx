@@ -758,6 +758,10 @@ export default function Governance() {
           <ASCModelsPanel />
         </TabsContent>
 
+        <TabsContent value="compliance" className="space-y-6">
+          <ComplianceAuditTab />
+        </TabsContent>
+
         <TabsContent value="feedback" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Submit Feedback */}
