@@ -78,6 +78,26 @@ export default function TradeDetails() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  const fetchExecution = async () => {
+    if (!id) return;
+    setExecLoading(true);
+    setExecError(null);
+    setExecData(null);
+    try {
+      const r = await apiFetch(`/api/execution/latency?tradeId=${encodeURIComponent(id)}`);
+      if (!r.ok) {
+        const j = await r.json().catch(() => ({}));
+        throw new Error(j.detail || `Latency HTTP ${r.status}`);
+      }
+      const j = await r.json();
+      setExecData(j?.data || j || null);
+    } catch (e:any) {
+      setExecError(e?.message || 'Failed to load execution details');
+    } finally {
+      setExecLoading(false);
+    }
+  };
+
   const fetchExplain = async () => {
     if (!id) return;
     setExplainLoading(true);
