@@ -244,12 +244,6 @@ export default function TradeDetails() {
         </Card>
       )}
 
-      {!isAdmin && (
-        <Alert>
-          <AlertDescription>Model Explanation is visible to administrators only.</AlertDescription>
-        </Alert>
-      )}
-
       {(!trade && !loading && !error) && (
         <div className="text-sm text-muted-foreground">No trade found.</div>
       )}
