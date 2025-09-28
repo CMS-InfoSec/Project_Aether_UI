@@ -64,6 +64,7 @@ import ModelComparisonTab from "./components/ModelComparisonTab";
 import RegulatoryReportsTab from "./components/RegulatoryReportsTab";
 import ComplianceForecastPanel from "./components/ComplianceForecastPanel";
 import FederatedLearningTab from "./components/FederatedLearningTab";
+import OnChainGovernanceViewer from "./components/OnChainGovernanceViewer";
 
 // Types
 interface Proposal {
@@ -483,6 +484,7 @@ export default function Governance() {
           <TabsTrigger value="regulatory-reports" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Regulatory Reports</TabsTrigger>
           <TabsTrigger value="model-lineage" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Lineage</TabsTrigger>
           <TabsTrigger value="model-comparison" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Comparison</TabsTrigger>
+          <TabsTrigger value="onchain" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">On-Chain Governance</TabsTrigger>
           <TabsTrigger value="feedback" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Feedback</TabsTrigger>
         </TabsList>
 
@@ -609,6 +611,10 @@ export default function Governance() {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="onchain" className="space-y-6">
+          <OnChainGovernanceViewer />
         </TabsContent>
 
         <TabsContent value="voting" className="space-y-6">
