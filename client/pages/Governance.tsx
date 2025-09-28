@@ -472,18 +472,18 @@ export default function Governance() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-11">
-          <TabsTrigger value="proposals">Proposals</TabsTrigger>
-          <TabsTrigger value="voting">Voting</TabsTrigger>
-          <TabsTrigger value="deploy">Deploy</TabsTrigger>
-          <TabsTrigger value="asc-models">ASC Models</TabsTrigger>
-          <TabsTrigger value="compliance">Compliance & Audit</TabsTrigger>
-          <TabsTrigger value="compliance-forecast">Compliance Forecast</TabsTrigger>
-          <TabsTrigger value="federated">Federated Learning</TabsTrigger>
-          <TabsTrigger value="regulatory-reports">Regulatory Reports</TabsTrigger>
-          <TabsTrigger value="model-lineage">Model Lineage</TabsTrigger>
-          <TabsTrigger value="model-comparison">Model Comparison</TabsTrigger>
-          <TabsTrigger value="feedback">Feedback</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto whitespace-nowrap gap-2">
+          <TabsTrigger value="proposals" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Proposals</TabsTrigger>
+          <TabsTrigger value="voting" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Voting</TabsTrigger>
+          <TabsTrigger value="deploy" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Deploy</TabsTrigger>
+          <TabsTrigger value="asc-models" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">ASC Models</TabsTrigger>
+          <TabsTrigger value="compliance" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Compliance & Audit</TabsTrigger>
+          <TabsTrigger value="compliance-forecast" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Compliance Forecast</TabsTrigger>
+          <TabsTrigger value="federated" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Federated Learning</TabsTrigger>
+          <TabsTrigger value="regulatory-reports" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Regulatory Reports</TabsTrigger>
+          <TabsTrigger value="model-lineage" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Lineage</TabsTrigger>
+          <TabsTrigger value="model-comparison" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Model Comparison</TabsTrigger>
+          <TabsTrigger value="feedback" className="whitespace-nowrap text-xs md:text-sm h-auto px-3 py-1">Feedback</TabsTrigger>
         </TabsList>
 
         <TabsContent value="proposals" className="space-y-6">
