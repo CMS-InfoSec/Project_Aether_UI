@@ -122,7 +122,9 @@ export default function AdminSystemControl() {
   // API request helper with X-API-Key header
   const apiRequest = async (url: string, options: RequestInit = {}) => {
     const fullUrl = url.startsWith('http') ? url : `${backendUrl.replace(/\/+$/, '')}${url}`;
-    const response = await apiFetch(fullUrl, { ...options, admin: true, headers: options.headers });
+    const needsJson = !!options.body && !(options.headers as any)?.["Content-Type"];
+    const headers = needsJson ? { "Content-Type": "application/json", ...(options.headers || {}) } : options.headers;
+    const response = await apiFetch(fullUrl, { ...options, admin: true, headers });
     if (response.status === 401) throw new Error('API key required');
     if (response.status === 403) throw new Error('Insufficient permissions');
     if (response.status >= 500) throw new Error('Server error. Please try again.');
