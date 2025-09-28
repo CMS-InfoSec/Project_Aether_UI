@@ -104,8 +104,8 @@ export default function UserDashboard() {
         ? vdata.map((v: any) => ({
             name: v.name || v.venue || "Unknown",
             latency: Number(v.latencyMs ?? v.latency ?? 0),
-            spreadBps: Number(v.spreadBps ?? v.spread_bps ?? v.spread || 0),
-            depthUsd: Number(v.depthUsd ?? v.depth_usd ?? v.depth || 0),
+            spreadBps: Number(v.spreadBps ?? v.spread_bps ?? v.spread ?? 0),
+            depthUsd: Number(v.depthUsd ?? v.depth_usd ?? v.depth ?? 0),
           }))
         : [];
 
@@ -137,6 +137,7 @@ export default function UserDashboard() {
     loadRecentTrades();
     loadPortfolioPanel();
     loadAlerts();
+    loadCrossMarket();
 
     // Cleanup function
     return () => {
