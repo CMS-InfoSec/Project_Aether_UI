@@ -8,6 +8,7 @@ import HelpTip from "@/components/ui/help-tip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import apiFetch from "@/lib/apiClient";
 import { RefreshCw, Download } from "lucide-react";
+import { BarChart as ReBarChart, Bar as ReBar, Tooltip as ReTooltip, Legend as ReLegend } from "recharts";
 import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend } from "recharts";
 
 interface ScenarioConfig {
@@ -35,6 +36,16 @@ interface RunResult {
   metrics: RunMetrics;
   raw?: any;
 }
+
+type AgentProfile = { type: 'market_maker'|'arbitrage_bot'|'momentum_trader'|'spoofer'; count: number; aggression: number; capital: number };
+
+type AgentsRunResult = {
+  id: string;
+  pnl: Array<{ agent: string; pnl: number }>;
+  spread_over_time: Array<{ t: number; spread_bps: number }>;
+  metrics: { stability_index: number; avg_spread_bps: number; spread_vol_bps: number; midprice_drift_bps: number };
+  cfg: { profiles: AgentProfile[]; seed?: number; steps?: number };
+};
 
 const COLORS = [
   "#2563eb",
@@ -83,6 +94,14 @@ export default function ScenarioLab() {
   const [runs, setRuns] = useState<RunResult[]>([]);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
   const [running, setRunning] = useState(false);
+  const [agentsCfg, setAgentsCfg] = useState<{ profiles: AgentProfile[]; seed?: number; steps?: number }>({ profiles: [
+    { type:'market_maker', count:3, aggression:0.4, capital:1 },
+    { type:'arbitrage_bot', count:2, aggression:0.6, capital:0.8 },
+    { type:'momentum_trader', count:3, aggression:0.7, capital:0.6 },
+    { type:'spoofer', count:1, aggression:0.9, capital:0.2 },
+  ], seed:42, steps:200 });
+  const [agentRuns, setAgentRuns] = useState<AgentsRunResult[]>(()=>{ try { return JSON.parse(localStorage.getItem('agent_runs')||'[]'); } catch { return []; } });
+  const [selAgentRuns, setSelAgentRuns] = useState<Record<string, boolean>>({});
   const progressTimers = useRef<Record<string, any>>({});
 
   const presets: ScenarioConfig[] = [
@@ -224,6 +243,39 @@ export default function ScenarioLab() {
     });
   }, [runs]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await apiFetch('/api/sim/agents/config');
+        if (r.ok) {
+          const j = await r.json().catch(()=>({}));
+          const d = j?.data || j;
+          if (d?.profiles) setAgentsCfg(d);
+        }
+      } catch {}
+    })();
+  }, []);
+
+  useEffect(() => { try { localStorage.setItem('agent_runs', JSON.stringify(agentRuns.slice(0,20))); } catch {} }, [agentRuns]);
+
+  const saveAgentsCfg = async () => {
+    try {
+      await apiFetch('/api/sim/agents/config', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(agentsCfg) });
+    } catch {}
+  };
+
+  const runAgents = async () => {
+    try {
+      const r = await apiFetch('/api/sim/agents/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ config: agentsCfg }) });
+      const j = await r.json().catch(()=>({}));
+      const data: AgentsRunResult = (j?.data || j);
+      if (data?.id) {
+        setAgentRuns(prev => [data, ...prev].slice(0, 20));
+        setSelAgentRuns(prev => ({ ...prev, [data.id]: true }));
+      }
+    } catch {}
+  };
+
   return (
     <Card className="lg:col-span-2">
       <CardHeader className="flex items-start justify-between">
@@ -242,6 +294,97 @@ export default function ScenarioLab() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-lg font-semibold">Multi-Agent LOB</div>
+              <div className="text-sm text-muted-foreground">Configure agent profiles and simulate. Tracks PnL distribution, spread impact, and stability.</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={saveAgentsCfg}>Save Config</Button>
+              <Button size="sm" onClick={runAgents}>Run Agents</Button>
+            </div>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Agent Profiles</div>
+              <div className="space-y-2">
+                {agentsCfg.profiles.map((p, idx) => (
+                  <div key={idx} className="p-2 border rounded-md grid grid-cols-8 gap-2 items-center">
+                    <div className="col-span-2 text-xs capitalize">{p.type.replace('_',' ')}</div>
+                    <div className="col-span-2"><Label className="text-[11px]">Count</Label><Input type="number" value={p.count} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, count: Number(e.target.value) } : q)}))} /></div>
+                    <div className="col-span-2"><Label className="text-[11px]">Aggression</Label><Input type="number" step="0.01" min="0" max="1" value={p.aggression} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, aggression: Math.max(0, Math.min(1, Number(e.target.value))) } : q)}))} /></div>
+                    <div className="col-span-2"><Label className="text-[11px]">Capital</Label><Input type="number" step="0.1" min="0" value={p.capital} onChange={(e)=> setAgentsCfg(c=> ({...c, profiles: c.profiles.map((q,i)=> i===idx ? { ...q, capital: Math.max(0, Number(e.target.value)) } : q)}))} /></div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-2 text-sm">
+                <div><Label className="text-[11px]">Seed</Label><Input type="number" value={agentsCfg.seed ?? ''} onChange={(e)=> setAgentsCfg(c=> ({...c, seed: Number(e.target.value)}))} /></div>
+                <div><Label className="text-[11px]">Steps</Label><Input type="number" value={agentsCfg.steps ?? 200} onChange={(e)=> setAgentsCfg(c=> ({...c, steps: Number(e.target.value)}))} /></div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="text-sm font-medium">Latest Run</div>
+              {agentRuns.length>0 ? (
+                <div className="space-y-3">
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ReBarChart data={agentRuns[0].pnl}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="agent" />
+                        <YAxis />
+                        <ReTooltip />
+                        <ReLegend />
+                        <ReBar dataKey="pnl" name="PnL" fill="#10b981" />
+                      </ReBarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="h-48">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsLineChart data={agentRuns[0].spread_over_time}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="t" />
+                        <YAxis />
+                        <RechartsTooltip />
+                        <Line type="monotone" dataKey="spread_bps" stroke="#f59e0b" strokeWidth={2} dot={false} name="Spread (bps)" />
+                      </RechartsLineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div>Stability: <span className="font-semibold">{Math.round(agentRuns[0].metrics.stability_index*100)}%</span></div>
+                    <div>Avg Spread: <span className="font-semibold">{agentRuns[0].metrics.avg_spread_bps.toFixed(1)} bps</span></div>
+                    <div>Spread Vol: <span className="font-semibold">{agentRuns[0].metrics.spread_vol_bps.toFixed(1)} bps</span></div>
+                    <div>Mid Drift: <span className="font-semibold">{agentRuns[0].metrics.midprice_drift_bps.toFixed(1)} bps</span></div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">No agent run yet.</div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div className="font-medium mb-2">Agent Runs</div>
+            <ScrollArea className="h-40">
+              <div className="space-y-2">
+                {agentRuns.map((r)=> (
+                  <div key={r.id} className="p-2 border rounded-md flex items-center justify-between text-sm">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" checked={!!selAgentRuns[r.id]} onChange={(e)=> setSelAgentRuns(prev=> ({ ...prev, [r.id]: e.target.checked }))} />
+                      <span className="font-medium">Run {r.id.slice(-6)}</span>
+                      <Badge variant="outline">{new Date(((r as any).started_at) || Date.now()).toLocaleTimeString()}</Badge>
+                    </label>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span>Stab {Math.round(r.metrics.stability_index*100)}%</span>
+                      <span>Spread {r.metrics.avg_spread_bps.toFixed(1)}</span>
+                    </div>
+                  </div>
+                ))}
+                {agentRuns.length===0 && <div className="text-xs text-muted-foreground">No runs</div>}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
         <div className="grid md:grid-cols-5 gap-3">
           <div>
             <div className="flex items-center gap-2"><Label>Price jump (%)</Label><HelpTip content="Instant shock to price; negative for drop." /></div>
