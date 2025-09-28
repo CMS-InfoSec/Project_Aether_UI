@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import HelpTip from "@/components/ui/help-tip";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
@@ -61,6 +62,13 @@ export default function StrategiesSignals() {
 
   // Explainability
   const [explainLimit, setExplainLimit] = useState<number>(10);
+
+  // Builder controls
+  const [signalThreshold, setSignalThreshold] = useState<number>(0.5);
+  const [hedgePercent, setHedgePercent] = useState<number>(0.3);
+  const [builderSaving, setBuilderSaving] = useState<{ threshold?: boolean; hedge?: boolean; weights?: boolean }>({});
+  const thresholdTimer = useRef<number | null>(null);
+  const hedgeTimer = useRef<number | null>(null);
   const [explainCaps, setExplainCaps] = useState<{
     default_limit: number;
     max_limit: number;
@@ -220,6 +228,21 @@ export default function StrategiesSignals() {
     loadModels();
     loadExplainability();
     loadTelemetry();
+    // Load builder defaults
+    (async () => {
+      try {
+        const r = await apiFetch('/api/config');
+        const j = await r.json().catch(() => ({}));
+        const th = j?.data?.strategies?.SIGNAL_CONFIRMATION_THRESHOLD;
+        if (typeof th === 'number') setSignalThreshold(th);
+      } catch {}
+      try {
+        const r2 = await apiFetch('/api/hedge/percent');
+        const j2 = await r2.json().catch(() => ({}));
+        const hp = j2?.data?.hedgePercent ?? j2?.hedgePercent ?? j2?.percent;
+        if (typeof hp === 'number') setHedgePercent(hp);
+      } catch {}
+    })();
   }, []);
   useEffect(() => {
     const id = setInterval(loadTelemetry, 30000);
@@ -300,6 +323,70 @@ export default function StrategiesSignals() {
     }
   };
 
+  // Immediate apply (debounced) helpers
+  const applySignalThreshold = (val: number) => {
+    setSignalThreshold(val);
+    if (thresholdTimer.current) window.clearTimeout(thresholdTimer.current);
+    thresholdTimer.current = window.setTimeout(async () => {
+      setBuilderSaving((s) => ({ ...s, threshold: true }));
+      try {
+        const r = await apiFetch('/api/config', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ config: { strategies: { SIGNAL_CONFIRMATION_THRESHOLD: val } }, actor: (user?.email || 'builder') }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j?.message || 'Failed to save threshold');
+        toast({ title: 'Updated', description: `SIGNAL_CONFIRMATION_THRESHOLD = ${val.toFixed(2)}` });
+      } catch (e:any) {
+        toast({ title: 'Error', description: e?.message || 'Save failed', variant: 'destructive' });
+      } finally {
+        setBuilderSaving((s) => ({ ...s, threshold: false }));
+      }
+    }, 400) as any;
+  };
+
+  const applyHedgePercent = (val: number) => {
+    setHedgePercent(val);
+    if (hedgeTimer.current) window.clearTimeout(hedgeTimer.current);
+    hedgeTimer.current = window.setTimeout(async () => {
+      setBuilderSaving((s) => ({ ...s, hedge: true }));
+      try {
+        const r = await apiFetch('/api/hedge/percent', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ hedgePercent: val }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j?.message || j?.detail || 'Failed to save hedge');
+        toast({ title: 'Updated', description: `Hedge ratio = ${(val*100).toFixed(1)}%` });
+      } catch (e:any) {
+        toast({ title: 'Error', description: e?.message || 'Save failed', variant: 'destructive' });
+      } finally {
+        setBuilderSaving((s) => ({ ...s, hedge: false }));
+      }
+    }, 400) as any;
+  };
+
+  const applyWeightsImmediate = async (next: Record<string, number>) => {
+    setBuilderSaving((s) => ({ ...s, weights: true }));
+    try {
+      const r = await apiFetch('/api/strategy/controller/reweight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weights: next }),
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j?.detail || 'Failed to apply weights');
+      toast({ title: 'Weights applied', description: 'Strategy allocations updated' });
+      await loadRegistry();
+    } catch (e:any) {
+      toast({ title: 'Error', description: e?.message || 'Failed', variant: 'destructive' });
+    } finally {
+      setBuilderSaving((s) => ({ ...s, weights: false }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -326,12 +413,106 @@ export default function StrategiesSignals() {
       <Tabs defaultValue="registry">
         <TabsList>
           <TabsTrigger value="registry">Registry</TabsTrigger>
+          <TabsTrigger value="builder">Builder</TabsTrigger>
           <TabsTrigger value="telemetry">Telemetry</TabsTrigger>
           <TabsTrigger value="sentiment">Sentiment</TabsTrigger>
           <TabsTrigger value="stress">Stress Tests</TabsTrigger>
           <TabsTrigger value="explain">Explainability</TabsTrigger>
           <TabsTrigger value="ingest">Manual Ingest</TabsTrigger>
         </TabsList>
+
+        {/* Strategy Builder */}
+        <TabsContent value="builder">
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card>
+              <CardHeader className="flex items-start justify-between">
+                <CardTitle>Signal Confirmation Threshold</CardTitle>
+                <HelpTip content="Threshold (0-1) required to confirm signals across strategies. Changes apply immediately." />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-muted-foreground">Value</div>
+                  <div className="text-sm font-medium">{signalThreshold.toFixed(2)}</div>
+                </div>
+                <Slider value={[signalThreshold]} min={0} max={1} step={0.01} onValueChange={(v) => applySignalThreshold(Number(v?.[0] ?? 0))} />
+                <div className="text-xs text-muted-foreground">
+                  {builderSaving.threshold ? 'Saving…' : 'Auto-applied'}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex items-start justify-between">
+                <CardTitle>Hedge Ratio</CardTitle>
+                <HelpTip content="Portfolio hedge ratio (0-1). Updates /api/hedge/percent and applies immediately." />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <Label className="min-w-[110px]">Ratio</Label>
+                  <Input type="number" step="0.01" min="0" max="1" value={hedgePercent} onChange={(e)=> applyHedgePercent(Math.max(0, Math.min(1, Number(e.target.value))))} />
+                  <Badge variant="outline">{(hedgePercent*100).toFixed(1)}%</Badge>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {builderSaving.hedge ? 'Saving…' : 'Auto-applied'}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex items-center justify-between">
+                <CardTitle>Per-Strategy Weights</CardTitle>
+                <HelpTip content="Adjust weights using dropdowns. Changes are applied immediately via reweight API." />
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr>
+                        <th className="text-left p-2">Strategy</th>
+                        <th className="text-left p-2">Weight</th>
+                        <th className="text-left p-2">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {registry.map((r)=> (
+                        <tr key={r.name} className="border-t">
+                          <td className="p-2 font-medium">{r.name}</td>
+                          <td className="p-2 w-56">
+                            <Select
+                              value={String((weights[r.name] ?? r.weight).toFixed(2))}
+                              onValueChange={(val)=>{
+                                const n = Number(val);
+                                const next = { ...weights, [r.name]: n };
+                                setWeights(next);
+                                applyWeightsImmediate(next);
+                              }}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Array.from({ length: 21 }).map((_, i)=> (i*0.05).toFixed(2)).map((v)=> (
+                                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </td>
+                          <td className="p-2">
+                            <Badge variant={r.enabled ? 'outline':'destructive'}>{r.enabled ? 'enabled':'disabled'}</Badge>
+                          </td>
+                        </tr>
+                      ))}
+                      {registry.length===0 && (
+                        <tr><td className="p-2 text-muted-foreground" colSpan={3}>No strategies</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="text-xs text-muted-foreground mt-2">{builderSaving.weights ? 'Applying…' : ''}</div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Registry & weighting */}
         <TabsContent value="registry">
