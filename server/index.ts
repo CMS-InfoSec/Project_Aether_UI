@@ -10,7 +10,7 @@ import {
   handleRejectUser,
   handleGetUserSettings,
   handleUpdateUserSettings,
-  handleGetUserStats
+  handleGetUserStats,
 } from "./routes/users";
 import {
   handleGetSystemStatus,
@@ -19,7 +19,7 @@ import {
   handleGetTradingMode,
   handleSetTradingMode,
   handleKillSwitch,
-  handleGetAuditLog
+  handleGetAuditLog,
 } from "./routes/system";
 import {
   handleGetRuntimeConfig,
@@ -30,7 +30,7 @@ import {
   handleUpdateSystemConfig,
   handleResetSystemConfig,
   handleGetUserSettings as handleGetConfigUserSettings,
-  handleUpdateUserSettings as handleUpdateConfigUserSettings
+  handleUpdateUserSettings as handleUpdateConfigUserSettings,
 } from "./routes/config";
 import {
   handleStartTraining,
@@ -47,13 +47,13 @@ import {
   handleGetCurriculumStages,
   handleGetDatasets,
   handleGetSentimentPipelines,
-  handleStartTrainingV1
+  handleStartTrainingV1,
 } from "./routes/models";
 import {
   handleGetEligibleMarkets,
   handleGetMarketStats,
   handleExportMarkets,
-  handleStrategyOverride
+  handleStrategyOverride,
 } from "./routes/markets";
 import {
   handleGetPortfolioOverview,
@@ -61,7 +61,7 @@ import {
   handleRebalanceAll,
   handleGetRebalanceStatus,
   handleGetRebalanceHistory,
-  handleGetPortfolioStats
+  handleGetPortfolioStats,
 } from "./routes/portfolio";
 import {
   handleGetWalletHedges,
@@ -76,7 +76,7 @@ import {
   handleCloseHedge,
   handleGetWalletSnapshot,
   handlePostWalletApiKeys,
-  handleGetWalletApiKeysStatus
+  handleGetWalletApiKeysStatus,
 } from "./routes/hedge";
 import {
   handleGetProposals,
@@ -85,7 +85,7 @@ import {
   handleDeployProposal,
   handleGetFeedbackSummary,
   handleSubmitFeedback,
-  handleGetAllFeedback
+  handleGetAllFeedback,
 } from "./routes/governance";
 import {
   handleGetDailyReport,
@@ -97,7 +97,7 @@ import {
   handleMarkNotificationRead,
   handleMarkAllNotificationsRead,
   handleCreateNotification,
-  handleGetExecutionMetrics
+  handleGetExecutionMetrics,
 } from "./routes/reports";
 import { handleGetUserTradesReport } from "./routes/reports.user-trades";
 import {
@@ -106,7 +106,7 @@ import {
   handleGetTradingSettings,
   handleUpdateTradingSettings,
   handleGetApiKeys,
-  handleDeleteApiKeys
+  handleDeleteApiKeys,
 } from "./routes/profile";
 import {
   handleGetBootstrapStatus,
@@ -114,18 +114,18 @@ import {
   handleGetFounders,
   handleDeleteFounder,
   handleResetFounders,
-  handleGetSystemDebug
+  handleGetSystemDebug,
 } from "./routes/founders";
 import {
   handleGetRecentTrades,
   handleGetOpenPositions,
   handleVetoTrade,
-  handleGetTradeDetail
+  handleGetTradeDetail,
 } from "./routes/trades";
 import {
   handleAskLLM,
   handleLLMStatus,
-  handleResetRateLimit
+  handleResetRateLimit,
 } from "./routes/llm";
 
 export function createServer() {
@@ -138,9 +138,11 @@ export function createServer() {
 
   // Simple admin key check for sensitive model operations
   function requireAdminKey(req: any, res: any, next: any) {
-    const key = req.get('X-API-Key');
-    if (key !== 'aether-admin-key-2024') {
-      return res.status(403).json({ status: 'error', message: 'Admin key required' });
+    const key = req.get("X-API-Key");
+    if (key !== "aether-admin-key-2024") {
+      return res
+        .status(403)
+        .json({ status: "error", message: "Admin key required" });
     }
     next();
   }
@@ -149,9 +151,15 @@ export function createServer() {
   app.post("/api/auth/login", handleLogin);
   app.post("/api/auth/refresh", handleRefresh);
   app.post("/api/auth/logout", handleLogout);
-  app.get("/api/auth/me", (require('./routes/auth').handleMe));
-  app.post('/api/auth/reset/request', (require('./routes/auth').handleResetRequest));
-  app.post('/api/auth/reset/confirm', (require('./routes/auth').handleResetConfirm));
+  app.get("/api/auth/me", require("./routes/auth").handleMe);
+  app.post(
+    "/api/auth/reset/request",
+    require("./routes/auth").handleResetRequest,
+  );
+  app.post(
+    "/api/auth/reset/confirm",
+    require("./routes/auth").handleResetConfirm,
+  );
 
   // Founder/Bootstrap routes (public)
   app.get("/api/founders/bootstrap-status", handleGetBootstrapStatus);
@@ -196,12 +204,21 @@ export function createServer() {
   app.post("/api/v1/models/train", requireAdminKey, handleStartTrainingV1);
   app.get("/api/models/status/:jobId", handleGetTrainingStatus);
   app.get("/api/models/jobs", handleGetAllTrainingJobs);
-  app.get("/api/models/jobs/stream", (require('./routes/models').handleStreamTrainingJobs));
-  app.get("/api/v1/models/jobs/stream", (require('./routes/models').handleStreamTrainingJobs));
+  app.get(
+    "/api/models/jobs/stream",
+    require("./routes/models").handleStreamTrainingJobs,
+  );
+  app.get(
+    "/api/v1/models/jobs/stream",
+    require("./routes/models").handleStreamTrainingJobs,
+  );
   app.delete("/api/models/train/:jobId", requireAdminKey, handleCancelTraining);
   app.post("/api/models/deploy/:modelId", requireAdminKey, handleDeployModel);
   app.get("/api/models", handleGetAllModels);
-  app.get("/api/models/history", (require('./routes/models').handleGetModelsHistory));
+  app.get(
+    "/api/models/history",
+    require("./routes/models").handleGetModelsHistory,
+  );
   app.post("/api/models/promote", requireAdminKey, handlePromoteModel);
   app.post("/api/models/shadow/start", requireAdminKey, handleStartShadow);
   app.post("/api/models/shadow/stop", requireAdminKey, handleStopShadow);
@@ -211,20 +228,22 @@ export function createServer() {
   app.get("/api/models/datasets", handleGetDatasets);
   app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
   // Generic v1 compatibility: redirect /api/v1/* -> /api/* preserving method
-  app.use('/api/v1', (req, res, next) => {
+  app.use("/api/v1", (req, res, next) => {
     // If a specific /api/v1 route above handled it, skip
     if (res.headersSent) return next();
-    const target = req.originalUrl.replace(/^\/api\/v1/, '/api');
+    const target = req.originalUrl.replace(/^\/api\/v1/, "/api");
     return res.redirect(308, target);
   });
   // Audit log endpoint
-  app.get('/api/models/audit', requireAdminKey, (_req, res) => {
+  app.get("/api/models/audit", requireAdminKey, (_req, res) => {
     try {
-      const { auditLog } = require('./routes/models');
+      const { auditLog } = require("./routes/models");
       const lim = 200;
-      res.json({ status: 'success', data: auditLog.slice(0, lim) });
+      res.json({ status: "success", data: auditLog.slice(0, lim) });
     } catch (e) {
-      res.status(500).json({ status: 'error', message: 'Audit log unavailable' });
+      res
+        .status(500)
+        .json({ status: "error", message: "Audit log unavailable" });
     }
   });
 
@@ -232,15 +251,18 @@ export function createServer() {
   app.get("/api/markets/eligible", handleGetEligibleMarkets);
   app.get("/api/markets/stats", handleGetMarketStats);
   app.get("/api/markets/export", handleExportMarkets);
-  const { handleMarketPrice } = require('./routes/market_price');
-  app.get('/api/markets/price', handleMarketPrice);
-  app.post('/api/admin/strategy-override', handleStrategyOverride);
+  const { handleMarketPrice } = require("./routes/market_price");
+  app.get("/api/markets/price", handleMarketPrice);
+  app.post("/api/admin/strategy-override", handleStrategyOverride);
 
   // Portfolio routes
   app.get("/api/admin/portfolio", handleGetPortfolioOverview);
   app.get("/api/admin/portfolio/:userId", handleGetPortfolioDetails);
   app.post("/api/admin/portfolio/rebalance", handleRebalanceAll);
-  app.get("/api/admin/portfolio/rebalance/:rebalanceId", handleGetRebalanceStatus);
+  app.get(
+    "/api/admin/portfolio/rebalance/:rebalanceId",
+    handleGetRebalanceStatus,
+  );
   app.get("/api/admin/portfolio/rebalance-history", handleGetRebalanceHistory);
   app.get("/api/admin/portfolio/stats", handleGetPortfolioStats);
 
@@ -269,16 +291,27 @@ export function createServer() {
   app.get("/api/admin/feedback/all", handleGetAllFeedback);
 
   // Strategy plugins
-  const { handlePluginsList, handlePluginPropose, handlePluginVote, handlePluginApprove } = require('./routes/plugins');
-  app.get('/api/governance/plugins', handlePluginsList);
-  app.post('/api/governance/plugins/propose', handlePluginPropose);
-  app.post('/api/governance/plugins/:name/vote', handlePluginVote);
-  app.post('/api/governance/plugins/:name/approve', handlePluginApprove);
+  const {
+    handlePluginsList,
+    handlePluginPropose,
+    handlePluginVote,
+    handlePluginApprove,
+  } = require("./routes/plugins");
+  app.get("/api/governance/plugins", handlePluginsList);
+  app.post("/api/governance/plugins/propose", handlePluginPropose);
+  app.post("/api/governance/plugins/:name/vote", handlePluginVote);
+  app.post("/api/governance/plugins/:name/approve", handlePluginApprove);
 
   // Strategy review
-  const { handlePendingStrategies, handleApproveStrategy } = require('./routes/strategyReview');
-  app.get('/api/strategy-review/strategies/pending', handlePendingStrategies);
-  app.post('/api/strategy-review/strategies/:strategyId/approve', handleApproveStrategy);
+  const {
+    handlePendingStrategies,
+    handleApproveStrategy,
+  } = require("./routes/strategyReview");
+  app.get("/api/strategy-review/strategies/pending", handlePendingStrategies);
+  app.post(
+    "/api/strategy-review/strategies/:strategyId/approve",
+    handleApproveStrategy,
+  );
 
   // Reports and notifications routes
   app.get("/api/reports/daily", handleGetDailyReport);
@@ -286,30 +319,51 @@ export function createServer() {
   app.get("/api/reports/per-asset", handleGetPerAssetReport);
   app.get("/api/reports/backtest", handleGetBacktestReport);
   app.get("/api/reports/export", handleExportReportCSV);
-  app.get('/api/reports/execution', handleGetExecutionMetrics);
-  app.get('/api/reports/trades', handleGetUserTradesReport);
+  app.get("/api/reports/execution", handleGetExecutionMetrics);
+  app.get("/api/reports/trades", handleGetUserTradesReport);
   // UK tax-year report (v1 prefix)
-  app.get('/api/v1/reports/tax-year', (require('./routes/reports.tax-year').handleGetTaxYearReport));
+  app.get(
+    "/api/v1/reports/tax-year",
+    require("./routes/reports.tax-year").handleGetTaxYearReport,
+  );
   app.get("/api/notifications", handleGetNotifications);
-  app.patch("/api/notifications/:notificationId/read", handleMarkNotificationRead);
+  app.patch(
+    "/api/notifications/:notificationId/read",
+    handleMarkNotificationRead,
+  );
   app.post("/api/notifications/mark-all-read", handleMarkAllNotificationsRead);
   app.post("/api/notifications", handleCreateNotification);
-  app.get('/api/notifications/preferences', (require('./routes/reports').handleGetNotificationPreferences));
-  app.post('/api/notifications/preferences', (require('./routes/reports').handleSaveNotificationPreferences));
-  const notif = require('./routes/notifications');
-  app.get('/api/notifications/channels/status', notif.handleGetChannelStatus);
-  app.post('/api/notifications/async_notify_channels', notif.handleAsyncNotifyChannels);
-  app.post('/api/notifications/notify_channels', notif.handleNotifyChannels);
-  app.post('/api/notifications/notify_user', notif.handleNotifyUser);
-  app.post('/api/notifications/notify_admins', notif.handleNotifyAdmins);
-  app.post('/api/notifications/alert_api_failure', notif.handleAlertApiFailure);
-  app.post('/api/notifications/alert_market_cap_failure', notif.handleAlertMarketCapFailure);
-  app.post('/api/notifications/send_notification', notif.handleSendNotification);
+  app.get(
+    "/api/notifications/preferences",
+    require("./routes/reports").handleGetNotificationPreferences,
+  );
+  app.post(
+    "/api/notifications/preferences",
+    require("./routes/reports").handleSaveNotificationPreferences,
+  );
+  const notif = require("./routes/notifications");
+  app.get("/api/notifications/channels/status", notif.handleGetChannelStatus);
+  app.post(
+    "/api/notifications/async_notify_channels",
+    notif.handleAsyncNotifyChannels,
+  );
+  app.post("/api/notifications/notify_channels", notif.handleNotifyChannels);
+  app.post("/api/notifications/notify_user", notif.handleNotifyUser);
+  app.post("/api/notifications/notify_admins", notif.handleNotifyAdmins);
+  app.post("/api/notifications/alert_api_failure", notif.handleAlertApiFailure);
+  app.post(
+    "/api/notifications/alert_market_cap_failure",
+    notif.handleAlertMarketCapFailure,
+  );
+  app.post(
+    "/api/notifications/send_notification",
+    notif.handleSendNotification,
+  );
 
   // API docs
-  const { handleOpenApiJson, handleSwaggerDocs } = require('./routes/docs');
-  app.get('/api/openapi.json', handleOpenApiJson);
-  app.get('/docs', handleSwaggerDocs);
+  const { handleOpenApiJson, handleSwaggerDocs } = require("./routes/docs");
+  app.get("/api/openapi.json", handleOpenApiJson);
+  app.get("/docs", handleSwaggerDocs);
 
   // User profile routes
   app.get("/api/user/profile", handleGetUserProfile);
@@ -317,30 +371,41 @@ export function createServer() {
   app.get("/api/user/trading-settings", handleGetTradingSettings);
   app.patch("/api/user/trading-settings", handleUpdateTradingSettings);
 
-
   app.get("/api/user/api-keys", handleGetApiKeys);
   app.delete("/api/user/api-keys", handleDeleteApiKeys);
 
   // Health & observability routes
-  const { handleHealthLive, handleHealthReady, handleHealthReadyDetails, handleHealthDependencies, handleMetrics } = require('./routes/health');
-  app.get('/api/health/live', handleHealthLive);
+  const {
+    handleHealthLive,
+    handleHealthReady,
+    handleHealthReadyDetails,
+    handleHealthDependencies,
+    handleMetrics,
+  } = require("./routes/health");
+  app.get("/api/health/live", handleHealthLive);
   // Alias for system-scoped health path expected by client
-  app.get('/api/system/health/live', handleHealthLive);
-  app.get('/api/health/ready', handleHealthReady);
+  app.get("/api/system/health/live", handleHealthLive);
+  app.get("/api/health/ready", handleHealthReady);
   // Alias for system-scoped health path expected by client
-  app.get('/api/system/health/ready', handleHealthReady);
-  app.get('/api/health/ready/details', handleHealthReadyDetails);
-  app.get('/api/health/dependencies', handleHealthDependencies);
-  app.get('/api/health/live/details', (require('./routes/health').handleHealthLiveDetails));
-  app.get('/api/metrics', handleMetrics);
+  app.get("/api/system/health/ready", handleHealthReady);
+  app.get("/api/health/ready/details", handleHealthReadyDetails);
+  app.get("/api/health/dependencies", handleHealthDependencies);
+  app.get(
+    "/api/health/live/details",
+    require("./routes/health").handleHealthLiveDetails,
+  );
+  app.get("/api/metrics", handleMetrics);
 
   // Events (audit/logs)
-  const { handleEventsTrades, handleEventsBalances } = require('./routes/events');
-  app.get('/api/events/trades', handleEventsTrades);
-  app.get('/api/events/balances', handleEventsBalances);
+  const {
+    handleEventsTrades,
+    handleEventsBalances,
+  } = require("./routes/events");
+  app.get("/api/events/trades", handleEventsTrades);
+  app.get("/api/events/balances", handleEventsBalances);
   // Explicit v1 aliases for WS/SSE compatibility
-  app.get('/api/v1/events/trades', handleEventsTrades);
-  app.get('/api/v1/events/balances', handleEventsBalances);
+  app.get("/api/v1/events/trades", handleEventsTrades);
+  app.get("/api/v1/events/balances", handleEventsBalances);
 
   // Strategies & Signals
   const {
@@ -355,49 +420,80 @@ export function createServer() {
     handleStrategiesExplain,
     handleStrategiesStressTest,
     handlePostBacktest,
-  } = require('./routes/strategies');
-  app.get('/api/strategies/flags', handleGetStrategyFlags);
-  app.get('/api/strategies/breakdown', handleGetStrategyBreakdown);
-  app.patch('/api/strategies/:strategy/trading', (require('./routes/strategies').handlePatchStrategyTrading));
-  app.get('/api/news/sentiment', handleNewsSentiment);
-  app.get('/api/news/latest', handleNewsLatest);
-  app.get('/api/social/latest', handleSocialLatest);
-  app.get('/api/signals/metrics', handleSignalsMetrics);
-  app.post('/api/news/replay-failures', handleNewsReplayFailures);
-  app.post('/api/signals/ingest', handleSignalsIngest);
-  app.get('/api/strategies/explain', handleStrategiesExplain);
-  app.post('/api/strategies/stress-test', handleStrategiesStressTest);
-  app.post('/api/strategies/backtest', handlePostBacktest);
+  } = require("./routes/strategies");
+  app.get("/api/strategies/flags", handleGetStrategyFlags);
+  app.get("/api/strategies/breakdown", handleGetStrategyBreakdown);
+  app.patch(
+    "/api/strategies/:strategy/trading",
+    require("./routes/strategies").handlePatchStrategyTrading,
+  );
+  app.get("/api/news/sentiment", handleNewsSentiment);
+  app.get("/api/news/latest", handleNewsLatest);
+  app.get("/api/social/latest", handleSocialLatest);
+  app.get("/api/signals/metrics", handleSignalsMetrics);
+  app.post("/api/news/replay-failures", handleNewsReplayFailures);
+  app.post("/api/signals/ingest", handleSignalsIngest);
+  app.get("/api/strategies/explain", handleStrategiesExplain);
+  app.post("/api/strategies/stress-test", handleStrategiesStressTest);
+  app.post("/api/strategies/backtest", handlePostBacktest);
 
   // Models explainability
-  app.get('/api/models/explain/:modelId', (req, res) => {
+  app.get("/api/models/explain/:modelId", (req, res) => {
     const { modelId } = req.params as any;
     try {
-      const { handleGetAllModels } = require('./routes/models');
+      const { handleGetAllModels } = require("./routes/models");
       // Reuse models store indirectly via the listing handler's closure
       // Fallback: if not available, respond minimally
-      const all = (require('./routes/models').__getModels?.() || require('./routes/models').models || []).filter?.((m:any)=>m.modelId === modelId);
+      const all = (
+        require("./routes/models").__getModels?.() ||
+        require("./routes/models").models ||
+        []
+      ).filter?.((m: any) => m.modelId === modelId);
       const model = Array.isArray(all) && all.length ? all[0] : null;
-      res.json({ status: 'success', data: { modelId, explanation: model ? `Explainability summary for ${model.name}` : 'Model not found in registry', model } });
+      res.json({
+        status: "success",
+        data: {
+          modelId,
+          explanation: model
+            ? `Explainability summary for ${model.name}`
+            : "Model not found in registry",
+          model,
+        },
+      });
     } catch {
-      res.json({ status: 'success', data: { modelId, explanation: 'Explainability data not available in mock server' } });
+      res.json({
+        status: "success",
+        data: {
+          modelId,
+          explanation: "Explainability data not available in mock server",
+        },
+      });
     }
   });
-  const { handleSHAPExplore } = require('./routes/shap');
-  app.post('/api/shap/:modelId', handleSHAPExplore);
+  const { handleSHAPExplore } = require("./routes/shap");
+  app.post("/api/shap/:modelId", handleSHAPExplore);
 
   // Adaptive Strategy Controller
-  const { handleASCStatus, handleASCReweight, handleASCActivate, handleASCDeactivate, handleASCHistory } = require('./routes/asc');
-  app.get('/api/strategy/controller/status', handleASCStatus);
-  app.get('/api/strategy/controller/history', handleASCHistory);
-  app.post('/api/strategy/controller/reweight', handleASCReweight);
-  app.post('/api/strategy/controller/policy/:name/activate', handleASCActivate);
-  app.post('/api/strategy/controller/policy/:name/deactivate', handleASCDeactivate);
+  const {
+    handleASCStatus,
+    handleASCReweight,
+    handleASCActivate,
+    handleASCDeactivate,
+    handleASCHistory,
+  } = require("./routes/asc");
+  app.get("/api/strategy/controller/status", handleASCStatus);
+  app.get("/api/strategy/controller/history", handleASCHistory);
+  app.post("/api/strategy/controller/reweight", handleASCReweight);
+  app.post("/api/strategy/controller/policy/:name/activate", handleASCActivate);
+  app.post(
+    "/api/strategy/controller/policy/:name/deactivate",
+    handleASCDeactivate,
+  );
 
   // Debug endpoint
   app.post("/api/debug/test", (req, res) => {
-    console.log('Debug endpoint hit with body:', req.body);
-    res.json({ status: 'success', received: req.body });
+    console.log("Debug endpoint hit with body:", req.body);
+    res.json({ status: "success", received: req.body });
   });
 
   // Trades and positions routes
@@ -407,9 +503,12 @@ export function createServer() {
   app.post("/api/admin/trades/veto", handleVetoTrade);
   // Alias for Project Aether style path
   app.post("/api/trades/admin/veto", handleVetoTrade);
-  const { handleTradeDecision, handleTradeExecute } = require('./routes/trades_decision');
-  app.post('/api/trades/decision', handleTradeDecision);
-  app.post('/api/trades/execute', handleTradeExecute);
+  const {
+    handleTradeDecision,
+    handleTradeExecute,
+  } = require("./routes/trades_decision");
+  app.post("/api/trades/decision", handleTradeDecision);
+  app.post("/api/trades/execute", handleTradeExecute);
 
   // LLM/AI Assistant routes
   app.post("/api/llm/ask", handleAskLLM);
@@ -427,32 +526,40 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // Automation social ingest
-  const { handleAutomationLimitsMe, handleAutomationSocial } = require('./routes/automation');
-  app.get('/api/automation/limits/me', handleAutomationLimitsMe);
-  app.post('/api/automation/social', handleAutomationSocial);
+  const {
+    handleAutomationLimitsMe,
+    handleAutomationSocial,
+  } = require("./routes/automation");
+  app.get("/api/automation/limits/me", handleAutomationLimitsMe);
+  app.post("/api/automation/social", handleAutomationSocial);
 
   // Mobile push console
-  const { handleMobileStatus, handleMobilePush } = require('./routes/mobile');
-  app.get('/api/mobile/status', handleMobileStatus);
-  app.post('/api/mobile/push', handleMobilePush);
+  const { handleMobileStatus, handleMobilePush } = require("./routes/mobile");
+  app.get("/api/mobile/status", handleMobileStatus);
+  app.post("/api/mobile/push", handleMobilePush);
 
   // System tasks
-  const { handleUserDataRefresh, handleGlobalDataRefresh, handleDataPriceSeries, handleTaskStatus } = require('./routes/tasks');
-  app.post('/api/tasks/data-refresh', handleUserDataRefresh);
-  app.post('/api/data/refresh', handleGlobalDataRefresh);
-  app.get('/api/data/price-series', handleDataPriceSeries);
-  app.get('/api/tasks/:id', handleTaskStatus);
+  const {
+    handleUserDataRefresh,
+    handleGlobalDataRefresh,
+    handleDataPriceSeries,
+    handleTaskStatus,
+  } = require("./routes/tasks");
+  app.post("/api/tasks/data-refresh", handleUserDataRefresh);
+  app.post("/api/data/refresh", handleGlobalDataRefresh);
+  app.get("/api/data/price-series", handleDataPriceSeries);
+  app.get("/api/tasks/:id", handleTaskStatus);
 
   // Global error handler: ensure we always return JSON for unexpected errors
   app.use((err: any, _req: any, res: any, _next: any) => {
-    console.error('Unhandled server error:', err);
+    console.error("Unhandled server error:", err);
     if (res.headersSent) return;
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   });
 
   // API 404 handler: return JSON for unknown API routes (avoid serving HTML)
-  app.use('/api', (_req: any, res: any) => {
-    res.status(404).json({ error: 'API endpoint not found' });
+  app.use("/api", (_req: any, res: any) => {
+    res.status(404).json({ error: "API endpoint not found" });
   });
 
   return app;
