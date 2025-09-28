@@ -87,6 +87,46 @@ export default function UserDashboard() {
   const [portfolioTotal, setPortfolioTotal] = useState<number>(0);
   const [portfolioPnL, setPortfolioPnL] = useState<number>(0);
   const [hedgePercent, setHedgePercent] = useState<number>(0);
+  const [venues, setVenues] = useState<Array<{ name: string; latency: number; spreadBps: number; depthUsd: number }>>([]);
+  const [arbs, setArbs] = useState<Array<{ symbol: string; buyVenue: string; sellVenue: string; spreadPct: number }>>([]);
+  const [crossLoading, setCrossLoading] = useState<boolean>(false);
+
+  const loadCrossMarket = async () => {
+    if (!mounted) return;
+    setCrossLoading(true);
+    try {
+      const vresp = await getJson<any>("/api/venue/health");
+      const aresp = await getJson<any>("/api/arbitrage/opportunities");
+      const vdata = vresp?.data || vresp || [];
+      const adata = aresp?.data || aresp || [];
+
+      const venuesParsed = Array.isArray(vdata)
+        ? vdata.map((v: any) => ({
+            name: v.name || v.venue || "Unknown",
+            latency: Number(v.latencyMs ?? v.latency ?? 0),
+            spreadBps: Number(v.spreadBps ?? v.spread_bps ?? v.spread || 0),
+            depthUsd: Number(v.depthUsd ?? v.depth_usd ?? v.depth || 0),
+          }))
+        : [];
+
+      const arbsParsed = Array.isArray(adata)
+        ? adata.map((o: any) => ({
+            symbol: o.symbol || o.pair || "-",
+            buyVenue: o.buyVenue || o.buy_venue || o.buy || "-",
+            sellVenue: o.sellVenue || o.sell_venue || o.sell || "-",
+            spreadPct: Number(o.spreadPct ?? o.spread_pct ?? o.spread ?? 0),
+          }))
+        : [];
+
+      if (!mounted) return;
+      setVenues(venuesParsed);
+      setArbs(arbsParsed);
+    } catch (err) {
+      console.error("Error loading cross-market data:", err);
+    } finally {
+      if (mounted) setCrossLoading(false);
+    }
+  };
 
   useEffect(() => {
     // Load initial data
