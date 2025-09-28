@@ -38,8 +38,8 @@ function shouldAddAdminKey(url: string, init?: ApiFetchInit): boolean {
   if (init && init.admin) return true;
   try {
     const u = new URL(url);
-    // Admin-like namespaces
-    return /\/api\/(admin|system|governance|automation)\b/.test(u.pathname);
+    // Admin-like namespaces including models, and handle optional /v1 prefix
+    return /\/api(?:\/v1)?\/(admin|system|governance|automation|models)\b/.test(u.pathname);
   } catch {
     return false;
   }
