@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
 import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import ScenarioLab from "./components/ScenarioLab";
 import { toast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import apiFetch from "@/lib/apiClient";
