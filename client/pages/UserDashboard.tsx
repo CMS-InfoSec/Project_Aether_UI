@@ -827,6 +827,107 @@ export default function UserDashboard() {
             </CardContent>
           </Card>
 
+          {/* Execution Heatmap */}
+          <Card>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="inline-flex items-center gap-2">Execution Heatmap</CardTitle>
+                <CardDescription>Venue × time buckets; slippage (bps), latency (P50/P95), and fill rates</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {execDiscrepancies > 0 && (
+                  <Badge variant="destructive">Discrepancies: {execDiscrepancies}</Badge>
+                )}
+                <HelpTip content="Data merges /api/execution/latency with realized impact logs. Tooltip shows symbol, depth, and predicted vs realized cost." />
+                <Button variant="outline" size="sm" onClick={loadExecutionHeatmap} disabled={execLoading}>
+                  <RefreshCw className={`h-4 w-4 ${execLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid md:grid-cols-4 gap-3">
+                <div>
+                  <div className="flex items-center gap-2"><Label>Venue</Label><HelpTip content="Filter by venue or All." /></div>
+                  <Select value={execVenue} onValueChange={setExecVenue}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All</SelectItem>
+                      {Array.from(new Set(execRows.map(r=> r.venue))).map(v => (
+                        <SelectItem key={v} value={v}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2"><Label>Symbol</Label><HelpTip content="Optional symbol filter (e.g., BTC/USDT)." /></div>
+                  <Input value={execSymbol} onChange={(e)=> setExecSymbol(e.target.value)} placeholder="All" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2"><Label>Window</Label><HelpTip content="Aggregation window." /></div>
+                  <Select value={execWindow} onValueChange={setExecWindow}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="15m">15 minutes</SelectItem>
+                      <SelectItem value="1h">1 hour</SelectItem>
+                      <SelectItem value="24h">24 hours</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm">Auto-refresh</Label>
+                  <input type="checkbox" checked={execAuto} onChange={(e)=> setExecAuto(e.target.checked)} />
+                </div>
+              </div>
+
+              <div className="overflow-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Venue</th>
+                      {execBuckets.map((b)=> (
+                        <th key={b} className="text-center p-2">{b}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {execRows
+                      .filter(r => execVenue==='all' ? true : r.venue===execVenue)
+                      .map((r)=> (
+                        <tr key={r.venue} className="border-b">
+                          <td className="p-2 font-medium">{r.venue}</td>
+                          {execBuckets.map((b)=> {
+                            const c = r.byBucket[b];
+                            const bg = (()=>{
+                              const v = Number(c?.p95Slip ?? 0);
+                              const clamped = Math.max(0, Math.min(200, v));
+                              const alpha = (clamped/200);
+                              return `rgba(239,68,68,${alpha})`;
+                            })();
+                            const title = c ? `sym: ${c.symbol || '-'}\ndepth: ${c.depthUsd ? new Intl.NumberFormat('en-US',{ style:'currency', currency:'USD', maximumFractionDigits:0 }).format(c.depthUsd) : '-'}\np50/p95 lat: ${Math.round(c.p50Lat||0)}/${Math.round(c.p95Lat||0)} ms\nfill: ${Math.round((c.fill||0)*100)}%\npred vs real: ${(c.predictedCost??0).toFixed?.(2) || (c.predictedCost||0)} / ${(c.realizedCost??0).toFixed?.(2) || (c.realizedCost||0)}` : '';
+                            return (
+                              <td key={r.venue+"__"+b} className="p-1 align-top">
+                                <div className={`rounded-md p-2 ${c?.discrepant ? 'ring-1 ring-destructive' : ''}`} style={{ background: bg }} title={title}>
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[10px] text-muted-foreground">{b}</span>
+                                    {c?.discrepant && (<Badge variant="destructive" className="h-4 px-1 text-[10px]">Δ</Badge>)}
+                                  </div>
+                                  <div className="text-[11px]">lat P50/P95: {c ? `${Math.round(c.p50Lat||0)}/${Math.round(c.p95Lat||0)} ms` : '—'}</div>
+                                  <div className="text-[11px]">fill: {c ? `${Math.round((c.fill||0)*100)}%` : '—'}</div>
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    {execRows.length===0 && (
+                      <tr><td className="p-3 text-muted-foreground" colSpan={execBuckets.length+1}>No data</td></tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Risk Monitoring */}
           <RiskMonitoringPanel />
 
