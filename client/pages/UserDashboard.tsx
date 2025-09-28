@@ -96,6 +96,7 @@ export default function UserDashboard() {
     loadPerAsset();
     loadRecentTrades();
     loadPortfolioPanel();
+    loadAlerts();
 
     // Cleanup function
     return () => {
