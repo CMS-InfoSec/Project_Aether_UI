@@ -759,6 +759,8 @@ export default function AppLayout() {
           </div>
         </footer>
       </div>
+      {/* Docked Copilot */}
+      <CopilotDock />
     </div>
   );
 }
