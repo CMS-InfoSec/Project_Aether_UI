@@ -79,6 +79,10 @@ export default function UserDashboard() {
     notifications: false,
   });
   const [mounted, setMounted] = useState(true);
+  const [portfolioHoldings, setPortfolioHoldings] = useState<Array<{ symbol:string; value:number; allocation:number; pnl:number }>>([]);
+  const [portfolioTotal, setPortfolioTotal] = useState<number>(0);
+  const [portfolioPnL, setPortfolioPnL] = useState<number>(0);
+  const [hedgePercent, setHedgePercent] = useState<number>(0);
 
   useEffect(() => {
     // Load initial data
@@ -87,6 +91,7 @@ export default function UserDashboard() {
     loadNotifications();
     loadPerAsset();
     loadRecentTrades();
+    loadPortfolioPanel();
 
     // Cleanup function
     return () => {
@@ -174,6 +179,33 @@ export default function UserDashboard() {
     } catch (e) {
       console.error("Error loading per-asset report:", e);
     }
+  };
+
+  const loadPortfolioPanel = async () => {
+    try {
+      const pos = await getJson<any>("/api/positions/open");
+      const items = Array.isArray(pos?.items) ? pos.items : [];
+      const holdingsRaw = items.map((p:any)=>{
+        const price = Number(p.current_price ?? p.entry_price) || 0;
+        const value = price * (Number(p.amount)||0);
+        const pnl = Number(p.net_pnl ?? p.pnl ?? 0) || 0;
+        const symbol = String(p.symbol||'');
+        return { symbol, value, pnl };
+      });
+      const total = holdingsRaw.reduce((s:any,h:any)=> s + h.value, 0);
+      const holdings = holdingsRaw
+        .sort((a:any,b:any)=> b.value - a.value)
+        .map((h:any)=> ({ ...h, allocation: total > 0 ? (h.value/total)*100 : 0 }));
+      setPortfolioHoldings(holdings);
+      setPortfolioTotal(total);
+      setPortfolioPnL(holdings.reduce((s:any,h:any)=> s + h.pnl, 0));
+    } catch (e) {}
+    try {
+      const hp = await getJson<any>("/api/hedge/percent");
+      const data = hp?.data || hp;
+      const eff = Number(data?.effectivePercent ?? data?.hedgePercent ?? 0) || 0;
+      setHedgePercent(eff);
+    } catch(e) {}
   };
 
   const loadRecentTrades = async () => {
@@ -434,6 +466,72 @@ export default function UserDashboard() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Portfolio Panel */}
+          <Card>
+            <CardHeader className="flex items-start justify-between">
+              <div>
+                <CardTitle className="inline-flex items-center gap-2">Portfolio</CardTitle>
+                <CardDescription>Holdings, allocations, hedge exposure, and unrealized P&L</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                <HelpTip content="Pulled from open positions and hedge settings. Hedge ratio applies at portfolio level." />
+                <Button variant="outline" size="sm" onClick={loadPortfolioPanel}>
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <div className="text-sm text-muted-foreground mb-1">Hedge Ratio</div>
+                  <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
+                    <div className="h-3 bg-primary rounded-full" style={{ width: `${Math.min(100, Math.max(0, hedgePercent*100)).toFixed(0)}%` }} />
+                  </div>
+                  <div className="text-xs mt-1">{(hedgePercent*100).toFixed(0)}% hedged</div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-sm font-medium mb-2">Current Holdings</div>
+                    <div className="space-y-2">
+                      {portfolioHoldings.length === 0 && (
+                        <div className="text-xs text-muted-foreground">No open positions</div>
+                      )}
+                      {portfolioHoldings.map((h, idx)=> (
+                        <div key={h.symbol+idx}>
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="font-medium">{h.symbol}</div>
+                            <div className="text-muted-foreground">{formatCurrency(h.value)}</div>
+                          </div>
+                          <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                            <div className="h-2" style={{ width: `${h.allocation.toFixed(2)}%`, backgroundColor: COLORS[idx % COLORS.length] }} />
+                          </div>
+                          <div className="text-[11px] text-muted-foreground">{h.allocation.toFixed(2)}%</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-2">Unrealized P&L</div>
+                    <div className="space-y-2">
+                      {portfolioHoldings.map((h)=> (
+                        <div key={h.symbol} className="flex items-center justify-between text-xs">
+                          <div>{h.symbol}</div>
+                          <div className={`${h.pnl>=0? 'text-accent':'text-destructive'} font-medium`}>{h.pnl>=0? '+':''}{formatCurrency(h.pnl)}</div>
+                        </div>
+                      ))}
+                      <div className="border-t pt-2 flex items-center justify-between text-sm">
+                        <div className="font-medium">Total</div>
+                        <div className={`${portfolioPnL>=0? 'text-accent':'text-destructive'} font-semibold`}>{portfolioPnL>=0? '+':''}{formatCurrency(portfolioPnL)}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">Portfolio Market Value: {formatCurrency(portfolioTotal)}</div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Risk Monitoring */}
           <RiskMonitoringPanel />
