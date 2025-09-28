@@ -338,6 +338,9 @@ export function createServer() {
   const { handleEventsTrades, handleEventsBalances } = require('./routes/events');
   app.get('/api/events/trades', handleEventsTrades);
   app.get('/api/events/balances', handleEventsBalances);
+  // Explicit v1 aliases for WS/SSE compatibility
+  app.get('/api/v1/events/trades', handleEventsTrades);
+  app.get('/api/v1/events/balances', handleEventsBalances);
 
   // Strategies & Signals
   const {
