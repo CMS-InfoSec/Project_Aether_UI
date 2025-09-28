@@ -49,6 +49,7 @@ import {
   WifiOff,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import QuantumSecurityPanel from "./components/QuantumSecurityPanel";
 
 // Types
 interface UserProfile {
@@ -1292,6 +1293,9 @@ export default function ProfileSettings() {
             )}
           </CardContent>
         </Card>
+
+        {/* Quantum Security Panel */}
+        <QuantumSecurityPanel />
 
         {/* Current Settings Summary */}
         <Card>
