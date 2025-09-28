@@ -203,6 +203,121 @@ export default function TradeDetails() {
         </Card>
       )}
 
+      {/* Execution Details */}
+      <Card>
+        <CardHeader className="flex items-start justify-between">
+          <div>
+            <CardTitle className="inline-flex items-center gap-2">Execution Details</CardTitle>
+            <CardDescription>Latency, slippage vs mid, and partial fills</CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            <HelpTip content="Pulled from /api/execution/latency?tradeId=...; shows end-to-end latency and per-fill slippage." />
+            <Button variant="outline" size="sm" onClick={fetchExecution} disabled={execLoading}>
+              <RefreshCw className={`h-4 w-4 ${execLoading ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {execError && (
+            <div className="text-sm text-red-600 mb-2">{execError}</div>
+          )}
+          <div className="grid md:grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="text-muted-foreground">Latency (ms)</div>
+              <div className="font-semibold text-base">
+                {(() => {
+                  const src = execData || {};
+                  const lat = Number(src.latency_ms ?? src.latency ?? 0);
+                  if (lat) return lat.toFixed(0);
+                  const submit = new Date(src.submit_ts || src.submitted_at || 0).getTime();
+                  const fill = new Date(src.fill_ts || src.filled_at || 0).getTime();
+                  const diff = submit && fill ? (fill - submit) : 0;
+                  return diff ? String(diff) : '-';
+                })()}
+              </div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Fills</div>
+              <div className="font-semibold text-base">{Array.isArray(execData?.fills) ? execData.fills.length : (execData?.fills_count ?? '-')}</div>
+            </div>
+            <div>
+              <div className="text-muted-foreground">Avg Slippage (bps)</div>
+              <div className="font-semibold text-base">
+                {(() => {
+                  const src = execData || {};
+                  if (src.avg_slippage_bps !== undefined) return Number(src.avg_slippage_bps).toFixed(2);
+                  if (src.slippage_bps !== undefined) return Number(src.slippage_bps).toFixed(2);
+                  return trade?.slippage_bps ?? '-';
+                })()}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4 mt-4">
+            <div className="h-64">
+              <div className="text-sm font-medium mb-1">Slippage by Fill (bps)</div>
+              <div className="h-56">
+                {(() => {
+                  const src = execData || {};
+                  const fills = Array.isArray(src.fills) ? src.fills : [];
+                  const mid = Number(src.mid_price ?? src.mid ?? 0) || null;
+                  const bars = fills.map((f:any, idx:number)=> {
+                    const price = Number(f.price ?? f.fill_price ?? 0);
+                    const bps = mid ? ((price - mid) / mid) * 10000 : (typeof f.slippage_bps === 'number' ? f.slippage_bps : 0);
+                    return { name: `Fill ${idx+1}`, value: Math.abs(bps) };
+                  });
+                  const data = bars.length ? bars : (
+                    ((execData?.slippage_bps!==undefined) || (trade?.slippage_bps!==undefined))
+                      ? [{ name: 'Total', value: Math.abs(Number(execData?.slippage_bps ?? trade?.slippage_bps ?? 0)) }]
+                      : []
+                  );
+                  if (!data.length) return <div className="text-xs text-muted-foreground">No slippage data</div>;
+                  return (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RechartsBarChart data={data} layout="vertical" margin={{ left: 28 }}>
+                        <XAxis type="number" />
+                        <YAxis dataKey="name" type="category" width={80} />
+                        <RechartsTooltip />
+                        <Bar dataKey="value" fill="#16a34a" />
+                      </RechartsBarChart>
+                    </ResponsiveContainer>
+                  );
+                })()}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-medium mb-1">Partial Fills</div>
+              <div className="space-y-2 max-h-56 overflow-auto">
+                {(() => {
+                  const fills = Array.isArray(execData?.fills) ? execData!.fills : [];
+                  if (!fills.length) return <div className="text-xs text-muted-foreground">No partial fills reported</div>;
+                  const totalQty = fills.reduce((s:any,f:any)=> s + Number(f.qty ?? f.quantity ?? 0), 0) || 0;
+                  return fills.map((f:any, idx:number)=> {
+                    const qty = Number(f.qty ?? f.quantity ?? 0);
+                    const price = Number(f.price ?? f.fill_price ?? 0);
+                    const ts = f.ts || f.time || f.timestamp;
+                    const pct = totalQty ? (qty/totalQty)*100 : 0;
+                    return (
+                      <div key={idx} className="p-2 border rounded-md">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="font-medium">Fill {idx+1}</div>
+                          <div className="text-muted-foreground">{ts ? new Date(ts).toLocaleTimeString() : ''}</div>
+                        </div>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <div>Qty: <span className="font-medium">{qty}</span></div>
+                          <div>Price: <span className="font-medium">{price}</span></div>
+                          <div>{pct.toFixed(1)}%</div>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {isAdmin && (
         <Card>
           <CardHeader className="flex items-start justify-between">
