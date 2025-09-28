@@ -15,6 +15,7 @@ import HelpTip from "@/components/ui/help-tip";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Slider } from "@/components/ui/slider";
+import { ResponsiveContainer, LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
@@ -69,6 +70,13 @@ export default function StrategiesSignals() {
   const [builderSaving, setBuilderSaving] = useState<{ threshold?: boolean; hedge?: boolean; weights?: boolean }>({});
   const thresholdTimer = useRef<number | null>(null);
   const hedgeTimer = useRef<number | null>(null);
+
+  // Backtest
+  const [btRunning, setBtRunning] = useState(false);
+  const [btError, setBtError] = useState<string | null>(null);
+  const [btCurve, setBtCurve] = useState<Array<{ idx:number; value:number }>>([]);
+  const [btWinRate, setBtWinRate] = useState<number | null>(null);
+  const [btDrawdown, setBtDrawdown] = useState<number | null>(null);
   const [explainCaps, setExplainCaps] = useState<{
     default_limit: number;
     max_limit: number;
@@ -509,6 +517,78 @@ export default function StrategiesSignals() {
                   </table>
                 </div>
                 <div className="text-xs text-muted-foreground mt-2">{builderSaving.weights ? 'Applying…' : ''}</div>
+              </CardContent>
+            </Card>
+
+            {/* Run Backtest */}
+            <Card className="lg:col-span-2">
+              <CardHeader className="flex items-start justify-between">
+                <CardTitle>Run Backtest</CardTitle>
+                <HelpTip content="Runs a quick backtest using current builder settings. Tries /backtest/run, falls back to /api/strategies/backtest, then reads latest report." />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={async ()=>{
+                      setBtError(null); setBtRunning(true); setBtCurve([]); setBtWinRate(null); setBtDrawdown(null);
+                      try {
+                        const payload:any = { config: { threshold: signalThreshold, weights, hedge: hedgePercent } };
+                        let r = await apiFetch('/backtest/run', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+                        if (r.status === 404) {
+                          r = await apiFetch('/api/strategies/backtest', { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify(payload) });
+                        }
+                        const j = await r.json().catch(()=> ({}));
+                        if (!r.ok && r.status !== 202) throw new Error(j.detail || j.message || `HTTP ${r.status}`);
+                        // Fetch latest report
+                        let report:any = null;
+                        try {
+                          const rr = await apiFetch('/api/reports/backtest?format=json');
+                          report = await rr.json().catch(()=> ({}));
+                        } catch {}
+                        const data = report?.data || report || {};
+                        const curve = Array.isArray(data?.equity) ? data.equity : (Array.isArray(data?.curve) ? data.curve : (Array.isArray(data?.series) ? data.series : []));
+                        const points = (curve || []).map((v:any, i:number)=> ({ idx:i, value: typeof v === 'number' ? v : (v.value ?? v.pnl ?? 0) }));
+                        setBtCurve(points);
+                        const wr = Number(data?.win_rate ?? data?.winRate ?? 0);
+                        setBtWinRate(isFinite(wr) ? wr : null);
+                        const dd = Number(data?.max_drawdown ?? data?.drawdown ?? 0);
+                        setBtDrawdown(isFinite(dd) ? dd : null);
+                      } catch (e:any) {
+                        setBtError(e?.message || 'Backtest failed');
+                      } finally {
+                        setBtRunning(false);
+                      }
+                    }}
+                    disabled={btRunning}
+                  >
+                    {btRunning ? 'Running…' : 'Run Backtest'}
+                  </Button>
+                  {btError && <div className="text-sm text-red-600">{btError}</div>}
+                </div>
+
+                {(btCurve.length>0 || btWinRate!==null || btDrawdown!==null) && (
+                  <div className="grid md:grid-cols-3 gap-3">
+                    <div className="md:col-span-2">
+                      <div className="h-48">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsLineChart data={btCurve}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="idx" />
+                            <YAxis />
+                            <RechartsTooltip />
+                            <Line type="monotone" dataKey="value" stroke="#2563eb" strokeWidth={2} dot={false} />
+                          </RechartsLineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-sm">Win Rate</div>
+                      <div className="text-2xl font-semibold">{btWinRate!==null ? `${(btWinRate*100).toFixed(1)}%` : '—'}</div>
+                      <div className="text-sm">Max Drawdown</div>
+                      <div className="text-2xl font-semibold">{btDrawdown!==null ? `${(btDrawdown*100).toFixed(1)}%` : '—'}</div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
