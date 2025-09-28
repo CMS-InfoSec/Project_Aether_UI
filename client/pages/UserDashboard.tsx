@@ -151,6 +151,7 @@ export default function UserDashboard() {
     loadPortfolioPanel();
     loadAlerts();
     loadCrossMarket();
+    loadExecutionHeatmap();
 
     // Cleanup function
     return () => {
