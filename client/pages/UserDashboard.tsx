@@ -1058,6 +1058,14 @@ export default function UserDashboard() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="risk" className="space-y-6">
+          <RiskMonitoringPanel range={regimeRange || undefined} />
+        </TabsContent>
+
+        <TabsContent value="defense" className="space-y-6">
+          <ManipulationDefenseConsole />
+        </TabsContent>
+
         <TabsContent value="reports" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Daily Report */}
