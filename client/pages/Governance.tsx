@@ -467,11 +467,12 @@ export default function Governance() {
         onValueChange={setActiveTab}
         className="space-y-6"
       >
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="proposals">Proposals</TabsTrigger>
           <TabsTrigger value="voting">Voting</TabsTrigger>
           <TabsTrigger value="deploy">Deploy</TabsTrigger>
           <TabsTrigger value="asc-models">ASC Models</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance & Audit</TabsTrigger>
           <TabsTrigger value="feedback">Feedback</TabsTrigger>
         </TabsList>
 
