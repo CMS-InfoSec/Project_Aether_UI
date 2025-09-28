@@ -896,7 +896,7 @@ export default function UserDashboard() {
                 </div>
                 <div>
                   <div className="flex items-center gap-2"><Label>Window</Label><HelpTip content="Aggregation window." /></div>
-                  <Select value={regimeRange ? 'custom' : execWindow} onValueChange={(v)=> { if (v==='custom') return; setExecWindow(v); setRegimeRange(null); }}>
+                  <Select value={execWindow} onValueChange={(v)=> { setExecWindow(v); }} disabled={!!regimeRange}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="15m">15 minutes</SelectItem>
