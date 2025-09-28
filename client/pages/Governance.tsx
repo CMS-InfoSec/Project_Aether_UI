@@ -752,6 +752,10 @@ export default function Governance() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="asc-models" className="space-y-6">
+          <ASCModelsPanel />
+        </TabsContent>
+
         <TabsContent value="feedback" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Submit Feedback */}
