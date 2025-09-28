@@ -434,6 +434,12 @@ export default function UserDashboard() {
             </Card>
           </div>
 
+          {/* Risk Monitoring */}
+          {(() => {
+            const RiskMonitoringPanel = require("./components/RiskMonitoringPanel").default;
+            return <RiskMonitoringPanel />;
+          })()}
+
           {/* Recent Activity */}
           <Card>
             <CardHeader className="flex items-start justify-between">
