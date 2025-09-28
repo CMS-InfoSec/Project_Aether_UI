@@ -436,10 +436,7 @@ export default function UserDashboard() {
           </div>
 
           {/* Risk Monitoring */}
-          {(() => {
-            const RiskMonitoringPanel = require("./components/RiskMonitoringPanel").default;
-            return <RiskMonitoringPanel />;
-          })()}
+          <RiskMonitoringPanel />
 
           {/* Recent Activity */}
           <Card>
