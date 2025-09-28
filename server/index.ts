@@ -517,6 +517,22 @@ export function createServer() {
   app.get("/api/llm/status", handleLLMStatus);
   app.delete("/api/llm/rate-limit/:userId", handleResetRateLimit);
 
+  // Multi-agent LOB simulator
+  {
+    const {
+      handleGetAgentsConfig,
+      handleSaveAgentsConfig,
+      handleRunAgentsSim,
+      handleGetAgentsResult,
+      handleGetAgentsHistory,
+    } = require("./routes/sim_agents");
+    app.get("/api/sim/agents/config", handleGetAgentsConfig);
+    app.post("/api/sim/agents/config", handleSaveAgentsConfig);
+    app.post("/api/sim/agents/run", handleRunAgentsSim);
+    app.get("/api/sim/agents/result/:id", handleGetAgentsResult);
+    app.get("/api/sim/agents/history", handleGetAgentsHistory);
+  }
+
   // Example API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
