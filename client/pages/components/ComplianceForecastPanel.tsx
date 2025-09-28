@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import HelpTip from "@/components/ui/help-tip";
-import apiFetch, { getJson } from "@/lib/apiClient";
+import apiFetch from "@/lib/apiClient";
 import { AlertTriangle, BarChart3, Download, RefreshCw, SlidersHorizontal, TrendingDown } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, Legend, CartesianGrid } from "recharts";
 
