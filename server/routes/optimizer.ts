@@ -176,3 +176,7 @@ export function handleGetLastOptimization(_req: Request, res: Response) {
   if (!lastCovariance) return res.json({ status: "success", data: null });
   return res.json({ status: "success", data: { covarianceId: lastCovariance.id, symbols: lastCovariance.symbols, uploadedAt: lastCovariance.uploadedAt } });
 }
+
+export function __getLastCovariance() {
+  return lastCovariance;
+}
