@@ -3,7 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import HelpTip from "@/components/ui/help-tip";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { getBaseUrl, apiFetch } from "@/lib/apiClient";
 
 interface AlertItem {
@@ -48,8 +54,10 @@ export default function AlertsPanel() {
   const esRef = useRef<EventSource | null>(null);
   const lastTsRef = useRef<string | null>(null);
   const stopRef = useRef(false);
-  const [severity, setSeverity] = useState<'all'|'info'|'warning'|'error'|'critical'>('all');
-  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [severity, setSeverity] = useState<
+    "all" | "info" | "warning" | "error" | "critical"
+  >("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     const base = getBaseUrl();
@@ -119,7 +127,7 @@ export default function AlertsPanel() {
       const params = new URLSearchParams();
       params.set("limit", "50");
       if (lastTsRef.current) params.set("since", lastTsRef.current);
-      if (severity !== 'all') params.set('severity', severity);
+      if (severity !== "all") params.set("severity", severity);
       try {
         const r = await apiFetch(`/api/events/alerts?${params.toString()}`, {
           cache: "no-cache",
@@ -145,8 +153,12 @@ export default function AlertsPanel() {
     return () => clearTimeout(timer);
   }, [live, severity]);
 
-  const eventOptions = Array.from(new Set(items.map(i => i.event))).sort();
-  const filtered = items.filter(i => (severity==='all' ? true : i.severity===severity) && (typeFilter==='all' ? true : i.event===typeFilter));
+  const eventOptions = Array.from(new Set(items.map((i) => i.event))).sort();
+  const filtered = items.filter(
+    (i) =>
+      (severity === "all" ? true : i.severity === severity) &&
+      (typeFilter === "all" ? true : i.event === typeFilter),
+  );
 
   return (
     <Card>
@@ -162,8 +174,13 @@ export default function AlertsPanel() {
         </CardTitle>
         <div className="flex items-center gap-2">
           <div className="min-w-[140px]">
-            <Select value={severity} onValueChange={(v)=> setSeverity(v as any)}>
-              <SelectTrigger><SelectValue placeholder="Severity" /></SelectTrigger>
+            <Select
+              value={severity}
+              onValueChange={(v) => setSeverity(v as any)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Severity" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All severities</SelectItem>
                 <SelectItem value="critical">Critical</SelectItem>
@@ -175,11 +192,15 @@ export default function AlertsPanel() {
           </div>
           <div className="min-w-[160px]">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All types</SelectItem>
-                {eventOptions.map((e)=> (
-                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                {eventOptions.map((e) => (
+                  <SelectItem key={e} value={e}>
+                    {e}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
