@@ -337,7 +337,14 @@ export default function ModelComparisonTab() {
                             <Checkbox
                               checked={!!selected[m.modelId]}
                               onCheckedChange={(c) =>
-                                setSelected((prev) => ({ ...prev, [m.modelId]: !!c }))
+                                setSelected((prev) => {
+                                  const isAdding = !!c;
+                                  if (isAdding) {
+                                    const count = Object.values(prev).filter(Boolean).length;
+                                    if (!prev[m.modelId] && count >= 4) return prev;
+                                  }
+                                  return { ...prev, [m.modelId]: !!c };
+                                })
                               }
                             />
                             <span className="font-medium">
@@ -440,7 +447,7 @@ export default function ModelComparisonTab() {
                           <td className="p-2 text-right">{loading ? "…" : perf?.sharpe !== undefined ? perf.sharpe.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sortino !== undefined ? perf.sortino.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.cvar !== undefined ? perf.cvar.toFixed(3) : "—"}</td>
-                          <td className="p-2 text-right">{loading ? "��" : me.turnover !== undefined ? (me.turnover * 100).toFixed(1) + "%" : "—"}</td>
+                          <td className="p-2 text-right">{loading ? "…" : me.turnover !== undefined ? (me.turnover * 100).toFixed(1) + "%" : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : me.breaches !== undefined ? me.breaches : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : me.drift !== undefined ? me.drift : "—"}</td>
                           <td className="p-2">
