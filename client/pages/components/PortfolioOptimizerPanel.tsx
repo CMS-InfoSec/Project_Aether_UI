@@ -68,8 +68,9 @@ export default function PortfolioOptimizerPanel() {
   const [symbols, setSymbols] = useState<string[]>([]);
   const [matrix, setMatrix] = useState<number[][] | null>(null);
   const [expected, setExpected] = useState<Record<string, number>>({});
-  const [method, setMethod] = useState<"kelly" | "markowitz">("markowitz");
+  const [method, setMethod] = useState<"kelly" | "markowitz" | "risk-parity">("markowitz");
   const [riskAversion, setRiskAversion] = useState<number>(1);
+  const [maxWeight, setMaxWeight] = useState<number>(0.5);
   const [running, setRunning] = useState(false);
   const [allocations, setAllocations] = useState<Array<{ symbol: string; weight: number }>>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
@@ -118,12 +119,17 @@ export default function PortfolioOptimizerPanel() {
     }
     setRunning(true);
     try {
-      const body: any = { method, expectedReturns: expected, riskAversion };
+      const body: any = { method, expectedReturns: expected, riskAversion, riskLimits: { maxWeight } };
       if (covarianceId) body.covarianceId = covarianceId;
       else body.symbols = symbols, body.matrix = matrix;
-      const r = await postJson<any>("/api/optimizer/run", body);
+      let r: any;
+      try {
+        r = await postJson<any>("/api/v1/portfolio/optimize", body);
+      } catch (e) {
+        r = await postJson<any>("/api/portfolio/optimize", body);
+      }
       if (r?.allocations) setAllocations(r.allocations);
-      toast({ title: "Optimization complete", description: `${method === "kelly" ? "Kelly" : "Markowitz"} allocations ready` });
+      toast({ title: "Optimization complete", description: `${method === "kelly" ? "Kelly" : method === 'risk-parity' ? 'Risk Parity' : "Markowitz"} allocations ready` });
       // Audit log
       try {
         await postJson("/api/notifications", {
@@ -149,7 +155,7 @@ export default function PortfolioOptimizerPanel() {
     <Card className="lg:col-span-2">
       <CardHeader className="flex items-start justify-between">
         <CardTitle>Portfolio Optimizer</CardTitle>
-        <HelpTip content="Upload covariance, set expected returns, choose optimization (Kelly/Markowitz), and compute allocations." />
+        <HelpTip content="Upload covariance, set expected returns, choose optimization (Kelly/Markowitz/Risk-Parity), set risk limits, and compute allocations." />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-3 gap-3 items-end">
@@ -169,7 +175,7 @@ export default function PortfolioOptimizerPanel() {
           <div>
             <div className="flex items-center gap-2">
               <Label>Method</Label>
-              <HelpTip content="Kelly uses w=Σ⁻¹μ clipped to >=0. Markowitz uses mean-variance with risk aversion." />
+              <HelpTip content="Kelly uses w=Σ⁻¹μ clipped to >=0. Markowitz uses mean-variance with risk aversion. Risk-Parity targets equal risk contribution (proxied by inverse-variance)." />
             </div>
             <RadioGroup value={method} onValueChange={(v) => setMethod(v as any)}>
               <div className="flex items-center space-x-2">
@@ -180,12 +186,16 @@ export default function PortfolioOptimizerPanel() {
                 <RadioGroupItem id="m-kelly" value="kelly" />
                 <Label htmlFor="m-kelly">Kelly</Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem id="m-rp" value="risk-parity" />
+                <Label htmlFor="m-rp">Risk-Parity</Label>
+              </div>
             </RadioGroup>
           </div>
         </div>
 
-        {method === "markowitz" && (
-          <div className="grid md:grid-cols-3 gap-3 items-end">
+        <div className="grid md:grid-cols-3 gap-3 items-end">
+          {method === "markowitz" && (
             <div>
               <div className="flex items-center gap-2">
                 <Label>Risk aversion (λ)</Label>
@@ -193,8 +203,15 @@ export default function PortfolioOptimizerPanel() {
               </div>
               <Input type="number" step="0.1" min="0.1" value={riskAversion} onChange={(e) => setRiskAversion(Math.max(0.1, Number(e.target.value) || 1))} />
             </div>
+          )}
+          <div>
+            <div className="flex items-center gap-2">
+              <Label>Max weight</Label>
+              <HelpTip content="Cap any single asset weight; post-cap weights are renormalized." />
+            </div>
+            <Input type="number" step="0.01" min="0.01" max="1" value={maxWeight} onChange={(e)=> setMaxWeight(Math.max(0.01, Math.min(1, Number(e.target.value)||0.5)))} />
           </div>
-        )}
+        </div>
 
         {symbols.length > 0 && (
           <div>
