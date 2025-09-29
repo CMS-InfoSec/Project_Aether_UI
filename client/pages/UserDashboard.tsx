@@ -287,9 +287,9 @@ export default function UserDashboard() {
     // Cleanup function
     return () => {
       setMounted(false);
-      if (alertsEsRefMutable.current) {
-        try { alertsEsRefMutable.current.close(); } catch {}
-        alertsEsRefMutable.current = null;
+      if (alertsEsRef.current) {
+        try { alertsEsRef.current.close(); } catch {}
+        alertsEsRef.current = null;
       }
     };
   }, []);
