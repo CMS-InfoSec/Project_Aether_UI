@@ -709,6 +709,44 @@ export function createServer() {
     res.status(500).json({ error: "Internal server error" });
   });
 
+  // Optional proxy to external backend for any unknown /api routes
+  const proxyBase = process.env.AETHER_BACKEND_URL;
+  if (proxyBase) {
+    app.use("/api", async (req: any, res: any, next: any) => {
+      // If a route already handled the request, skip
+      if (res.headersSent) return next();
+      try {
+        const url = new URL(req.originalUrl.replace(/^\/api\b/, "/api"), proxyBase);
+        const headers: Record<string, string> = {};
+        for (const [k, v] of Object.entries(req.headers)) {
+          if (typeof v === "string") headers[k] = v;
+        }
+        if (!headers["x-api-key"] && process.env.AETHER_API_KEY) headers["x-api-key"] = String(process.env.AETHER_API_KEY);
+        const init: any = { method: req.method, headers };
+        if (!/GET|HEAD/i.test(req.method)) {
+          init.body = req.body && Object.keys(req.body).length ? JSON.stringify(req.body) : undefined;
+          if (init.body && !headers["content-type"]) headers["content-type"] = "application/json";
+        }
+        const r = await fetch(url.toString(), init as any);
+        const ct = r.headers.get("content-type") || "";
+        res.status(r.status);
+        r.headers.forEach((val, key) => {
+          if (key.toLowerCase() === "content-length") return;
+          res.setHeader(key, val);
+        });
+        if (ct.includes("application/json")) {
+          const j = await r.json().catch(() => ({}));
+          res.json(j);
+        } else {
+          const text = await r.text();
+          res.send(text);
+        }
+      } catch (e) {
+        next();
+      }
+    });
+  }
+
   // API 404 handler: return JSON for unknown API routes (avoid serving HTML)
   app.use("/api", (_req: any, res: any) => {
     res.status(404).json({ error: "API endpoint not found" });
