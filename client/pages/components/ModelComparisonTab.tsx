@@ -293,7 +293,7 @@ export default function ModelComparisonTab() {
     return selectedIds.map((id, idx) => {
       const m = models.find((mm) => mm.modelId === id);
       const mm = metrics[id];
-      const perf = sampleMode === "oos" ? mm?.oos : mm?.ins;
+      const perf = sourceMode === 'live' ? mm?.live : backtestMode === "oos" ? mm?.oos : mm?.ins;
       return {
         name: m?.name || id,
         value: perf && perf[key] !== undefined ? perf[key] : undefined,
