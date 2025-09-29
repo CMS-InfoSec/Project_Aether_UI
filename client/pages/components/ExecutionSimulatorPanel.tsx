@@ -89,11 +89,32 @@ export default function ExecutionSimulatorPanel() {
 
   const chartData = useMemo(()=> (result?.perSlice || result?.chart || []).map((d:any)=> ({ t: d.t, cumCost: d.cumCost ?? d.cumcost ?? d.value ?? 0 })), [result]);
 
+  const slipData = useMemo(()=>{
+    const rows = Array.isArray(result?.perSlice) ? result.perSlice : [];
+    if (!rows.length || !result?.summary) return [] as any[];
+    const benchPx = Number(result.summary.benchmarkPrice)||0;
+    const buy = String(side).toLowerCase() !== 'sell';
+    let cumQty = 0; let cumCost = 0; let cumBench = 0; let cumSlip = 0;
+    const out: any[] = [];
+    for (const r of rows) {
+      const qty = Number(r.qty)||0; const px = Number(r.price)||0;
+      const qSigned = (buy ? 1 : -1) * qty;
+      cumQty += Math.abs(qSigned);
+      cumCost += (buy ? 1 : -1) * qty * px;
+      cumBench += (buy ? 1 : -1) * qty * benchPx;
+      cumSlip = cumCost - cumBench; // positive is worse for buys
+      const notional = Math.max(1e-9, cumQty * benchPx);
+      const pct = cumSlip / notional;
+      out.push({ t: r.t, cumSlipUsd: cumSlip, cumSlipPct: pct });
+    }
+    return out;
+  }, [result, side]);
+
   return (
     <Card>
       <CardHeader className="flex items-start justify-between">
         <CardTitle>Execution Simulator</CardTitle>
-        <HelpTip content="Select execution method and upload order book (CSV/JSON). Simulates via /api/v1/execution/simulate." />
+        <HelpTip content="Select execution style, upload order book (CSV/JSON). Shows cost and slippage-adjusted return. Source: /api/v1/execution/simulate." />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-4 gap-3 items-end">
@@ -148,16 +169,36 @@ export default function ExecutionSimulatorPanel() {
         </div>
 
         {chartData.length>0 && (
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height="100%">
-              <RechartsLineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="t" tickFormatter={(v)=> new Date(v).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} />
-                <YAxis />
-                <RechartsTooltip />
-                <Line type="monotone" dataKey="cumCost" stroke="#2563eb" strokeWidth={2} dot={false} />
-              </RechartsLineChart>
-            </ResponsiveContainer>
+          <div>
+            <div className="font-medium mb-1">Cumulative Cost</div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsLineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="t" tickFormatter={(v)=> new Date(v).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} />
+                  <YAxis />
+                  <RechartsTooltip />
+                  <Line type="monotone" dataKey="cumCost" stroke="#2563eb" strokeWidth={2} dot={false} />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
+
+        {slipData.length>0 && (
+          <div>
+            <div className="font-medium mb-1">Slippage-adjusted Return</div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <RechartsLineChart data={slipData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="t" tickFormatter={(v)=> new Date(v).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} />
+                  <YAxis tickFormatter={(v)=> `${(Number(v)*100).toFixed(2)}%`} />
+                  <RechartsTooltip formatter={(v)=> typeof v==='number'? `${(v*100).toFixed(2)}%`: v} />
+                  <Line type="monotone" dataKey="cumSlipPct" stroke="#16a34a" strokeWidth={2} dot={false} />
+                </RechartsLineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
 
