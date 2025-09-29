@@ -114,6 +114,7 @@ import { toast } from "@/hooks/use-toast";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import ModelManagementPanel from "./components/ModelManagementPanel";
 
 // Enhanced Types for AI Training Workflow
 interface TrainingJob {
