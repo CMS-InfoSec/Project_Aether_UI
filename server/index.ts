@@ -266,6 +266,14 @@ export function createServer() {
   app.get("/api/admin/portfolio/rebalance-history", handleGetRebalanceHistory);
   app.get("/api/admin/portfolio/stats", handleGetPortfolioStats);
 
+  // Portfolio optimizer routes
+  {
+    const { handleUploadCovariance, handleRunOptimizer, handleGetLastOptimization } = require("./routes/optimizer");
+    app.post("/api/optimizer/covariance", handleUploadCovariance);
+    app.post("/api/optimizer/run", handleRunOptimizer);
+    app.get("/api/optimizer/last", handleGetLastOptimization);
+  }
+
   // Hedge & Wallet routes
   app.get("/api/wallet/hedges", handleGetWalletHedges);
   app.get("/api/wallet/balances", handleGetWalletBalances);

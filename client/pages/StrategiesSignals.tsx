@@ -26,6 +26,7 @@ import {
 } from "recharts";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import ScenarioLab from "./components/ScenarioLab";
+import PortfolioOptimizerPanel from "./components/PortfolioOptimizerPanel";
 import { toast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import apiFetch from "@/lib/apiClient";
@@ -730,6 +731,10 @@ export default function StrategiesSignals() {
 
             {/* Scenario Lab */}
             <ScenarioLab />
+
+            {/* Portfolio Optimizer */}
+            {/** A panel to upload covariance, set expected returns, select optimization, and view allocations **/}
+            <PortfolioOptimizerPanel />
           </div>
         </TabsContent>
 
