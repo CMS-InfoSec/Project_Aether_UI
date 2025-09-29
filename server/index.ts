@@ -272,9 +272,10 @@ export function createServer() {
 
   // Execution simulation
   {
-    const { handleExecutionSimulate } = require("./routes/execution");
+    const { handleExecutionSimulate, handleExecutionLatency } = require("./routes/execution");
     app.post("/api/execution/simulate", handleExecutionSimulate);
     app.post("/api/v1/execution/simulate", handleExecutionSimulate);
+    app.get("/api/execution/latency", handleExecutionLatency);
   }
 
   // Portfolio routes
@@ -474,10 +475,13 @@ export function createServer() {
       handleGetRiskConfig,
       handleGetLiveMetrics,
       handlePatchRiskConfig,
+      handleGetRiskBreaches,
     } = require("./routes/risk");
     app.get("/api/config/risk", handleGetRiskConfig);
     app.patch("/api/config/risk", handlePatchRiskConfig);
     app.get("/api/metrics/live", handleGetLiveMetrics);
+    app.get("/api/risk/breaches", handleGetRiskBreaches);
+    app.get("/risk/breaches", handleGetRiskBreaches);
   }
 
   // Events (audit/logs)
@@ -530,6 +534,11 @@ export function createServer() {
   // Trade decision explainability
   app.get("/api/explain", handleExplain);
   app.get("/api/v1/explain", handleExplain);
+  {
+    const { handleExplainById } = require("./routes/explain");
+    app.get("/api/ai/explain/:id", handleExplainById);
+    app.get("/ai/explain/:id", handleExplainById);
+  }
   app.post("/api/strategies/backtest", handlePostBacktest);
   app.post("/api/v1/backtest", handlePostBacktest);
 
@@ -635,6 +644,13 @@ export function createServer() {
     app.get("/api/sim/agents/history", handleGetAgentsHistory);
   }
 
+  // Scenario Lab generic simulator
+  {
+    const { handleSimRun } = require("./routes/sim");
+    app.post("/api/sim/run", handleSimRun);
+    app.post("/sim/run", handleSimRun);
+  }
+
   // Example API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
@@ -642,6 +658,21 @@ export function createServer() {
   });
 
   app.get("/api/demo", handleDemo);
+
+  // Data quality & compliance
+  {
+    const { handleGetDataAnomalies } = require("./routes/data");
+    app.get("/api/data/anomalies", handleGetDataAnomalies);
+    app.get("/data/anomalies", handleGetDataAnomalies);
+  }
+  {
+    const { handleGetComplianceLogs } = require("./routes/compliance");
+    app.get("/api/compliance/logs", handleGetComplianceLogs);
+  }
+  {
+    const { handleGetAuditLogs } = require("./routes/audit");
+    app.get("/api/audit/logs", handleGetAuditLogs);
+  }
 
   // Automation social ingest
   const {
