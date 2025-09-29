@@ -145,12 +145,14 @@ export default function ExecutionHeatmapPanel({
         params.set("window", windowSize || "1h");
       }
 
+      // Prefer real reports endpoints; gracefully fall back if not available
       let latencyResp: any = null;
-      const latencyEndpoints = [
+      const latencyCandidates = [
+        `/api/reports/execution/latency?${params.toString()}`,
+        `/api/v1/reports/execution/latency?${params.toString()}`,
         `/api/execution/latency?${params.toString()}`,
-        `/execution/latency?${params.toString()}`,
       ];
-      for (const ep of latencyEndpoints) {
+      for (const ep of latencyCandidates) {
         try {
           latencyResp = await getJson<any>(ep);
           if (latencyResp) break;
@@ -160,27 +162,31 @@ export default function ExecutionHeatmapPanel({
         ? latencyResp.data
         : Array.isArray(latencyResp)
           ? latencyResp
-          : [];
+          : Array.isArray(latencyResp?.items)
+            ? latencyResp.items
+            : [];
 
-      let impactResp: any = null;
-      const impactEndpoints = [
-        `/api/execution/logs/realized?${params.toString()}`,
-        `/api/execution/impact?${params.toString()}`,
-        `/api/execution/realized-impact?${params.toString()}`,
-        `/execution/logs/realized?${params.toString()}`,
-        `/execution/impact?${params.toString()}`,
+      // Aggregate slippage/fee metrics from execution reports (realized vs predicted)
+      let execResp: any = null;
+      const execCandidates = [
+        `/api/reports/execution?${params.toString()}`,
+        `/api/v1/reports/execution?${params.toString()}`,
       ];
-      for (const ep of impactEndpoints) {
+      for (const ep of execCandidates) {
         try {
-          impactResp = await getJson<any>(ep);
-          if (impactResp) break;
+          execResp = await getJson<any>(ep);
+          if (execResp) break;
         } catch {}
       }
-      const impactItems: any[] = Array.isArray(impactResp?.data)
-        ? impactResp.data
-        : Array.isArray(impactResp)
-          ? impactResp
-          : [];
+      const impactItems: any[] = Array.isArray(execResp?.data)
+        ? execResp.data
+        : Array.isArray(execResp?.metrics)
+          ? execResp.metrics
+          : Array.isArray(execResp)
+            ? execResp
+            : Array.isArray(execResp?.items)
+              ? execResp.items
+              : [];
 
       const symbolSet = new Set<string>();
       const latMap = new Map<string, HeatCell>();
