@@ -475,7 +475,7 @@ export default function ModelComparisonTab() {
                       const m = models.find((mm) => mm.modelId === id);
                       const me = metrics[id] || {};
                       const loading = loadingIds[id];
-                      const perf = sampleMode === "oos" ? me.oos : me.ins;
+                      const perf = sourceMode === 'live' ? me.live : backtestMode === "oos" ? me.oos : me.ins;
                       return (
                         <tr key={id} className="border-b align-top">
                           <td className="p-2">
