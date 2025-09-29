@@ -70,14 +70,26 @@ export default function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4">
+      {/* Brand top-left to match main app */}
+      <div className="absolute top-4 left-4 flex items-center space-x-2">
+        <img
+          src="https://cdn.builder.io/api/v1/image/assets%2Fd9af307b1ff14040a7ba27bfc11d5227%2Ffd066184d3bd44f2ab4e38cf3625b126?format=webp&width=800"
+          alt="Aether Logo"
+          className="w-8 h-8 object-contain"
+        />
+        <span className="hidden sm:inline font-semibold text-slate-900">AETHER</span>
+      </div>
+
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-              <span className="text-white font-bold text-2xl">A</span>
-            </div>
+          <div className="flex justify-center mb-3">
+            <img
+              src="https://cdn.builder.io/api/v1/image/assets%2Fd9af307b1ff14040a7ba27bfc11d5227%2Ffd066184d3bd44f2ab4e38cf3625b126?format=webp&width=800"
+              alt="Aether Logo"
+              className="w-12 h-12 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-foreground">Project Aether</h1>
           <p className="text-muted-foreground mt-2">Admin Portal Access</p>
