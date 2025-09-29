@@ -41,10 +41,24 @@ export default function RiskTierPanel() {
   };
   const loadMetrics = async () => {
     try {
-      const j = await getJson<any>("/api/metrics/live?points=120");
-      const data = j?.data || j;
-      setMetrics(Array.isArray(data) ? data : []);
-    } catch {}
+      const j = await getJson<any>("/api/reports/daily");
+      const data = j?.data || j || {};
+      const dr = Array.isArray(data.dailyReturnsData) ? data.dailyReturnsData : [];
+      let equity = 1;
+      let peak = 1;
+      const series = dr.map((d: any) => {
+        const ret = Number(d.returns) / 100 || 0;
+        equity *= 1 + ret;
+        if (equity > peak) peak = equity;
+        const pnl = equity - 1;
+        const dd = equity / peak - 1;
+        const t = new Date(d.date || new Date()).toISOString();
+        return { t, pnl, dd };
+      });
+      setMetrics(series);
+    } catch {
+      setMetrics([]);
+    }
   };
 
   useEffect(() => { loadConfig(); loadMetrics(); }, []);
