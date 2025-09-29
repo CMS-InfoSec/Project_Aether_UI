@@ -26,6 +26,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
+  Cell,
 } from "recharts";
 
 interface ModelItem {
