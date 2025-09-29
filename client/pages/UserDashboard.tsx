@@ -55,6 +55,7 @@ import {
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 import RegimeTimelineRibbon from "./components/RegimeTimelineRibbon";
 import ManipulationDefenseConsole from "./components/ManipulationDefenseConsole";
+import ExecutionHeatmapPanel from "./components/ExecutionHeatmapPanel";
 
 import apiFetch, { getJson, patchJson } from "@/lib/apiClient";
 
