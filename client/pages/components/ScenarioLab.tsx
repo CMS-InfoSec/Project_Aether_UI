@@ -185,11 +185,19 @@ export default function ScenarioLab() {
       durationMin: 20,
     },
     {
-      name: "Rally on Thin Liquidity",
-      priceJumpPct: 15,
-      volSpikePct: 40,
-      spreadWidenBps: 60,
-      liquidityDrainPct: 60,
+      name: "Volatility Spike",
+      priceJumpPct: 0,
+      volSpikePct: 120,
+      spreadWidenBps: 40,
+      liquidityDrainPct: 20,
+      durationMin: 60,
+    },
+    {
+      name: "Liquidity Drain",
+      priceJumpPct: -5,
+      volSpikePct: 30,
+      spreadWidenBps: 80,
+      liquidityDrainPct: 80,
       durationMin: 45,
     },
   ];
@@ -348,6 +356,10 @@ export default function ScenarioLab() {
             `/api/sim/result/${encodeURIComponent(id)}`,
             `/api/sim/run/${encodeURIComponent(id)}/result`,
             `/sim/result/${encodeURIComponent(id)}`,
+            `/api/sim/results/${encodeURIComponent(id)}`,
+            `/sim/results/${encodeURIComponent(id)}`,
+            `/api/sim/results?id=${encodeURIComponent(id)}`,
+            `/sim/results?id=${encodeURIComponent(id)}`,
           ];
           for (const ep of endpoints) {
             try {
@@ -916,6 +928,59 @@ export default function ScenarioLab() {
                 ))}
               </RechartsLineChart>
             </ResponsiveContainer>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            {/* Final PnL comparison */}
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <ReBarChart
+                  data={runs
+                    .filter((r) => selected[r.id])
+                    .map((r, i) => ({ name: r.name, value: r.metrics.finalPnl ?? 0 }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ReTooltip />
+                  <ReLegend />
+                  <ReBar dataKey="value" name="Final PnL" fill="#10b981" />
+                </ReBarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Max Drawdown comparison */}
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <ReBarChart
+                  data={runs
+                    .filter((r) => selected[r.id])
+                    .map((r) => ({ name: r.name, value: (r.metrics.maxDrawdownPct ?? 0) * 100 }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ReTooltip />
+                  <ReLegend />
+                  <ReBar dataKey="value" name="Max DD %" fill="#ef4444" />
+                </ReBarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Fill quality comparison */}
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <ReBarChart
+                  data={runs
+                    .filter((r) => selected[r.id])
+                    .map((r) => ({ name: r.name, value: (r.metrics.fillQuality ?? 0) * 100 }))}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <ReTooltip />
+                  <ReLegend />
+                  <ReBar dataKey="value" name="Fill %" fill="#3b82f6" />
+                </ReBarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
           <div className="text-xs text-muted-foreground">
             Select runs to overlay; export includes selected overlays.
