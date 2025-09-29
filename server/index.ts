@@ -356,6 +356,7 @@ export function createServer() {
     app.get("/api/admin/config/data-retention", handleGetDataRetention);
     app.patch("/api/admin/config/data-retention", requireAdminKey, handlePatchDataRetention);
     app.post("/api/admin/data/purge", requireAdminKey, handlePostManualPurge);
+    app.get("/api/metrics/retention", require("./routes/retention").handleRetentionMetrics);
   }
   // UK tax-year report (v1 prefix)
   app.get(
