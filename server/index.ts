@@ -263,6 +263,13 @@ export function createServer() {
   app.get("/api/markets/price", handleMarketPrice);
   app.post("/api/admin/strategy-override", handleStrategyOverride);
 
+  // Execution simulation
+  {
+    const { handleExecutionSimulate } = require("./routes/execution");
+    app.post("/api/execution/simulate", handleExecutionSimulate);
+    app.post("/api/v1/execution/simulate", handleExecutionSimulate);
+  }
+
   // Portfolio routes
   app.get("/api/admin/portfolio", handleGetPortfolioOverview);
   app.get("/api/admin/portfolio/:userId", handleGetPortfolioDetails);
