@@ -692,6 +692,9 @@ export default function ProfileSettings() {
           </Alert>
         )}
 
+        {/* Risk Visualization */}
+        <RiskVisualizationPanel />
+
         {/* Risk Profile Section */}
         <Card>
           <CardHeader className="flex items-start justify-between">
