@@ -62,6 +62,7 @@ interface Perf {
 interface Metrics {
   oos?: Perf;
   ins?: Perf;
+  live?: Perf;
   turnover?: number;
   breaches?: number;
   drift?: number;
@@ -454,7 +455,7 @@ export default function ModelComparisonTab() {
                             <div className="font-medium">{m?.name || id}</div>
                             <div className="text-xs text-muted-foreground">v{m?.version}</div>
                           </td>
-                          <td className="p-2 text-right">{loading ? "…" : perf?.pnl !== undefined ? perf.pnl.toFixed(2) : "���"}</td>
+                          <td className="p-2 text-right">{loading ? "…" : perf?.pnl !== undefined ? perf.pnl.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sharpe !== undefined ? perf.sharpe.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sortino !== undefined ? perf.sortino.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.cvar !== undefined ? perf.cvar.toFixed(3) : "—"}</td>
