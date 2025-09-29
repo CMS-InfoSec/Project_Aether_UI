@@ -478,6 +478,8 @@ export function createServer() {
     handleStrategiesStressTest,
     handlePostBacktest,
   } = require("./routes/strategies");
+  // Explainability (trade decisions)
+  const { handleExplain } = require("./routes/explain");
   app.get("/api/strategies/flags", handleGetStrategyFlags);
   app.get("/api/strategies/breakdown", handleGetStrategyBreakdown);
   app.patch(
@@ -492,6 +494,9 @@ export function createServer() {
   app.post("/api/signals/ingest", handleSignalsIngest);
   app.get("/api/strategies/explain", handleStrategiesExplain);
   app.post("/api/strategies/stress-test", handleStrategiesStressTest);
+  // Trade decision explainability
+  app.get("/api/explain", handleExplain);
+  app.get("/api/v1/explain", handleExplain);
   app.post("/api/strategies/backtest", handlePostBacktest);
 
   // Federated learning status

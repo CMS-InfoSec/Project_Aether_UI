@@ -54,6 +54,7 @@ import {
 } from "recharts";
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 import RegimeTimelineRibbon from "./components/RegimeTimelineRibbon";
+import ExplainabilityPanel from "./components/ExplainabilityPanel";
 import ManipulationDefenseConsole from "./components/ManipulationDefenseConsole";
 import ExecutionHeatmapPanel from "./components/ExecutionHeatmapPanel";
 
@@ -1055,6 +1056,9 @@ export default function UserDashboard() {
 
           {/* Execution Heatmap */}
           <ExecutionHeatmapPanel regimeRange={regimeRange} />
+
+          {/* Explainability Panel */}
+          <ExplainabilityPanel />
 
           <Card className="legacy-exec-heatmap">
             <CardHeader className="flex items-start justify-between">
