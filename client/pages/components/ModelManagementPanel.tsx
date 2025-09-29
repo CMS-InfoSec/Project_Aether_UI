@@ -64,23 +64,24 @@ export default function ModelManagementPanel() {
     if (coinList.length === 0) return;
     setRetraining(true);
     try {
-      const payload: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
-      if (modelType === 'rl_agent') payload.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
-      else payload.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
-      const r = await apiFetch(`/api/v1/models/train`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        admin: true,
-      });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.message || 'Failed');
+      const body: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
+      if (modelType === 'rl_agent') body.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
+      else body.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
+      const j = await postJson<any>("/api/admin/models/retrain", body, { admin: true });
+      if (!j || j.status === 'error') throw new Error(j?.message || 'Failed');
     } catch (e: any) {
-      // fallback to admin retrain route
       try {
-        const body: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coins.split(/\s*,\s*/).filter(Boolean).slice(0, 10) };
-        const j = await postJson<any>("/api/admin/models/retrain", body, { admin: true });
-        if (!j || j.status === 'error') throw new Error(j?.message || 'Failed');
+        const payload: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
+        if (modelType === 'rl_agent') payload.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
+        else payload.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
+        const r = await apiFetch(`/api/v1/models/train`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+          admin: true,
+        });
+        const j2 = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(j2.message || 'Failed');
       } catch {}
     } finally {
       setRetraining(false);
@@ -142,14 +143,48 @@ export default function ModelManagementPanel() {
             <Badge variant="outline">Last checkpoint: {lastCheckpoint}</Badge>
           )}
         </div>
-        <div>
-          <div className="font-medium mb-2">Retraining Logs</div>
-          <div className="border rounded h-52">
-            <ScrollArea className="h-52 p-2">
-              <pre className="text-xs whitespace-pre-wrap">
-                {logs.map((l, i) => `${new Date(l.ts).toLocaleTimeString()} ${l.msg}`).join("\n") || 'No logs yet'}
-              </pre>
-            </ScrollArea>
+        <div className="grid md:grid-cols-2 gap-4">
+          <div>
+            <div className="font-medium mb-2">Retraining Logs</div>
+            <div className="border rounded h-52">
+              <ScrollArea className="h-52 p-2">
+                <pre className="text-xs whitespace-pre-wrap">
+                  {logs.map((l, i) => `${new Date(l.ts).toLocaleTimeString()} ${l.msg}`).join("\n") || 'No logs yet'}
+                </pre>
+              </ScrollArea>
+            </div>
+          </div>
+          <div>
+            <div className="font-medium mb-2">Models Registry</div>
+            <div className="border rounded max-h-52 overflow-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Model</th>
+                    <th className="text-left p-2">Type</th>
+                    <th className="text-left p-2">Version</th>
+                    <th className="text-left p-2">Status</th>
+                    <th className="text-left p-2">Last trained</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(registry?.models || []).slice(0, 10).map((m: any) => (
+                    <tr key={m.modelId} className="border-b">
+                      <td className="p-2">{m.name}</td>
+                      <td className="p-2">{m.type}</td>
+                      <td className="p-2">{m.version}</td>
+                      <td className="p-2">
+                        <Badge variant={m.status === 'deployed' ? 'outline' : 'secondary'}>{m.status}</Badge>
+                      </td>
+                      <td className="p-2">{m.createdAt ? new Date(m.createdAt).toLocaleString() : '-'}</td>
+                    </tr>
+                  ))}
+                  {(!registry?.models || registry.models.length === 0) && (
+                    <tr><td className="p-3 text-muted-foreground" colSpan={5}>No models in registry</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </CardContent>
