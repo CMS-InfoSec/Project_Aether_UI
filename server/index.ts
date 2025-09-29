@@ -227,6 +227,14 @@ export function createServer() {
   app.get("/api/models/curriculum", handleGetCurriculumStages);
   app.get("/api/models/datasets", handleGetDatasets);
   app.get("/api/models/sentiment-pipelines", handleGetSentimentPipelines);
+
+  // Admin models registry/retrain
+  {
+    const { handleAdminModelsRegistry, handleAdminModelsRetrain } = require("./routes/models");
+    app.get("/api/admin/models/registry", handleAdminModelsRegistry);
+    app.post("/api/admin/models/retrain", requireAdminKey, handleAdminModelsRetrain);
+  }
+
   // Generic v1 compatibility: redirect /api/v1/* -> /api/* preserving method
   app.use("/api/v1", (req, res, next) => {
     // If a specific /api/v1 route above handled it, skip
