@@ -54,6 +54,7 @@ import {
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import apiFetch from "@/lib/apiClient";
+import DataRetentionPanel from "./components/DataRetentionPanel";
 
 // Types
 interface RuntimeConfig {
