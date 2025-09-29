@@ -278,7 +278,7 @@ export default function UserDashboard() {
       es.onerror = () => {
         setAlertsLive(false);
         try { es.close(); } catch {}
-        alertsEsRefMutable.current = null;
+        alertsEsRef.current = null;
       };
     } catch {
       setAlertsLive(false);
