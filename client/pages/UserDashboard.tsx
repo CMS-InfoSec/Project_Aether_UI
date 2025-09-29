@@ -119,9 +119,8 @@ export default function UserDashboard() {
   >([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
   const [alertsLive, setAlertsLive] = useState(false);
-  const alertsEsRef = useState<EventSource | null>(null)[0] as any;
-  const alertsEsRefMutable = { current: null as EventSource | null };
-  const alertsLastTsRef = useState<string | null>(null)[0] as any;
+  const alertsEsRef = useRef<EventSource | null>(null);
+  const alertsLastTsRef = useRef<string | null>(null);
   const [portfolioHoldings, setPortfolioHoldings] = useState<
     Array<{ symbol: string; value: number; allocation: number; pnl: number }>
   >([]);
