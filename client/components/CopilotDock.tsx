@@ -32,8 +32,10 @@ export default function CopilotDock() {
     open: boolean;
     title: string;
     desc: string;
-    onConfirm: (() => Promise<void>) | null;
-  }>({ open: false, title: "", desc: "", onConfirm: null });
+    requireReason?: boolean;
+    reason?: string;
+    onConfirm: ((reason?: string) => Promise<void>) | null;
+  }>({ open: false, title: "", desc: "", onConfirm: null, requireReason: false, reason: "" });
 
   if (!user) return null;
 
@@ -205,6 +207,89 @@ export default function CopilotDock() {
     }
   };
 
+  const actExplainRisk = async () => {
+    setLoading(true);
+    try {
+      const r = await apiFetch("/api/strategies/explain");
+      const j = await r.json().catch(() => ({}));
+      const data = j?.data || j || {};
+      const summary = data.summary || data.explanation || data.reason || "No explanation";
+      append({ role: "assistant", text: `Risk explain: ${summary}\n\nSources: GET /api/strategies/explain`, ts: Date.now() });
+      await logCopilot("Copilot risk explain", "ok");
+    } catch {
+      append({ role: "assistant", text: "Risk explain failed.", ts: Date.now() });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const actCompareModels = async () => {
+    setLoading(true);
+    try {
+      let modelsResp: any = null;
+      const endpoints = ["/api/governance/models", "/governance/models", "/api/models", "/api/models/history"];
+      for (const ep of endpoints) {
+        try {
+          const r = await apiFetch(ep, { admin: true });
+          const j = await r.json().catch(() => null);
+          if (j) { modelsResp = j; break; }
+        } catch {}
+      }
+      const list: any[] = Array.isArray(modelsResp?.data) ? modelsResp.data : Array.isArray(modelsResp) ? modelsResp : [];
+      const norm = list.map((m: any) => ({
+        id: m.modelId || m.id || m.name,
+        name: m.name || m.modelId,
+        status: m.status || "trained",
+        deployedAt: m.deployedAt ? new Date(m.deployedAt).getTime() : 0,
+        sharpe: m.performance?.sharpeRatio ?? m.metrics?.sharpeRatio ?? null,
+        dd: m.performance?.maxDrawdown ?? m.metrics?.maxDrawdown ?? null,
+        win: m.performance?.winRate ?? m.metrics?.winRate ?? null,
+      }));
+      const promoted = norm.filter(m => m.status === "deployed" || m.deployedAt > 0).sort((a,b)=> b.deployedAt - a.deployedAt).slice(0,3);
+      if (promoted.length === 0) {
+        append({ role: "assistant", text: "No promoted models found.", ts: Date.now() });
+        return;
+      }
+      const lines = promoted.map(m => `${m.name}: Sharpe ${m.sharpe ?? "-"}, Win ${(m.win ?? 0) * 100}%, MaxDD ${m.dd ?? "-"}`);
+      append({ role: "assistant", text: `Last promoted models (3):\n- ${lines.join("\n- ")}`, ts: Date.now() });
+      await logCopilot("Copilot compare models", `count=${promoted.length}`);
+    } catch {
+      append({ role: "assistant", text: "Failed to compare models.", ts: Date.now() });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const actKillSwitch = async () => {
+    if (user.role !== "admin") {
+      append({ role: "assistant", text: "Kill-switch requires admin.", ts: Date.now() });
+      return;
+    }
+    setConfirm({
+      open: true,
+      title: "Enable Kill Switch",
+      desc: "Emergency stop all trading and pause system. Reason required.",
+      requireReason: true,
+      reason: "",
+      onConfirm: async (reason?: string) => {
+        try {
+          const r = await apiFetch("/api/admin/kill-switch", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: true, actor: user.email, reason: reason || "Emergency stop" }),
+            admin: true,
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok) throw new Error(j.message || "Kill-switch failed");
+          append({ role: "assistant", text: `Kill switch enabled.`, ts: Date.now() });
+          await logCopilot("Copilot action", `kill-switch enabled`);
+        } catch (e: any) {
+          append({ role: "assistant", text: `Kill-switch error: ${e?.message || "error"}`, ts: Date.now() });
+        }
+      },
+    });
+  };
+
   const actRollback = async () => {
     if (user.role !== "admin") {
       append({
@@ -278,10 +363,13 @@ export default function CopilotDock() {
     // Simple intent routing
     const lower = q.toLowerCase();
     if (lower.startsWith("why")) return actWhyLastTrade();
-    if (lower.includes("what-if") || lower.includes("flash"))
+    if (lower.includes("flash crash") || lower.includes("what-if") || lower.includes("flash"))
       return actWhatIf("flash");
     if (lower.includes("rally")) return actWhatIf("rally");
+    if (lower.includes("explain") && lower.includes("risk")) return actExplainRisk();
     if (lower.includes("risk")) return actRiskSummary();
+    if (lower.includes("compare") && lower.includes("model")) return actCompareModels();
+    if (lower.includes("kill") && lower.includes("switch")) return actKillSwitch();
     if (lower.includes("rollback")) return actRollback();
     return sendLLM(q, []);
   };
@@ -326,12 +414,23 @@ export default function CopilotDock() {
             >
               What-if: Rally
             </Button>
+            <Button variant="outline" size="sm" onClick={actExplainRisk}>
+              Explain risk
+            </Button>
             <Button variant="outline" size="sm" onClick={actRiskSummary}>
               Risk summary
+            </Button>
+            <Button variant="outline" size="sm" onClick={actCompareModels}>
+              Compare models
             </Button>
             <Button variant="outline" size="sm" onClick={actRollback}>
               <Shield className="h-3 w-3 mr-1" /> Rollback
             </Button>
+            {user.role === "admin" && (
+              <Button variant="destructive" size="sm" onClick={actKillSwitch}>
+                Kill switch
+              </Button>
+            )}
           </div>
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-3">
@@ -392,6 +491,16 @@ export default function CopilotDock() {
             <DialogTitle>{confirm.title}</DialogTitle>
             <DialogDescription>{confirm.desc}</DialogDescription>
           </DialogHeader>
+          {confirm.requireReason && (
+            <div className="space-y-2">
+              <label className="text-sm">Reason</label>
+              <Input
+                value={confirm.reason || ""}
+                onChange={(e) => setConfirm((prev) => ({ ...prev, reason: e.target.value }))}
+                placeholder="Describe why this action is necessary"
+              />
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
@@ -401,7 +510,9 @@ export default function CopilotDock() {
             </Button>
             <Button
               onClick={async () => {
-                if (confirm.onConfirm) await confirm.onConfirm();
+                const reason = confirm.reason || "";
+                if (confirm.requireReason && reason.trim().length < 10) return;
+                if (confirm.onConfirm) await confirm.onConfirm(reason);
                 setConfirm((prev) => ({ ...prev, open: false }));
               }}
             >
