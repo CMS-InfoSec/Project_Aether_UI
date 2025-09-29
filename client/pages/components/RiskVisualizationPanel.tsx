@@ -37,10 +37,25 @@ export default function RiskVisualizationPanel() {
   useEffect(() => {
     (async () => {
       try {
-        const j = await getJson<any>("/api/metrics/live");
-        const data = j?.data || j || [];
-        setSeries(Array.isArray(data) ? data : []);
-      } catch {}
+        const j = await getJson<any>("/api/reports/daily");
+        const data = j?.data || j || {};
+        const dr = Array.isArray(data.dailyReturnsData) ? data.dailyReturnsData : [];
+        // Build cumulative PnL and drawdown from daily returns (% points)
+        let equity = 1;
+        let peak = 1;
+        const s = dr.map((d: any) => {
+          const ret = Number(d.returns) / 100 || 0;
+          equity *= 1 + ret;
+          if (equity > peak) peak = equity;
+          const pnl = equity - 1;
+          const dd = equity / peak - 1;
+          const t = new Date(d.date || new Date()).toISOString();
+          return { t, pnl, dd };
+        });
+        setSeries(s);
+      } catch {
+        setSeries([]);
+      }
     })();
   }, []);
 
