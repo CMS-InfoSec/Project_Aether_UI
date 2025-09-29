@@ -83,3 +83,39 @@ export function handleExecutionSimulate(req: Request, res: Response) {
     return res.status(500).json({ status:'error', message: e?.message || 'Simulation failed' });
   }
 }
+
+export function handleExecutionLatency(req: Request, res: Response) {
+  try {
+    const tradeId = String((req.query as any).tradeId || (req.query as any).id || "");
+    const now = Date.now();
+    const submit = new Date(now - 800 - Math.round(Math.random() * 500)).toISOString();
+    const fillsCount = 1 + Math.floor(Math.random() * 4);
+    const mid = 30000 + Math.random() * 20000;
+    const fills = Array.from({ length: fillsCount }).map((_, i) => ({
+      price: +(mid * (1 + (Math.random() - 0.5) * 0.001)).toFixed(2),
+      qty: +(Math.random() * 0.5 + 0.1).toFixed(4),
+      ts: new Date(now - (fillsCount - i) * 100).toISOString(),
+    }));
+    const firstFillTs = new Date(fills[0]?.ts || now).getTime();
+    const latency = Math.max(0, firstFillTs - new Date(submit).getTime());
+    const avgSlipBps =
+      typeof mid === 'number' && fills.length
+        ? fills.reduce((s: number, f: any) => s + ((f.price - mid) / mid) * 10000, 0) / fills.length
+        : 0;
+
+    return res.json({
+      status: 'success',
+      data: {
+        trade_id: tradeId,
+        submit_ts: submit,
+        filled_at: new Date(now).toISOString(),
+        latency_ms: Math.round(latency),
+        fills,
+        mid_price: +mid.toFixed(2),
+        avg_slippage_bps: +avgSlipBps.toFixed(2),
+      },
+    });
+  } catch (e: any) {
+    return res.status(500).json({ status:'error', message: e?.message || 'Failed to compute latency' });
+  }
+}
