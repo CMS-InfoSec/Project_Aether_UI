@@ -9,15 +9,22 @@ export function handleSimRun(req: Request, res: Response) {
     const volSpike = Number(scenario.vol_spike_pct ?? 0);
     const spreadWidenBps = Number(scenario.spread_widen_bps ?? 0);
     const liqDrain = Number(scenario.liquidity_drain_pct ?? 0);
-    const durationMin = Math.max(5, Math.min(480, Number(scenario.duration_min ?? 30)));
+    const durationMin = Math.max(
+      5,
+      Math.min(480, Number(scenario.duration_min ?? 30)),
+    );
 
     // Synthesize PnL curve influenced by scenario parameters
-    const steps = Math.max(30, Math.min(600, Math.round((durationMin || 30) * 2)));
+    const steps = Math.max(
+      30,
+      Math.min(600, Math.round((durationMin || 30) * 2)),
+    );
     const pnl: Array<{ t: number; pnl: number }> = [];
     let equity = 0;
     let peak = 0;
     let maxDD = 0;
-    const baseVol = 0.002 + volSpike * 0.01 + liqDrain * 0.003 + spreadWidenBps / 100000;
+    const baseVol =
+      0.002 + volSpike * 0.01 + liqDrain * 0.003 + spreadWidenBps / 100000;
     const drift = priceJump * 0.5 - liqDrain * 0.2;
     for (let i = 0; i < steps; i++) {
       const noise = (Math.random() - 0.5) * baseVol * 2;
@@ -31,12 +38,27 @@ export function handleSimRun(req: Request, res: Response) {
 
     const actions = [
       { t: 0, action: "rebalance", detail: "Reduce risk at start" },
-      { t: Math.round(steps * 0.4), action: "hedge_increase", detail: "Increase hedge due to volatility" },
-      { t: Math.round(steps * 0.8), action: "hedge_reduce", detail: "Reduce hedge as conditions stabilize" },
+      {
+        t: Math.round(steps * 0.4),
+        action: "hedge_increase",
+        detail: "Increase hedge due to volatility",
+      },
+      {
+        t: Math.round(steps * 0.8),
+        action: "hedge_reduce",
+        detail: "Reduce hedge as conditions stabilize",
+      },
     ];
 
     const data = {
-      scenario: { name, price_jump_pct: priceJump, vol_spike_pct: volSpike, spread_widen_bps: spreadWidenBps, liquidity_drain_pct: liqDrain, duration_min: durationMin },
+      scenario: {
+        name,
+        price_jump_pct: priceJump,
+        vol_spike_pct: volSpike,
+        spread_widen_bps: spreadWidenBps,
+        liquidity_drain_pct: liqDrain,
+        duration_min: durationMin,
+      },
       pnl,
       actions,
       metrics: {
@@ -50,6 +72,8 @@ export function handleSimRun(req: Request, res: Response) {
     // Return completed result synchronously for simplicity
     return res.json({ status: "success", id: `${Date.now()}`, data });
   } catch (e: any) {
-    return res.status(500).json({ status: "error", message: e?.message || "Simulation failed" });
+    return res
+      .status(500)
+      .json({ status: "error", message: e?.message || "Simulation failed" });
   }
 }

@@ -24,10 +24,30 @@ function sampleCompliance(): ComplianceLog[] {
     "SOL_015_20240121",
     "ADA_007_20240121",
   ];
-  const rules: Array<{ rule: string; severity: ComplianceLog["severity"]; passRate: number; msg: string }>= [
-    { rule: "risk", severity: "warning", passRate: 0.9, msg: "Position risk within thresholds" },
-    { rule: "limits", severity: "error", passRate: 0.85, msg: "Order size below venue max" },
-    { rule: "market", severity: "warning", passRate: 0.8, msg: "Slippage within tolerance" },
+  const rules: Array<{
+    rule: string;
+    severity: ComplianceLog["severity"];
+    passRate: number;
+    msg: string;
+  }> = [
+    {
+      rule: "risk",
+      severity: "warning",
+      passRate: 0.9,
+      msg: "Position risk within thresholds",
+    },
+    {
+      rule: "limits",
+      severity: "error",
+      passRate: 0.85,
+      msg: "Order size below venue max",
+    },
+    {
+      rule: "market",
+      severity: "warning",
+      passRate: 0.8,
+      msg: "Slippage within tolerance",
+    },
     { rule: "kyc", severity: "info", passRate: 0.98, msg: "User verified" },
   ];
   const out: ComplianceLog[] = [];
@@ -41,7 +61,11 @@ function sampleCompliance(): ComplianceLog[] {
       user: users[i % users.length],
       rule: r.rule,
       status: pass ? "pass" : "fail",
-      severity: pass ? (r.severity === "error" ? "warning" : r.severity) : r.severity,
+      severity: pass
+        ? r.severity === "error"
+          ? "warning"
+          : r.severity
+        : r.severity,
       message: pass ? r.msg : `${r.rule.toUpperCase()} violation detected`,
     });
   }

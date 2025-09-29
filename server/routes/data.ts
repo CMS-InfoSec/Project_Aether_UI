@@ -35,7 +35,11 @@ function genAnomalies(): AnomalyItem[] {
       severity: sev,
       detected_at: new Date(now - i * 90_000).toISOString(),
       auto_mitigation:
-        t === "stale_tick" ? "quarantined" : t === "outlier" ? "down_weighted" : "none",
+        t === "stale_tick"
+          ? "quarantined"
+          : t === "outlier"
+            ? "down_weighted"
+            : "none",
       sample_url: "https://example.com/sample.json",
       venue: venues[i % venues.length],
       notes:

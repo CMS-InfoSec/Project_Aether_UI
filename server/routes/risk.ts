@@ -3,21 +3,31 @@ import type { Request, Response } from "express";
 // Risk config (mock)
 let RISK_CONFIG = {
   tiers: [
-    { id: 'conservative', label: 'Conservative', maxDrawdown: 0.05, pnlWarning: -0.02 },
-    { id: 'moderate', label: 'Moderate', maxDrawdown: 0.1, pnlWarning: -0.05 },
-    { id: 'aggressive', label: 'Aggressive', maxDrawdown: 0.2, pnlWarning: -0.1 },
+    {
+      id: "conservative",
+      label: "Conservative",
+      maxDrawdown: 0.05,
+      pnlWarning: -0.02,
+    },
+    { id: "moderate", label: "Moderate", maxDrawdown: 0.1, pnlWarning: -0.05 },
+    {
+      id: "aggressive",
+      label: "Aggressive",
+      maxDrawdown: 0.2,
+      pnlWarning: -0.1,
+    },
   ],
-  defaultTier: 'moderate',
+  defaultTier: "moderate",
 };
 
 export function handleGetRiskConfig(_req: Request, res: Response) {
-  res.json({ status: 'success', data: RISK_CONFIG });
+  res.json({ status: "success", data: RISK_CONFIG });
 }
 
 export function handlePatchRiskConfig(req: Request, res: Response) {
   try {
     const body = req.body || {};
-    if (body.defaultTier && typeof body.defaultTier === 'string') {
+    if (body.defaultTier && typeof body.defaultTier === "string") {
       RISK_CONFIG.defaultTier = body.defaultTier;
     }
     if (Array.isArray(body.tiers)) {
@@ -29,15 +39,20 @@ export function handlePatchRiskConfig(req: Request, res: Response) {
       }));
       if (tiers.length > 0) RISK_CONFIG.tiers = tiers;
     }
-    return res.json({ status: 'success', data: RISK_CONFIG });
+    return res.json({ status: "success", data: RISK_CONFIG });
   } catch (e: any) {
-    return res.status(400).json({ status: 'error', message: e?.message || 'invalid payload' });
+    return res
+      .status(400)
+      .json({ status: "error", message: e?.message || "invalid payload" });
   }
 }
 
 // Generate synthetic live metrics (PnL and drawdown time series)
 export function handleGetLiveMetrics(req: Request, res: Response) {
-  const points = Math.max(30, Math.min(360, parseInt(String((req.query as any).points)) || 90));
+  const points = Math.max(
+    30,
+    Math.min(360, parseInt(String((req.query as any).points)) || 90),
+  );
   const now = Date.now();
   const stepMs = 60_000; // 1 min
   let equity = 1;
@@ -55,7 +70,7 @@ export function handleGetLiveMetrics(req: Request, res: Response) {
     const ts = new Date(now - i * stepMs).toISOString();
     data.push({ t: ts, pnl, dd });
   }
-  res.json({ status: 'success', data });
+  res.json({ status: "success", data });
 }
 
 export function handleGetRiskBreaches(_req: Request, res: Response) {
@@ -64,7 +79,7 @@ export function handleGetRiskBreaches(_req: Request, res: Response) {
     id: string;
     message: string;
     timestamp: string;
-    severity: 'low' | 'medium' | 'high' | 'critical' | string;
+    severity: "low" | "medium" | "high" | "critical" | string;
     metric: string;
     value: number;
     threshold: number;
@@ -72,15 +87,17 @@ export function handleGetRiskBreaches(_req: Request, res: Response) {
   const now = Date.now();
 
   // Example: drawdown breach
-  const tier = RISK_CONFIG.tiers.find((t) => t.id === RISK_CONFIG.defaultTier) || RISK_CONFIG.tiers[0];
+  const tier =
+    RISK_CONFIG.tiers.find((t) => t.id === RISK_CONFIG.defaultTier) ||
+    RISK_CONFIG.tiers[0];
   const dd = -0.06 - Math.random() * 0.03;
   if (dd < -tier.maxDrawdown) {
     items.push({
       id: `risk_dd_${now}`,
       message: `Max drawdown ${Math.abs(dd * 100).toFixed(2)}% exceeds limit ${Math.abs(tier.maxDrawdown * 100).toFixed(1)}%`,
       timestamp: new Date(now - 20_000).toISOString(),
-      severity: 'high',
-      metric: 'max_drawdown',
+      severity: "high",
+      metric: "max_drawdown",
       value: dd,
       threshold: -tier.maxDrawdown,
     });
@@ -93,8 +110,8 @@ export function handleGetRiskBreaches(_req: Request, res: Response) {
       id: `risk_sharpe_${now - 10_000}`,
       message: `Sharpe ${sharpe.toFixed(2)} below recommended 0.50`,
       timestamp: new Date(now - 10_000).toISOString(),
-      severity: sharpe < 0.3 ? 'critical' : 'warning',
-      metric: 'sharpe_ratio',
+      severity: sharpe < 0.3 ? "critical" : "warning",
+      metric: "sharpe_ratio",
       value: sharpe,
       threshold: 0.5,
     });
@@ -107,12 +124,12 @@ export function handleGetRiskBreaches(_req: Request, res: Response) {
       id: `risk_hedge_${now - 5_000}`,
       message: `Hedge ratio ${(hedge * 100).toFixed(1)}% outside [10%, 80%] band`,
       timestamp: new Date(now - 5_000).toISOString(),
-      severity: 'warning',
-      metric: 'hedge_ratio',
+      severity: "warning",
+      metric: "hedge_ratio",
       value: hedge,
       threshold: hedge < 0.1 ? 0.1 : 0.8,
     });
   }
 
-  res.json({ status: 'success', breaches: items });
+  res.json({ status: "success", breaches: items });
 }

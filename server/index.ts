@@ -272,7 +272,10 @@ export function createServer() {
 
   // Execution simulation
   {
-    const { handleExecutionSimulate, handleExecutionLatency } = require("./routes/execution");
+    const {
+      handleExecutionSimulate,
+      handleExecutionLatency,
+    } = require("./routes/execution");
     app.post("/api/execution/simulate", handleExecutionSimulate);
     app.post("/api/v1/execution/simulate", handleExecutionSimulate);
     app.get("/api/execution/latency", handleExecutionLatency);

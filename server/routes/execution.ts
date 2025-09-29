@@ -1,15 +1,27 @@
 import type { Request, Response } from "express";
 
-interface OBPoint { t?: string; time?: string; price: number; volume?: number; size?: number }
+interface OBPoint {
+  t?: string;
+  time?: string;
+  price: number;
+  volume?: number;
+  size?: number;
+}
 
-function parseOrderBook(arr: any[]): { t: string; price: number; volume: number }[] {
+function parseOrderBook(
+  arr: any[],
+): { t: string; price: number; volume: number }[] {
   const out: { t: string; price: number; volume: number }[] = [];
   for (const r of arr || []) {
-    const price = Number((r && (r.price ?? r.p)))
-    const volume = Number((r && (r.volume ?? r.size ?? r.v)))
+    const price = Number(r && (r.price ?? r.p));
+    const volume = Number(r && (r.volume ?? r.size ?? r.v));
     const t = String((r && (r.t || r.time)) || new Date().toISOString());
     if (Number.isFinite(price) && price > 0) {
-      out.push({ t, price, volume: Number.isFinite(volume) && volume > 0 ? volume : 1 });
+      out.push({
+        t,
+        price,
+        volume: Number.isFinite(volume) && volume > 0 ? volume : 1,
+      });
     }
   }
   return out;
@@ -17,78 +29,117 @@ function parseOrderBook(arr: any[]): { t: string; price: number; volume: number 
 
 export function handleExecutionSimulate(req: Request, res: Response) {
   try {
-    const { method = 'TWAP', side = 'buy', quantity, slices = 10, orderBook } = req.body || {};
+    const {
+      method = "TWAP",
+      side = "buy",
+      quantity,
+      slices = 10,
+      orderBook,
+    } = req.body || {};
     const qty = Number(quantity);
     const nSlices = Math.max(1, Math.min(1000, Number(slices) || 10));
-    if (!Number.isFinite(qty) || qty <= 0) return res.status(422).json({ status:'error', message:'quantity must be > 0' });
+    if (!Number.isFinite(qty) || qty <= 0)
+      return res
+        .status(422)
+        .json({ status: "error", message: "quantity must be > 0" });
     const ob = parseOrderBook(Array.isArray(orderBook) ? orderBook : []);
-    if (ob.length === 0) return res.status(422).json({ status:'error', message:'orderBook array required (price, volume, t)' });
+    if (ob.length === 0)
+      return res
+        .status(422)
+        .json({
+          status: "error",
+          message: "orderBook array required (price, volume, t)",
+        });
 
-    const isBuy = String(side).toLowerCase() !== 'sell';
+    const isBuy = String(side).toLowerCase() !== "sell";
     const m = String(method).toUpperCase();
 
     // Determine allocation per slice
     const points = ob.slice(0, Math.max(nSlices, ob.length));
     let alloc: number[] = [];
 
-    if (m === 'VWAP') {
-      const volSum = points.reduce((s, p)=> s + (p.volume || 1), 0) || 1;
-      alloc = points.map(p => (qty * (p.volume || 1)) / volSum);
-    } else if (m === 'MARKET') {
+    if (m === "VWAP") {
+      const volSum = points.reduce((s, p) => s + (p.volume || 1), 0) || 1;
+      alloc = points.map((p) => (qty * (p.volume || 1)) / volSum);
+    } else if (m === "MARKET") {
       alloc = [qty];
-    } else { // TWAP default
+    } else {
+      // TWAP default
       const base = Math.floor((qty / nSlices) * 1e8) / 1e8;
-      alloc = Array.from({ length: Math.min(nSlices, points.length) }, () => base);
+      alloc = Array.from(
+        { length: Math.min(nSlices, points.length) },
+        () => base,
+      );
       // distribute remainder to first slice
-      const sum = alloc.reduce((a,b)=>a+b,0);
+      const sum = alloc.reduce((a, b) => a + b, 0);
       if (qty - sum > 0) alloc[0] += qty - sum;
     }
 
-    const execRows: Array<{ t: string; qty: number; price: number; cost: number; cumCost: number }>= [];
+    const execRows: Array<{
+      t: string;
+      qty: number;
+      price: number;
+      cost: number;
+      cumCost: number;
+    }> = [];
     let cum = 0;
     let i = 0;
     for (const a of alloc) {
-      const p = points[Math.min(i, points.length - 1)] || points[points.length - 1];
+      const p =
+        points[Math.min(i, points.length - 1)] || points[points.length - 1];
       const px = p.price;
       const cost = (isBuy ? 1 : -1) * a * px;
       cum += cost;
       execRows.push({ t: p.t, qty: a, price: px, cost, cumCost: cum });
       i++;
-      if (m === 'MARKET') break;
+      if (m === "MARKET") break;
     }
 
-    const totalQty = execRows.reduce((s,r)=> s + r.qty, 0) * (isBuy ? 1 : -1);
-    const totalCost = execRows.reduce((s,r)=> s + r.cost, 0);
-    const avgPx = Math.abs(totalQty) > 0 ? Math.abs(totalCost) / Math.abs(totalQty) : 0;
-    const benchPx = ob.reduce((s,p)=> s + p.price, 0) / ob.length;
-    const slippageBps = benchPx > 0 ? ((isBuy ? (avgPx - benchPx) : (benchPx - avgPx)) / benchPx) * 10000 : 0;
+    const totalQty = execRows.reduce((s, r) => s + r.qty, 0) * (isBuy ? 1 : -1);
+    const totalCost = execRows.reduce((s, r) => s + r.cost, 0);
+    const avgPx =
+      Math.abs(totalQty) > 0 ? Math.abs(totalCost) / Math.abs(totalQty) : 0;
+    const benchPx = ob.reduce((s, p) => s + p.price, 0) / ob.length;
+    const slippageBps =
+      benchPx > 0
+        ? ((isBuy ? avgPx - benchPx : benchPx - avgPx) / benchPx) * 10000
+        : 0;
 
-    const chart = execRows.map(r => ({ t: r.t, cumCost: r.cumCost }));
+    const chart = execRows.map((r) => ({ t: r.t, cumCost: r.cumCost }));
 
-    return res.json({ status:'success', data: {
-      method: m,
-      side: isBuy ? 'buy' : 'sell',
-      quantity: qty,
-      summary: {
-        totalQty,
-        totalCost,
-        avgPrice: avgPx,
-        benchmarkPrice: benchPx,
-        slippageBps,
+    return res.json({
+      status: "success",
+      data: {
+        method: m,
+        side: isBuy ? "buy" : "sell",
+        quantity: qty,
+        summary: {
+          totalQty,
+          totalCost,
+          avgPrice: avgPx,
+          benchmarkPrice: benchPx,
+          slippageBps,
+        },
+        perSlice: execRows,
+        chart,
       },
-      perSlice: execRows,
-      chart,
-    }});
+    });
   } catch (e: any) {
-    return res.status(500).json({ status:'error', message: e?.message || 'Simulation failed' });
+    return res
+      .status(500)
+      .json({ status: "error", message: e?.message || "Simulation failed" });
   }
 }
 
 export function handleExecutionLatency(req: Request, res: Response) {
   try {
-    const tradeId = String((req.query as any).tradeId || (req.query as any).id || "");
+    const tradeId = String(
+      (req.query as any).tradeId || (req.query as any).id || "",
+    );
     const now = Date.now();
-    const submit = new Date(now - 800 - Math.round(Math.random() * 500)).toISOString();
+    const submit = new Date(
+      now - 800 - Math.round(Math.random() * 500),
+    ).toISOString();
     const fillsCount = 1 + Math.floor(Math.random() * 4);
     const mid = 30000 + Math.random() * 20000;
     const fills = Array.from({ length: fillsCount }).map((_, i) => ({
@@ -99,12 +150,15 @@ export function handleExecutionLatency(req: Request, res: Response) {
     const firstFillTs = new Date(fills[0]?.ts || now).getTime();
     const latency = Math.max(0, firstFillTs - new Date(submit).getTime());
     const avgSlipBps =
-      typeof mid === 'number' && fills.length
-        ? fills.reduce((s: number, f: any) => s + ((f.price - mid) / mid) * 10000, 0) / fills.length
+      typeof mid === "number" && fills.length
+        ? fills.reduce(
+            (s: number, f: any) => s + ((f.price - mid) / mid) * 10000,
+            0,
+          ) / fills.length
         : 0;
 
     return res.json({
-      status: 'success',
+      status: "success",
       data: {
         trade_id: tradeId,
         submit_ts: submit,
@@ -116,6 +170,11 @@ export function handleExecutionLatency(req: Request, res: Response) {
       },
     });
   } catch (e: any) {
-    return res.status(500).json({ status:'error', message: e?.message || 'Failed to compute latency' });
+    return res
+      .status(500)
+      .json({
+        status: "error",
+        message: e?.message || "Failed to compute latency",
+      });
   }
 }
