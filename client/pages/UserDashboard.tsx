@@ -140,7 +140,6 @@ export default function UserDashboard() {
   const [crossLoading, setCrossLoading] = useState<boolean>(false);
 
   // Execution Heatmap
-  const [execVenue, setExecVenue] = useState<string>("all");
   const [regimeRange, setRegimeRange] = useState<{
     from: number;
     to: number;
@@ -152,32 +151,6 @@ export default function UserDashboard() {
       return null;
     }
   });
-  const [execSymbol, setExecSymbol] = useState<string>("");
-  const [execWindow, setExecWindow] = useState<string>("1h");
-  const [execBuckets, setExecBuckets] = useState<Array<string>>([]);
-  const [execRows, setExecRows] = useState<
-    Array<{
-      venue: string;
-      byBucket: Record<
-        string,
-        {
-          p50Lat?: number;
-          p95Lat?: number;
-          p50Slip?: number;
-          p95Slip?: number;
-          fill?: number;
-          symbol?: string;
-          depthUsd?: number;
-          predictedCost?: number;
-          realizedCost?: number;
-          discrepant?: boolean;
-        }
-      >;
-    }>
-  >([]);
-  const [execDiscrepancies, setExecDiscrepancies] = useState<number>(0);
-  const [execLoading, setExecLoading] = useState<boolean>(false);
-  const [execAuto, setExecAuto] = useState<boolean>(true);
 
   const loadCrossMarket = async () => {
     if (!mounted) return;
