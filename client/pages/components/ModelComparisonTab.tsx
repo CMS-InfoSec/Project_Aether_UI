@@ -168,7 +168,6 @@ export default function ModelComparisonTab() {
         const d = j?.data || j || {};
         const oosObj = d.oos || d.test || d.validation || {};
         const insObj = d.ins || d.in_sample || d.train || {};
-        const hasPrefix = (k: string) => (d[k] !== undefined ? d[k] : undefined);
         const m: Metrics = {
           oos: {
             pnl: num(d.oos_pnl ?? oosObj.pnl ?? d.pnl ?? d.total_return),
@@ -441,7 +440,7 @@ export default function ModelComparisonTab() {
                           <td className="p-2 text-right">{loading ? "…" : perf?.sharpe !== undefined ? perf.sharpe.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sortino !== undefined ? perf.sortino.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.cvar !== undefined ? perf.cvar.toFixed(3) : "—"}</td>
-                          <td className="p-2 text-right">{loading ? "…" : me.turnover !== undefined ? (me.turnover * 100).toFixed(1) + "%" : "—"}</td>
+                          <td className="p-2 text-right">{loading ? "��" : me.turnover !== undefined ? (me.turnover * 100).toFixed(1) + "%" : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : me.breaches !== undefined ? me.breaches : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : me.drift !== undefined ? me.drift : "—"}</td>
                           <td className="p-2">
