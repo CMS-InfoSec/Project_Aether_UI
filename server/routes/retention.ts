@@ -47,3 +47,8 @@ export function retentionMetrics(): string {
   ];
   return lines.join('\n') + '\n';
 }
+
+export function handleRetentionMetrics(_req: Request, res: Response) {
+  res.setHeader('Content-Type', 'text/plain');
+  res.status(200).send(retentionMetrics());
+}
