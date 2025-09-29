@@ -198,11 +198,38 @@ export default function ModelComparisonTab() {
     return {} as Metrics;
   };
 
+  const fetchLiveMetrics = async (id: string) => {
+    const tryEndpoints = [
+      `/api/models/${encodeURIComponent(id)}/live`,
+      `/api/models/perf/live/${encodeURIComponent(id)}`,
+      `/api/models/${encodeURIComponent(id)}/metrics?source=live`,
+      `/api/perf/models/${encodeURIComponent(id)}`,
+      `/api/models/metrics/live?id=${encodeURIComponent(id)}`,
+    ];
+    for (const ep of tryEndpoints) {
+      try {
+        const j = await getJson<any>(ep);
+        const d = j?.data || j || {};
+        const m: Metrics = {
+          live: {
+            pnl: num(d.pnl ?? d.return ?? d.total_return),
+            sharpe: num(d.sharpe ?? d.metrics?.sharpe),
+            sortino: num(d.sortino ?? d.metrics?.sortino),
+            cvar: num(d.cvar ?? d.CVaR ?? d.metrics?.cvar),
+          },
+          turnover: num(d.turnover ?? d.metrics?.turnover),
+        };
+        return m;
+      } catch {}
+    }
+    return {} as Metrics;
+  };
+
   const loadModelData = async (id: string) => {
     setLoadingIds((prev) => ({ ...prev, [id]: true }));
     try {
-      const [ln, bt] = await Promise.all([fetchLineage(id), fetchBacktestMetrics(id)]);
-      setMetrics((prev) => ({ ...prev, [id]: { ...prev[id], ...ln, ...bt } }));
+      const [ln, bt, lv] = await Promise.all([fetchLineage(id), fetchBacktestMetrics(id), fetchLiveMetrics(id)]);
+      setMetrics((prev) => ({ ...prev, [id]: { ...prev[id], ...ln, ...bt, ...lv } }));
     } finally {
       setLoadingIds((prev) => ({ ...prev, [id]: false }));
     }
