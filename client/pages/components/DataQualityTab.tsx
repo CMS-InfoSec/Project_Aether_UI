@@ -25,7 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import HelpTip from "@/components/ui/help-tip";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { getBaseUrl } from "@/lib/apiClient";
 import {
   AlertTriangle,
   CheckCircle2,
