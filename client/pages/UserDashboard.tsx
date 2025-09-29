@@ -610,14 +610,6 @@ export default function UserDashboard() {
     return pnl >= 0 ? "text-accent" : "text-destructive";
   };
 
-  useEffect(() => {
-    if (!execAuto) return;
-    const t = window.setInterval(() => {
-      loadExecutionHeatmap();
-    }, 30000);
-    return () => window.clearInterval(t);
-  }, [execAuto, execVenue, execSymbol, execWindow]);
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
