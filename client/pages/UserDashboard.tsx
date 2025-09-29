@@ -212,7 +212,6 @@ export default function UserDashboard() {
         localStorage.setItem("regime_range", JSON.stringify(regimeRange));
       else localStorage.removeItem("regime_range");
     } catch {}
-    loadExecutionHeatmap();
   }, [regimeRange]);
 
   const loadDailyReport = async () => {
