@@ -549,7 +549,6 @@ export default function UserDashboard() {
     );
   };
 
-
   const loadRecentTrades = async () => {
     try {
       const j = await getJson<any>("/api/trades/recent");

@@ -35,7 +35,14 @@ export default function CopilotDock() {
     requireReason?: boolean;
     reason?: string;
     onConfirm: ((reason?: string) => Promise<void>) | null;
-  }>({ open: false, title: "", desc: "", onConfirm: null, requireReason: false, reason: "" });
+  }>({
+    open: false,
+    title: "",
+    desc: "",
+    onConfirm: null,
+    requireReason: false,
+    reason: "",
+  });
 
   if (!user) return null;
 
@@ -213,11 +220,20 @@ export default function CopilotDock() {
       const r = await apiFetch("/api/strategies/explain");
       const j = await r.json().catch(() => ({}));
       const data = j?.data || j || {};
-      const summary = data.summary || data.explanation || data.reason || "No explanation";
-      append({ role: "assistant", text: `Risk explain: ${summary}\n\nSources: GET /api/strategies/explain`, ts: Date.now() });
+      const summary =
+        data.summary || data.explanation || data.reason || "No explanation";
+      append({
+        role: "assistant",
+        text: `Risk explain: ${summary}\n\nSources: GET /api/strategies/explain`,
+        ts: Date.now(),
+      });
       await logCopilot("Copilot risk explain", "ok");
     } catch {
-      append({ role: "assistant", text: "Risk explain failed.", ts: Date.now() });
+      append({
+        role: "assistant",
+        text: "Risk explain failed.",
+        ts: Date.now(),
+      });
     } finally {
       setLoading(false);
     }
@@ -227,15 +243,27 @@ export default function CopilotDock() {
     setLoading(true);
     try {
       let modelsResp: any = null;
-      const endpoints = ["/api/governance/models", "/governance/models", "/api/models", "/api/models/history"];
+      const endpoints = [
+        "/api/governance/models",
+        "/governance/models",
+        "/api/models",
+        "/api/models/history",
+      ];
       for (const ep of endpoints) {
         try {
           const r = await apiFetch(ep, { admin: true });
           const j = await r.json().catch(() => null);
-          if (j) { modelsResp = j; break; }
+          if (j) {
+            modelsResp = j;
+            break;
+          }
         } catch {}
       }
-      const list: any[] = Array.isArray(modelsResp?.data) ? modelsResp.data : Array.isArray(modelsResp) ? modelsResp : [];
+      const list: any[] = Array.isArray(modelsResp?.data)
+        ? modelsResp.data
+        : Array.isArray(modelsResp)
+          ? modelsResp
+          : [];
       const norm = list.map((m: any) => ({
         id: m.modelId || m.id || m.name,
         name: m.name || m.modelId,
@@ -245,16 +273,34 @@ export default function CopilotDock() {
         dd: m.performance?.maxDrawdown ?? m.metrics?.maxDrawdown ?? null,
         win: m.performance?.winRate ?? m.metrics?.winRate ?? null,
       }));
-      const promoted = norm.filter(m => m.status === "deployed" || m.deployedAt > 0).sort((a,b)=> b.deployedAt - a.deployedAt).slice(0,3);
+      const promoted = norm
+        .filter((m) => m.status === "deployed" || m.deployedAt > 0)
+        .sort((a, b) => b.deployedAt - a.deployedAt)
+        .slice(0, 3);
       if (promoted.length === 0) {
-        append({ role: "assistant", text: "No promoted models found.", ts: Date.now() });
+        append({
+          role: "assistant",
+          text: "No promoted models found.",
+          ts: Date.now(),
+        });
         return;
       }
-      const lines = promoted.map(m => `${m.name}: Sharpe ${m.sharpe ?? "-"}, Win ${(m.win ?? 0) * 100}%, MaxDD ${m.dd ?? "-"}`);
-      append({ role: "assistant", text: `Last promoted models (3):\n- ${lines.join("\n- ")}`, ts: Date.now() });
+      const lines = promoted.map(
+        (m) =>
+          `${m.name}: Sharpe ${m.sharpe ?? "-"}, Win ${(m.win ?? 0) * 100}%, MaxDD ${m.dd ?? "-"}`,
+      );
+      append({
+        role: "assistant",
+        text: `Last promoted models (3):\n- ${lines.join("\n- ")}`,
+        ts: Date.now(),
+      });
       await logCopilot("Copilot compare models", `count=${promoted.length}`);
     } catch {
-      append({ role: "assistant", text: "Failed to compare models.", ts: Date.now() });
+      append({
+        role: "assistant",
+        text: "Failed to compare models.",
+        ts: Date.now(),
+      });
     } finally {
       setLoading(false);
     }
@@ -262,7 +308,11 @@ export default function CopilotDock() {
 
   const actKillSwitch = async () => {
     if (user.role !== "admin") {
-      append({ role: "assistant", text: "Kill-switch requires admin.", ts: Date.now() });
+      append({
+        role: "assistant",
+        text: "Kill-switch requires admin.",
+        ts: Date.now(),
+      });
       return;
     }
     setConfirm({
@@ -276,15 +326,27 @@ export default function CopilotDock() {
           const r = await apiFetch("/api/admin/kill-switch", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ enabled: true, actor: user.email, reason: reason || "Emergency stop" }),
+            body: JSON.stringify({
+              enabled: true,
+              actor: user.email,
+              reason: reason || "Emergency stop",
+            }),
             admin: true,
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok) throw new Error(j.message || "Kill-switch failed");
-          append({ role: "assistant", text: `Kill switch enabled.`, ts: Date.now() });
+          append({
+            role: "assistant",
+            text: `Kill switch enabled.`,
+            ts: Date.now(),
+          });
           await logCopilot("Copilot action", `kill-switch enabled`);
         } catch (e: any) {
-          append({ role: "assistant", text: `Kill-switch error: ${e?.message || "error"}`, ts: Date.now() });
+          append({
+            role: "assistant",
+            text: `Kill-switch error: ${e?.message || "error"}`,
+            ts: Date.now(),
+          });
         }
       },
     });
@@ -363,13 +425,20 @@ export default function CopilotDock() {
     // Simple intent routing
     const lower = q.toLowerCase();
     if (lower.startsWith("why")) return actWhyLastTrade();
-    if (lower.includes("flash crash") || lower.includes("what-if") || lower.includes("flash"))
+    if (
+      lower.includes("flash crash") ||
+      lower.includes("what-if") ||
+      lower.includes("flash")
+    )
       return actWhatIf("flash");
     if (lower.includes("rally")) return actWhatIf("rally");
-    if (lower.includes("explain") && lower.includes("risk")) return actExplainRisk();
+    if (lower.includes("explain") && lower.includes("risk"))
+      return actExplainRisk();
     if (lower.includes("risk")) return actRiskSummary();
-    if (lower.includes("compare") && lower.includes("model")) return actCompareModels();
-    if (lower.includes("kill") && lower.includes("switch")) return actKillSwitch();
+    if (lower.includes("compare") && lower.includes("model"))
+      return actCompareModels();
+    if (lower.includes("kill") && lower.includes("switch"))
+      return actKillSwitch();
     if (lower.includes("rollback")) return actRollback();
     return sendLLM(q, []);
   };
@@ -496,7 +565,9 @@ export default function CopilotDock() {
               <label className="text-sm">Reason</label>
               <Input
                 value={confirm.reason || ""}
-                onChange={(e) => setConfirm((prev) => ({ ...prev, reason: e.target.value }))}
+                onChange={(e) =>
+                  setConfirm((prev) => ({ ...prev, reason: e.target.value }))
+                }
                 placeholder="Describe why this action is necessary"
               />
             </div>
