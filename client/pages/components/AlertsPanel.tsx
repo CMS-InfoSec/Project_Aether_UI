@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import HelpTip from "@/components/ui/help-tip";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getBaseUrl, apiFetch } from "@/lib/apiClient";
 
 interface AlertItem {
@@ -47,6 +48,8 @@ export default function AlertsPanel() {
   const esRef = useRef<EventSource | null>(null);
   const lastTsRef = useRef<string | null>(null);
   const stopRef = useRef(false);
+  const [severity, setSeverity] = useState<'all'|'info'|'warning'|'error'|'critical'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
 
   useEffect(() => {
     const base = getBaseUrl();
@@ -116,6 +119,7 @@ export default function AlertsPanel() {
       const params = new URLSearchParams();
       params.set("limit", "50");
       if (lastTsRef.current) params.set("since", lastTsRef.current);
+      if (severity !== 'all') params.set('severity', severity);
       try {
         const r = await apiFetch(`/api/events/alerts?${params.toString()}`, {
           cache: "no-cache",
@@ -139,7 +143,10 @@ export default function AlertsPanel() {
     };
     poll();
     return () => clearTimeout(timer);
-  }, [live]);
+  }, [live, severity]);
+
+  const eventOptions = Array.from(new Set(items.map(i => i.event))).sort();
+  const filtered = items.filter(i => (severity==='all' ? true : i.severity===severity) && (typeFilter==='all' ? true : i.event===typeFilter));
 
   return (
     <Card>
@@ -153,13 +160,38 @@ export default function AlertsPanel() {
             {live ? "Live" : "Polling"}
           </span>
         </CardTitle>
-        <HelpTip content="Streaming alerts from /events/alerts. Color-coded by severity." />
+        <div className="flex items-center gap-2">
+          <div className="min-w-[140px]">
+            <Select value={severity} onValueChange={(v)=> setSeverity(v as any)}>
+              <SelectTrigger><SelectValue placeholder="Severity" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All severities</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+                <SelectItem value="error">Error</SelectItem>
+                <SelectItem value="warning">Warning</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="min-w-[160px]">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                {eventOptions.map((e)=> (
+                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <HelpTip content="Streaming alerts from /events/alerts. Filter by severity and type." />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="border rounded">
           <ScrollArea className="h-80">
             <div className="divide-y">
-              {items.map((a) => (
+              {filtered.map((a) => (
                 <div key={a.id} className={`p-3 ${rowClass(a.severity)}`}>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -184,9 +216,9 @@ export default function AlertsPanel() {
                   )}
                 </div>
               ))}
-              {items.length === 0 && (
+              {filtered.length === 0 && (
                 <div className="p-6 text-sm text-muted-foreground">
-                  No alerts yet
+                  No alerts match filters
                 </div>
               )}
             </div>
