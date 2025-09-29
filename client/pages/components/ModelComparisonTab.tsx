@@ -81,7 +81,8 @@ export default function ModelComparisonTab() {
   const [canaryCap, setCanaryCap] = useState<number>(10);
   const [promotingId, setPromotingId] = useState<string | null>(null);
   const [auditBanner, setAuditBanner] = useState<{ ts: number; modelId: string; cap: number } | null>(null);
-  const [sampleMode, setSampleMode] = useState<"oos" | "ins">("oos");
+  const [sourceMode, setSourceMode] = useState<"backtest" | "live">("backtest");
+  const [backtestMode, setBacktestMode] = useState<"oos" | "ins">("oos");
 
   useEffect(() => {
     const boot = async () => {
@@ -453,7 +454,7 @@ export default function ModelComparisonTab() {
                             <div className="font-medium">{m?.name || id}</div>
                             <div className="text-xs text-muted-foreground">v{m?.version}</div>
                           </td>
-                          <td className="p-2 text-right">{loading ? "…" : perf?.pnl !== undefined ? perf.pnl.toFixed(2) : "—"}</td>
+                          <td className="p-2 text-right">{loading ? "…" : perf?.pnl !== undefined ? perf.pnl.toFixed(2) : "���"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sharpe !== undefined ? perf.sharpe.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.sortino !== undefined ? perf.sortino.toFixed(2) : "—"}</td>
                           <td className="p-2 text-right">{loading ? "…" : perf?.cvar !== undefined ? perf.cvar.toFixed(3) : "—"}</td>
