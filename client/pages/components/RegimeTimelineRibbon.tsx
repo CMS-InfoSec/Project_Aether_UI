@@ -54,65 +54,69 @@ export default function RegimeTimelineRibbon({
     setLoading(true);
     setError(null);
     try {
-      // Try multiple endpoints for robustness
+      const key = "regime_history_buffer";
+      let hist: RegimeSegment[] = [];
+      try {
+        const raw = localStorage.getItem(key);
+        const parsed = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(parsed)) hist = parsed;
+      } catch {}
+
+      let current: any = null;
       const endpoints = [
-        "/api/regime/current?history=1",
-        "/regime/current?history=1",
-        "/api/regime/history",
-        "/regime/history",
+        "/api/strategies/regime/current",
+        "/api/v1/strategies/regime/current",
       ];
-      let data: any = null;
       for (const ep of endpoints) {
         try {
           const r = await apiFetch(ep);
           if (r.ok) {
-            data = await r.json();
+            const j = await r.json();
+            current = j?.data || j;
             break;
           }
         } catch {}
       }
-      const hist = Array.isArray(data?.history)
-        ? data.history
-        : Array.isArray(data)
-          ? data
-          : [];
-      const segs: RegimeSegment[] = hist.map((h: any, i: number) => ({
-        id: String(h.id ?? i),
-        label: String(h.label ?? h.regime ?? `Regime ${i + 1}`),
-        start: String(
-          h.start ??
-            h.ts_start ??
-            h.begin ??
-            new Date(Date.now() - (i + 1) * 86400000).toISOString(),
-        ),
-        end: String(
-          h.end ??
-            h.ts_end ??
-            h.finish ??
-            new Date(Date.now() - i * 86400000).toISOString(),
-        ),
-        confidence:
-          typeof h.confidence === "number"
-            ? h.confidence
-            : typeof h.conf === "number"
-              ? h.conf
-              : undefined,
-        events: Array.isArray(h.events)
-          ? h.events.map((e: any) => ({
-              ts: String(e.ts || e.time || e.t || new Date().toISOString()),
-              label: String(e.label || e.name || "event"),
-            }))
-          : [],
-        color: h.color,
-      }));
-      // Assign colors if missing
-      for (let i = 0; i < segs.length; i++) {
-        if (!segs[i].color) segs[i].color = palette[i % palette.length];
+
+      if (current) {
+        const nowIso = new Date().toISOString();
+        const seg: RegimeSegment = {
+          id: String(current.id || current.label || nowIso),
+          label: String(current.label || current.regime || "Regime"),
+          start: String(current.start || current.since || nowIso),
+          end: nowIso,
+          confidence:
+            typeof current.confidence === "number"
+              ? current.confidence
+              : typeof current.conf === "number"
+                ? current.conf
+                : undefined,
+          events: Array.isArray(current.events)
+            ? current.events.map((e: any) => ({
+                ts: String(e.ts || e.time || e.t || nowIso),
+                label: String(e.label || e.name || "event"),
+              }))
+            : [],
+          color: current.color,
+        };
+        if (hist.length && hist[0].label === seg.label) {
+          hist[0].end = seg.end;
+          hist[0].confidence = seg.confidence ?? hist[0].confidence;
+        } else {
+          hist.unshift(seg);
+        }
+        hist = hist.slice(0, 50);
+        try { localStorage.setItem(key, JSON.stringify(hist)); } catch {}
       }
-      setSegments(segs);
-      if (segs.length) {
-        const min = Math.min(...segs.map((s) => new Date(s.start).getTime()));
-        const max = Math.max(...segs.map((s) => new Date(s.end).getTime()));
+
+      // Assign colors if missing
+      for (let i = 0; i < hist.length; i++) {
+        if (!hist[i].color) hist[i].color = palette[i % palette.length];
+      }
+      setSegments(hist);
+      if (hist.length) {
+        const min = Math.min(...hist.map((s) => new Date(s.start).getTime()));
+        const max = Math.max(...hist.map((s) => new Date(s.end).getTime()));
         setViewFrom(min);
         setViewTo(max);
       }
