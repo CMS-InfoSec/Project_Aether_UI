@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 
 // Risk config (mock)
-const RISK_CONFIG = {
+let RISK_CONFIG = {
   tiers: [
     { id: 'conservative', label: 'Conservative', maxDrawdown: 0.05, pnlWarning: -0.02 },
     { id: 'moderate', label: 'Moderate', maxDrawdown: 0.1, pnlWarning: -0.05 },
@@ -12,6 +12,27 @@ const RISK_CONFIG = {
 
 export function handleGetRiskConfig(_req: Request, res: Response) {
   res.json({ status: 'success', data: RISK_CONFIG });
+}
+
+export function handlePatchRiskConfig(req: Request, res: Response) {
+  try {
+    const body = req.body || {};
+    if (body.defaultTier && typeof body.defaultTier === 'string') {
+      RISK_CONFIG.defaultTier = body.defaultTier;
+    }
+    if (Array.isArray(body.tiers)) {
+      const tiers = body.tiers.map((t: any) => ({
+        id: String(t.id),
+        label: String(t.label || t.id),
+        maxDrawdown: Math.max(0, Number(t.maxDrawdown) || 0),
+        pnlWarning: Number(t.pnlWarning) || 0,
+      }));
+      if (tiers.length > 0) RISK_CONFIG.tiers = tiers;
+    }
+    return res.json({ status: 'success', data: RISK_CONFIG });
+  } catch (e: any) {
+    return res.status(400).json({ status: 'error', message: e?.message || 'invalid payload' });
+  }
 }
 
 // Generate synthetic live metrics (PnL and drawdown time series)

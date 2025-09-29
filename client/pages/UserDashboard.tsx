@@ -54,6 +54,7 @@ import {
 } from "recharts";
 import RiskMonitoringPanel from "./components/RiskMonitoringPanel";
 import RegimeTimelineRibbon from "./components/RegimeTimelineRibbon";
+import RiskTierPanel from "./components/RiskTierPanel";
 import ExplainabilityPanel from "./components/ExplainabilityPanel";
 import ManipulationDefenseConsole from "./components/ManipulationDefenseConsole";
 import ExecutionHeatmapPanel from "./components/ExecutionHeatmapPanel";
@@ -1291,6 +1292,7 @@ export default function UserDashboard() {
 
         <TabsContent value="risk" className="space-y-6">
           <RiskMonitoringPanel range={regimeRange || undefined} />
+          <RiskTierPanel />
         </TabsContent>
 
         <TabsContent value="defense" className="space-y-6">
