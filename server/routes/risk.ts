@@ -57,3 +57,62 @@ export function handleGetLiveMetrics(req: Request, res: Response) {
   }
   res.json({ status: 'success', data });
 }
+
+export function handleGetRiskBreaches(_req: Request, res: Response) {
+  // Synthesize a few current risk breaches based on config thresholds
+  const items = [] as Array<{
+    id: string;
+    message: string;
+    timestamp: string;
+    severity: 'low' | 'medium' | 'high' | 'critical' | string;
+    metric: string;
+    value: number;
+    threshold: number;
+  }>;
+  const now = Date.now();
+
+  // Example: drawdown breach
+  const tier = RISK_CONFIG.tiers.find((t) => t.id === RISK_CONFIG.defaultTier) || RISK_CONFIG.tiers[0];
+  const dd = -0.06 - Math.random() * 0.03;
+  if (dd < -tier.maxDrawdown) {
+    items.push({
+      id: `risk_dd_${now}`,
+      message: `Max drawdown ${Math.abs(dd * 100).toFixed(2)}% exceeds limit ${Math.abs(tier.maxDrawdown * 100).toFixed(1)}%`,
+      timestamp: new Date(now - 20_000).toISOString(),
+      severity: 'high',
+      metric: 'max_drawdown',
+      value: dd,
+      threshold: -tier.maxDrawdown,
+    });
+  }
+
+  // Example: Sharpe warning
+  const sharpe = 0.4 + Math.random() * 0.4;
+  if (sharpe < 0.5) {
+    items.push({
+      id: `risk_sharpe_${now - 10_000}`,
+      message: `Sharpe ${sharpe.toFixed(2)} below recommended 0.50`,
+      timestamp: new Date(now - 10_000).toISOString(),
+      severity: sharpe < 0.3 ? 'critical' : 'warning',
+      metric: 'sharpe_ratio',
+      value: sharpe,
+      threshold: 0.5,
+    });
+  }
+
+  // Example: Hedge ratio outside band
+  const hedge = 0.07 + Math.random() * 0.9;
+  if (hedge < 0.1 || hedge > 0.8) {
+    items.push({
+      id: `risk_hedge_${now - 5_000}`,
+      message: `Hedge ratio ${(hedge * 100).toFixed(1)}% outside [10%, 80%] band`,
+      timestamp: new Date(now - 5_000).toISOString(),
+      severity: 'warning',
+      metric: 'hedge_ratio',
+      value: hedge,
+      threshold: hedge < 0.1 ? 0.1 : 0.8,
+    });
+  }
+
+  res.json({ status: 'success', breaches: items });
+}
