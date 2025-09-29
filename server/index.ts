@@ -349,6 +349,14 @@ export function createServer() {
   app.get("/api/reports/export", handleExportReportCSV);
   app.get("/api/reports/execution", handleGetExecutionMetrics);
   app.get("/api/reports/trades", handleGetUserTradesReport);
+
+  // Data retention admin
+  {
+    const { handleGetDataRetention, handlePatchDataRetention, handlePostManualPurge } = require("./routes/retention");
+    app.get("/api/admin/config/data-retention", handleGetDataRetention);
+    app.patch("/api/admin/config/data-retention", requireAdminKey, handlePatchDataRetention);
+    app.post("/api/admin/data/purge", requireAdminKey, handlePostManualPurge);
+  }
   // UK tax-year report (v1 prefix)
   app.get(
     "/api/v1/reports/tax-year",
