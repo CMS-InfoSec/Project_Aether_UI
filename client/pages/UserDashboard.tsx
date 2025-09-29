@@ -1040,6 +1040,8 @@ export default function UserDashboard() {
           </Card>
 
           {/* Execution Heatmap */}
+          <ExecutionHeatmapPanel regimeRange={regimeRange} />
+
           <Card>
             <CardHeader className="flex items-start justify-between">
               <div>
