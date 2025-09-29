@@ -97,6 +97,8 @@ function usePersistedMap(key: string) {
   return [map, setMap] as const;
 }
 
+interface AlertItem { id: string; timestamp: string; severity: "info" | "warning" | "error" | "critical"; source: string; event: string; message: string; details?: Record<string, any>; }
+
 export default function DataQualityTab() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
