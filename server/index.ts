@@ -424,6 +424,13 @@ export function createServer() {
   );
   app.get("/api/metrics", handleMetrics);
 
+  // Risk config and live metrics
+  {
+    const { handleGetRiskConfig, handleGetLiveMetrics } = require("./routes/risk");
+    app.get("/api/config/risk", handleGetRiskConfig);
+    app.get("/api/metrics/live", handleGetLiveMetrics);
+  }
+
   // Events (audit/logs)
   const {
     handleEventsTrades,
