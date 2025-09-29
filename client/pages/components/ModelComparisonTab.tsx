@@ -305,15 +305,25 @@ export default function ModelComparisonTab() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <HelpTip content="Loads lineage (breaches/drift) and backtest metrics (PnL, Sharpe, Sortino, CVaR)." />
+            <HelpTip content="Toggle Backtest vs Live metrics. Backtest supports OOS/IS; Live uses realtime performance." />
             <div className="flex items-center rounded-md border overflow-hidden">
-              <Button variant={sampleMode === "oos" ? "default" : "ghost"} size="sm" onClick={() => setSampleMode("oos")}>
-                OOS
+              <Button variant={sourceMode === "backtest" ? "default" : "ghost"} size="sm" onClick={() => setSourceMode("backtest")}>
+                Backtest
               </Button>
-              <Button variant={sampleMode === "ins" ? "default" : "ghost"} size="sm" onClick={() => setSampleMode("ins")}>
-                In-sample
+              <Button variant={sourceMode === "live" ? "default" : "ghost"} size="sm" onClick={() => setSourceMode("live")}>
+                Live
               </Button>
             </div>
+            {sourceMode === 'backtest' && (
+              <div className="flex items-center rounded-md border overflow-hidden">
+                <Button variant={backtestMode === "oos" ? "default" : "ghost"} size="sm" onClick={() => setBacktestMode("oos")}>
+                  OOS
+                </Button>
+                <Button variant={backtestMode === "ins" ? "default" : "ghost"} size="sm" onClick={() => setBacktestMode("ins")}>
+                  In-sample
+                </Button>
+              </div>
+            )}
             <Button variant="outline" size="sm" onClick={() => Promise.all([fetchModels(), fetchProposals()])}>
               <RefreshCw className="h-4 w-4" />
             </Button>
