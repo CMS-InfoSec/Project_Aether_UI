@@ -93,7 +93,11 @@ export default function AdminSystemControl() {
 
   // Audit log
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
-  const [auditFilter, setAuditFilter] = useState<{ action?: string; actor?: string; success?: string }>({});
+  const [auditFilter, setAuditFilter] = useState<{
+    action?: string;
+    actor?: string;
+    success?: string;
+  }>({});
   const [auditPage, setAuditPage] = useState(1);
   const [auditPageSize] = useState(10);
 
@@ -123,7 +127,9 @@ export default function AdminSystemControl() {
   const [backendUrl, setBackendUrl] = useState(() => {
     return localStorage.getItem("aether-backend-url") || window.location.origin;
   });
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem("aether-api-key") || "");
+  const [apiKey, setApiKey] = useState(
+    () => localStorage.getItem("aether-api-key") || "",
+  );
   const [connectionStatus, setConnectionStatus] = useState<
     "unknown" | "connected" | "disconnected" | "testing"
   >("unknown");
@@ -260,13 +266,20 @@ export default function AdminSystemControl() {
       const u = new URL(cleanUrl);
       if (!/^https?:$/.test(u.protocol)) throw new Error("Invalid protocol");
     } catch {
-      toast({ title: "Invalid URL", description: "Enter a valid http(s) URL", variant: "destructive" });
+      toast({
+        title: "Invalid URL",
+        description: "Enter a valid http(s) URL",
+        variant: "destructive",
+      });
       return;
     }
     setBackendUrl(cleanUrl);
     localStorage.setItem("aether-backend-url", cleanUrl);
     setConnectionStatus("unknown");
-    toast({ title: "Backend URL Saved", description: `Backend URL updated to: ${cleanUrl}` });
+    toast({
+      title: "Backend URL Saved",
+      description: `Backend URL updated to: ${cleanUrl}`,
+    });
   };
 
   const saveApiKey = () => {
@@ -277,7 +290,11 @@ export default function AdminSystemControl() {
       return;
     }
     if (k.length < 8) {
-      toast({ title: "API key too short", description: "Enter a valid admin key", variant: "destructive" });
+      toast({
+        title: "API key too short",
+        description: "Enter a valid admin key",
+        variant: "destructive",
+      });
       return;
     }
     localStorage.setItem("aether-api-key", k);
@@ -294,7 +311,9 @@ export default function AdminSystemControl() {
         await fetchAudit();
         setConnectionStatus("connected");
       } catch (error) {
-        setError(error instanceof Error ? error.message : "Failed to load data");
+        setError(
+          error instanceof Error ? error.message : "Failed to load data",
+        );
         setConnectionStatus("disconnected");
       } finally {
         setIsLoading(false);
@@ -734,7 +753,8 @@ export default function AdminSystemControl() {
                   onChange={(e) => setBackendUrl(e.target.value)}
                 />
                 <div className="text-xs text-muted-foreground mt-1">
-                  Enter the complete URL including protocol (http:// or https://)
+                  Enter the complete URL including protocol (http:// or
+                  https://)
                 </div>
               </div>
               <div>
@@ -743,11 +763,35 @@ export default function AdminSystemControl() {
                   <HelpTip content="Admin key sent as X-API-Key for privileged endpoints (stored locally)." />
                 </div>
                 <div className="flex gap-2">
-                  <Input id="apiKey" type="password" placeholder="Enter admin API key" value={apiKey} onChange={(e)=> setApiKey(e.target.value)} />
-                  <Button variant="outline" onClick={()=> { setApiKey(""); localStorage.removeItem("aether-api-key"); toast({ title: "API key cleared" }); }}>Clear</Button>
-                  <Button onClick={saveApiKey} disabled={apiKey === (localStorage.getItem("aether-api-key") || "")}>Save</Button>
+                  <Input
+                    id="apiKey"
+                    type="password"
+                    placeholder="Enter admin API key"
+                    value={apiKey}
+                    onChange={(e) => setApiKey(e.target.value)}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setApiKey("");
+                      localStorage.removeItem("aether-api-key");
+                      toast({ title: "API key cleared" });
+                    }}
+                  >
+                    Clear
+                  </Button>
+                  <Button
+                    onClick={saveApiKey}
+                    disabled={
+                      apiKey === (localStorage.getItem("aether-api-key") || "")
+                    }
+                  >
+                    Save
+                  </Button>
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">Key persists in this browser only.</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Key persists in this browser only.
+                </div>
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -769,7 +813,10 @@ export default function AdminSystemControl() {
                 </Button>
                 <Button
                   onClick={saveBackendUrl}
-                  disabled={!backendUrl.trim() || backendUrl === localStorage.getItem("aether-backend-url")}
+                  disabled={
+                    !backendUrl.trim() ||
+                    backendUrl === localStorage.getItem("aether-backend-url")
+                  }
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save URL
@@ -781,7 +828,8 @@ export default function AdminSystemControl() {
                 <div className="mb-2">{getConnectionBadge()}</div>
                 <div className="text-sm text-muted-foreground">
                   {connectionStatus === "connected" && "Backend is reachable"}
-                  {connectionStatus === "disconnected" && "Cannot reach backend"}
+                  {connectionStatus === "disconnected" &&
+                    "Cannot reach backend"}
                   {connectionStatus === "testing" && "Testing connection..."}
                   {connectionStatus === "unknown" && "Connection not tested"}
                 </div>
@@ -1292,29 +1340,49 @@ export default function AdminSystemControl() {
               <Input
                 placeholder="Filter action"
                 value={auditFilter.action || ""}
-                onChange={(e)=> setAuditFilter((p)=> ({ ...p, action: e.target.value }))}
+                onChange={(e) =>
+                  setAuditFilter((p) => ({ ...p, action: e.target.value }))
+                }
                 className="h-8 w-36"
               />
               <Input
                 placeholder="Filter actor"
                 value={auditFilter.actor || ""}
-                onChange={(e)=> setAuditFilter((p)=> ({ ...p, actor: e.target.value }))}
+                onChange={(e) =>
+                  setAuditFilter((p) => ({ ...p, actor: e.target.value }))
+                }
                 className="h-8 w-36"
               />
-              <Select value={auditFilter.success || ""} onValueChange={(v)=> setAuditFilter((p)=> ({ ...p, success: v }))}>
-                <SelectTrigger className="h-8 w-32"><SelectValue placeholder="Any status" /></SelectTrigger>
+              <Select
+                value={auditFilter.success || ""}
+                onValueChange={(v) =>
+                  setAuditFilter((p) => ({ ...p, success: v }))
+                }
+              >
+                <SelectTrigger className="h-8 w-32">
+                  <SelectValue placeholder="Any status" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Any</SelectItem>
                   <SelectItem value="true">Success</SelectItem>
                   <SelectItem value="false">Failed</SelectItem>
                 </SelectContent>
               </Select>
-              <Button variant="outline" size="sm" onClick={()=> { setAuditPage(1); fetchAudit(); }}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setAuditPage(1);
+                  fetchAudit();
+                }}
+              >
                 <RefreshCw className="h-4 w-4 mr-2" /> Refresh
               </Button>
             </div>
           </div>
-          <CardDescription>Newest entries first. Auto-refreshes every 10s.</CardDescription>
+          <CardDescription>
+            Newest entries first. Auto-refreshes every 10s.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="overflow-auto">
@@ -1330,30 +1398,81 @@ export default function AdminSystemControl() {
               </thead>
               <tbody>
                 {auditLog
-                  .filter((a)=> !auditFilter.action || a.action.toLowerCase().includes(auditFilter.action!.toLowerCase()))
-                  .filter((a)=> !auditFilter.actor || a.actor.toLowerCase().includes(auditFilter.actor!.toLowerCase()))
-                  .filter((a)=> !auditFilter.success || String(a.success) === auditFilter.success)
-                  .slice((auditPage-1)*auditPageSize, auditPage*auditPageSize)
-                  .map((a)=> (
-                  <tr key={a.id} className="border-b">
-                    <td className="p-2 whitespace-nowrap">{new Date(a.timestamp).toLocaleString()}</td>
-                    <td className="p-2">{a.action}</td>
-                    <td className="p-2">{a.actor}</td>
-                    <td className="p-2">{a.details}</td>
-                    <td className="p-2">{a.success ? <Badge className="bg-green-100 text-green-800">success</Badge> : <Badge variant="destructive">failed</Badge>}</td>
-                  </tr>
-                ))}
+                  .filter(
+                    (a) =>
+                      !auditFilter.action ||
+                      a.action
+                        .toLowerCase()
+                        .includes(auditFilter.action!.toLowerCase()),
+                  )
+                  .filter(
+                    (a) =>
+                      !auditFilter.actor ||
+                      a.actor
+                        .toLowerCase()
+                        .includes(auditFilter.actor!.toLowerCase()),
+                  )
+                  .filter(
+                    (a) =>
+                      !auditFilter.success ||
+                      String(a.success) === auditFilter.success,
+                  )
+                  .slice(
+                    (auditPage - 1) * auditPageSize,
+                    auditPage * auditPageSize,
+                  )
+                  .map((a) => (
+                    <tr key={a.id} className="border-b">
+                      <td className="p-2 whitespace-nowrap">
+                        {new Date(a.timestamp).toLocaleString()}
+                      </td>
+                      <td className="p-2">{a.action}</td>
+                      <td className="p-2">{a.actor}</td>
+                      <td className="p-2">{a.details}</td>
+                      <td className="p-2">
+                        {a.success ? (
+                          <Badge className="bg-green-100 text-green-800">
+                            success
+                          </Badge>
+                        ) : (
+                          <Badge variant="destructive">failed</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
                 {auditLog.length === 0 && (
-                  <tr><td colSpan={5} className="p-3 text-muted-foreground">No audit entries</td></tr>
+                  <tr>
+                    <td colSpan={5} className="p-3 text-muted-foreground">
+                      No audit entries
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>
           </div>
           {auditLog.length > auditPageSize && (
             <div className="flex items-center justify-end gap-2 mt-3 text-sm">
-              <Button size="sm" variant="outline" onClick={()=> setAuditPage((p)=> Math.max(1, p-1))} disabled={auditPage===1}>Prev</Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setAuditPage((p) => Math.max(1, p - 1))}
+                disabled={auditPage === 1}
+              >
+                Prev
+              </Button>
               <div>Page {auditPage}</div>
-              <Button size="sm" variant="outline" onClick={()=> setAuditPage((p)=> (p*auditPageSize < auditLog.length ? p+1 : p))} disabled={auditPage*auditPageSize >= auditLog.length}>Next</Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  setAuditPage((p) =>
+                    p * auditPageSize < auditLog.length ? p + 1 : p,
+                  )
+                }
+                disabled={auditPage * auditPageSize >= auditLog.length}
+              >
+                Next
+              </Button>
             </div>
           )}
         </CardContent>

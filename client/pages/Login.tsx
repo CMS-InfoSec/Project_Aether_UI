@@ -1,27 +1,40 @@
-import { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useState, useEffect } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Eye, EyeOff } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function Login() {
   const { user, login, isLoading } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [remember, setRemember] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
-  const [loginError, setLoginError] = useState('');
+  const [loginError, setLoginError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
+  const [resetEmail, setResetEmail] = useState("");
   const [resetMsg, setResetMsg] = useState<string | null>(null);
   const [resetSubmitting, setResetSubmitting] = useState(false);
 
@@ -32,18 +45,20 @@ export default function Login() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoginError('');
+    setLoginError("");
     setIsSubmitting(true);
 
     try {
       const success = await login(formData.email, formData.password, remember);
       if (success) {
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        setLoginError('Invalid credentials. Please check your email and password.');
+        setLoginError(
+          "Invalid credentials. Please check your email and password.",
+        );
       }
     } catch (error) {
-      setLoginError('An error occurred during login. Please try again.');
+      setLoginError("An error occurred during login. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -51,13 +66,13 @@ export default function Login() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     // Clear error when user starts typing
     if (loginError) {
-      setLoginError('');
+      setLoginError("");
     }
   };
 
@@ -78,7 +93,9 @@ export default function Login() {
           alt="Aether Logo"
           className="w-8 h-8 object-contain"
         />
-        <span className="hidden sm:inline font-semibold text-slate-900">AETHER</span>
+        <span className="hidden sm:inline font-semibold text-slate-900">
+          AETHER
+        </span>
       </div>
 
       <div className="w-full max-w-md">
@@ -98,7 +115,9 @@ export default function Login() {
         {/* Login Card */}
         <Card className="shadow-2xl border-0 bg-card/95 backdrop-blur-sm">
           <CardHeader className="space-y-1 pb-6">
-            <CardTitle className="text-2xl text-center font-semibold">Sign In</CardTitle>
+            <CardTitle className="text-2xl text-center font-semibold">
+              Sign In
+            </CardTitle>
             <CardDescription className="text-center">
               Enter your credentials to access the admin dashboard
             </CardDescription>
@@ -132,7 +151,7 @@ export default function Login() {
                   <Input
                     id="password"
                     name="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
                     placeholder="Enter your password"
                     value={formData.password}
                     onChange={handleInputChange}
@@ -159,7 +178,12 @@ export default function Login() {
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <input type="checkbox" className="h-4 w-4" checked={remember} onChange={(e)=> setRemember(e.target.checked)} />
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={remember}
+                    onChange={(e) => setRemember(e.target.checked)}
+                  />
                   Remember me
                 </label>
                 <div className="flex items-center gap-3"></div>
@@ -176,23 +200,24 @@ export default function Login() {
                     Signing In...
                   </>
                 ) : (
-                  'Sign In'
+                  "Sign In"
                 )}
               </Button>
             </form>
 
-
-            {typeof window !== 'undefined' && localStorage.getItem('show-demo-credentials') === 'true' && (
-              <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border/50">
-                <p className="text-sm text-muted-foreground text-center">
-                  <strong>Demo Credentials:</strong>
-                </p>
-                <p className="text-sm text-muted-foreground text-center mt-1">
-                  Email: admin@projectaether.com<br />
-                  Password: admin123
-                </p>
-              </div>
-            )}
+            {typeof window !== "undefined" &&
+              localStorage.getItem("show-demo-credentials") === "true" && (
+                <div className="mt-6 p-4 bg-muted/50 rounded-lg border border-border/50">
+                  <p className="text-sm text-muted-foreground text-center">
+                    <strong>Demo Credentials:</strong>
+                  </p>
+                  <p className="text-sm text-muted-foreground text-center mt-1">
+                    Email: admin@projectaether.com
+                    <br />
+                    Password: admin123
+                  </p>
+                </div>
+              )}
           </CardContent>
         </Card>
 
@@ -201,7 +226,6 @@ export default function Login() {
           <p>© 2024 Project Aether. All rights reserved.</p>
         </div>
       </div>
-
     </div>
   );
 }
