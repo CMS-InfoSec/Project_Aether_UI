@@ -384,7 +384,7 @@ export default function ModelComparisonTab() {
                         <RechartsTooltip formatter={(v: any) => (typeof v === "number" ? v.toFixed(cfg.key === "cvar" ? 3 : 2) : v)} />
                         <Bar dataKey="value">
                           {chartData(cfg.key as keyof Perf).map((entry, idx) => (
-                            <cell key={`cell-${idx}`} fill={entry.color} />
+                            <Cell key={`cell-${idx}`} fill={entry.color} />
                           ))}
                         </Bar>
                       </RechartsBarChart>
