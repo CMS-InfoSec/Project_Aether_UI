@@ -248,7 +248,7 @@ export default function UserDashboard() {
       const base = (typeof window !== 'undefined' ? window.location.origin : '');
       const url = `${base.replace(/\/$/, '')}/api/v1/events/alerts/stream`;
       const es = new EventSource(url);
-      alertsEsRefMutable.current = es;
+      alertsEsRef.current = es;
       setAlertsLive(true);
       const push = (arr: any[]) => {
         const mapped = (Array.isArray(arr) ? arr : [])
