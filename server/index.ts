@@ -451,12 +451,18 @@ export function createServer() {
   const {
     handleEventsTrades,
     handleEventsBalances,
+    handleEventsAlerts,
+    handleEventsAlertsStream,
   } = require("./routes/events");
   app.get("/api/events/trades", handleEventsTrades);
   app.get("/api/events/balances", handleEventsBalances);
+  app.get("/api/events/alerts", handleEventsAlerts);
+  app.get("/api/events/alerts/stream", handleEventsAlertsStream);
   // Explicit v1 aliases for WS/SSE compatibility
   app.get("/api/v1/events/trades", handleEventsTrades);
   app.get("/api/v1/events/balances", handleEventsBalances);
+  app.get("/api/v1/events/alerts", handleEventsAlerts);
+  app.get("/api/v1/events/alerts/stream", handleEventsAlertsStream);
 
   // Strategies & Signals
   const {
