@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import QuantumSecurityPanel from "./components/QuantumSecurityPanel";
+import RiskVisualizationPanel from "./components/RiskVisualizationPanel";
 
 // Types
 interface UserProfile {
