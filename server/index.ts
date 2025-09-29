@@ -473,8 +473,10 @@ export function createServer() {
     const {
       handleGetRiskConfig,
       handleGetLiveMetrics,
+      handlePatchRiskConfig,
     } = require("./routes/risk");
     app.get("/api/config/risk", handleGetRiskConfig);
+    app.patch("/api/config/risk", handlePatchRiskConfig);
     app.get("/api/metrics/live", handleGetLiveMetrics);
   }
 
