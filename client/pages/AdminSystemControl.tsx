@@ -1279,6 +1279,85 @@ export default function AdminSystemControl() {
           )}
         </CardContent>
       </Card>
+
+      {/* System Audit Log */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-start justify-between">
+            <CardTitle className="flex items-center space-x-2">
+              <FileText className="h-5 w-5" />
+              <span>Audit Log</span>
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Input
+                placeholder="Filter action"
+                value={auditFilter.action || ""}
+                onChange={(e)=> setAuditFilter((p)=> ({ ...p, action: e.target.value }))}
+                className="h-8 w-36"
+              />
+              <Input
+                placeholder="Filter actor"
+                value={auditFilter.actor || ""}
+                onChange={(e)=> setAuditFilter((p)=> ({ ...p, actor: e.target.value }))}
+                className="h-8 w-36"
+              />
+              <Select value={auditFilter.success || ""} onValueChange={(v)=> setAuditFilter((p)=> ({ ...p, success: v }))}>
+                <SelectTrigger className="h-8 w-32"><SelectValue placeholder="Any status" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Any</SelectItem>
+                  <SelectItem value="true">Success</SelectItem>
+                  <SelectItem value="false">Failed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm" onClick={()=> { setAuditPage(1); fetchAudit(); }}>
+                <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+              </Button>
+            </div>
+          </div>
+          <CardDescription>Newest entries first. Auto-refreshes every 10s.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b text-xs text-muted-foreground">
+                  <th className="text-left p-2">Time</th>
+                  <th className="text-left p-2">Action</th>
+                  <th className="text-left p-2">Actor</th>
+                  <th className="text-left p-2">Details</th>
+                  <th className="text-left p-2">Success</th>
+                </tr>
+              </thead>
+              <tbody>
+                {auditLog
+                  .filter((a)=> !auditFilter.action || a.action.toLowerCase().includes(auditFilter.action!.toLowerCase()))
+                  .filter((a)=> !auditFilter.actor || a.actor.toLowerCase().includes(auditFilter.actor!.toLowerCase()))
+                  .filter((a)=> !auditFilter.success || String(a.success) === auditFilter.success)
+                  .slice((auditPage-1)*auditPageSize, auditPage*auditPageSize)
+                  .map((a)=> (
+                  <tr key={a.id} className="border-b">
+                    <td className="p-2 whitespace-nowrap">{new Date(a.timestamp).toLocaleString()}</td>
+                    <td className="p-2">{a.action}</td>
+                    <td className="p-2">{a.actor}</td>
+                    <td className="p-2">{a.details}</td>
+                    <td className="p-2">{a.success ? <Badge className="bg-green-100 text-green-800">success</Badge> : <Badge variant="destructive">failed</Badge>}</td>
+                  </tr>
+                ))}
+                {auditLog.length === 0 && (
+                  <tr><td colSpan={5} className="p-3 text-muted-foreground">No audit entries</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {auditLog.length > auditPageSize && (
+            <div className="flex items-center justify-end gap-2 mt-3 text-sm">
+              <Button size="sm" variant="outline" onClick={()=> setAuditPage((p)=> Math.max(1, p-1))} disabled={auditPage===1}>Prev</Button>
+              <div>Page {auditPage}</div>
+              <Button size="sm" variant="outline" onClick={()=> setAuditPage((p)=> (p*auditPageSize < auditLog.length ? p+1 : p))} disabled={auditPage*auditPageSize >= auditLog.length}>Next</Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
