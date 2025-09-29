@@ -60,7 +60,11 @@ export default function AlertsPanel() {
           const data = JSON.parse(ev.data || "[]") as AlertItem[];
           setItems((prev) => {
             const merged = [...data, ...prev];
-            merged.sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            merged.sort(
+              (a, b) =>
+                new Date(b.timestamp).getTime() -
+                new Date(a.timestamp).getTime(),
+            );
             return merged.slice(0, 200);
           });
           if (data[0]?.timestamp) lastTsRef.current = data[0].timestamp;
@@ -71,7 +75,11 @@ export default function AlertsPanel() {
           const data = JSON.parse(ev.data || "{}") as AlertItem;
           setItems((prev) => {
             const merged = [data, ...prev];
-            merged.sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            merged.sort(
+              (a, b) =>
+                new Date(b.timestamp).getTime() -
+                new Date(a.timestamp).getTime(),
+            );
             return merged.slice(0, 200);
           });
           lastTsRef.current = data.timestamp;
@@ -79,7 +87,9 @@ export default function AlertsPanel() {
       });
       es.onerror = () => {
         setLive(false);
-        try { es.close(); } catch {}
+        try {
+          es.close();
+        } catch {}
         esRef.current = null;
       };
     } catch {
@@ -89,7 +99,9 @@ export default function AlertsPanel() {
     return () => {
       stopRef.current = true;
       if (esRef.current) {
-        try { esRef.current.close(); } catch {}
+        try {
+          esRef.current.close();
+        } catch {}
         esRef.current = null;
       }
     };
@@ -105,13 +117,19 @@ export default function AlertsPanel() {
       params.set("limit", "50");
       if (lastTsRef.current) params.set("since", lastTsRef.current);
       try {
-        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, { cache: "no-cache" });
+        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, {
+          cache: "no-cache",
+        });
         const j = await r.json().catch(() => null);
         const list: AlertItem[] = j?.data?.items || j?.items || [];
         if (Array.isArray(list) && list.length) {
           setItems((prev) => {
             const merged = [...list, ...prev];
-            merged.sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+            merged.sort(
+              (a, b) =>
+                new Date(b.timestamp).getTime() -
+                new Date(a.timestamp).getTime(),
+            );
             return merged.slice(0, 200);
           });
           if (list[0]?.timestamp) lastTsRef.current = list[0].timestamp;
@@ -129,8 +147,10 @@ export default function AlertsPanel() {
         <CardTitle className="flex items-center gap-2">
           Alerts Feed
           <span className="inline-flex items-center gap-2 text-xs text-muted-foreground">
-            <span className={`w-2 h-2 rounded-full ${live ? 'bg-green-500' : 'bg-gray-400'}`}></span>
-            {live ? 'Live' : 'Polling'}
+            <span
+              className={`w-2 h-2 rounded-full ${live ? "bg-green-500" : "bg-gray-400"}`}
+            ></span>
+            {live ? "Live" : "Polling"}
           </span>
         </CardTitle>
         <HelpTip content="Streaming alerts from /events/alerts. Color-coded by severity." />
@@ -144,7 +164,9 @@ export default function AlertsPanel() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       {severityBadge(a.severity)}
-                      <div className="font-medium">{a.source}:{" "}{a.event}</div>
+                      <div className="font-medium">
+                        {a.source}: {a.event}
+                      </div>
                     </div>
                     <div className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(a.timestamp).toLocaleString()}
@@ -153,15 +175,19 @@ export default function AlertsPanel() {
                   <div className="text-sm mt-1">{a.message}</div>
                   {a.details && (
                     <div className="text-xs text-muted-foreground mt-1">
-                      {Object.entries(a.details).map(([k,v]) => (
-                        <span key={k} className="mr-3"><span className="uppercase">{k}</span>: {String(v)}</span>
+                      {Object.entries(a.details).map(([k, v]) => (
+                        <span key={k} className="mr-3">
+                          <span className="uppercase">{k}</span>: {String(v)}
+                        </span>
                       ))}
                     </div>
                   )}
                 </div>
               ))}
               {items.length === 0 && (
-                <div className="p-6 text-sm text-muted-foreground">No alerts yet</div>
+                <div className="p-6 text-sm text-muted-foreground">
+                  No alerts yet
+                </div>
               )}
             </div>
           </ScrollArea>

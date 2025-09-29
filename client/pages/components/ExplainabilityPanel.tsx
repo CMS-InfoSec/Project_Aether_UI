@@ -17,7 +17,11 @@ import {
   Cell,
 } from "recharts";
 
-interface ExplainFeature { name: string; value: number; contribution: number }
+interface ExplainFeature {
+  name: string;
+  value: number;
+  contribution: number;
+}
 interface ExplainItem {
   id: string;
   timestamp: string;
@@ -33,15 +37,31 @@ function toWaterfall(item?: ExplainItem) {
   if (!item) return [] as any[];
   const steps: any[] = [];
   let cum = 0;
-  steps.push({ name: "Base", start: 0, delta: item.base_value, color: "#64748b" });
+  steps.push({
+    name: "Base",
+    start: 0,
+    delta: item.base_value,
+    color: "#64748b",
+  });
   cum += item.base_value;
   for (const f of item.features) {
     const start = Math.min(cum, cum + f.contribution);
     const delta = Math.abs(f.contribution);
-    steps.push({ name: f.name, start, delta, color: f.contribution >= 0 ? "#16a34a" : "#ef4444", raw: f.contribution });
+    steps.push({
+      name: f.name,
+      start,
+      delta,
+      color: f.contribution >= 0 ? "#16a34a" : "#ef4444",
+      raw: f.contribution,
+    });
     cum += f.contribution;
   }
-  steps.push({ name: "Prediction", start: 0, delta: item.prediction, color: "#0ea5e9" });
+  steps.push({
+    name: "Prediction",
+    start: 0,
+    delta: item.prediction,
+    color: "#0ea5e9",
+  });
   return steps;
 }
 
@@ -56,7 +76,7 @@ export default function ExplainabilityPanel() {
     try {
       const r = await apiFetch(`/api/v1/explain?limit=${limit}`);
       if (!r.ok) {
-        const j = await r.json().catch(()=>({}));
+        const j = await r.json().catch(() => ({}));
         throw new Error(j.detail || `HTTP ${r.status}`);
       }
       const j = await r.json();
@@ -77,8 +97,12 @@ export default function ExplainabilityPanel() {
           base_value: Number(it.base_value || 0.5),
           prediction: Number(it.prediction || 0.6),
           features: Array.isArray(it.features)
-            ? it.features.map((f: any) => ({ name: f.name || f.feature, value: Number(f.value || 0), contribution: Number(f.contribution || f.weight || 0) }))
-            : []
+            ? it.features.map((f: any) => ({
+                name: f.name || f.feature,
+                value: Number(f.value || 0),
+                contribution: Number(f.contribution || f.weight || 0),
+              }))
+            : [],
         })) as ExplainItem[];
         setItems(list);
         setSelected(0);
@@ -88,7 +112,9 @@ export default function ExplainabilityPanel() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const current = items[selected];
   const wf = useMemo(() => toWaterfall(current), [current]);
@@ -104,7 +130,9 @@ export default function ExplainabilityPanel() {
       <CardContent className="space-y-3">
         <div className="flex items-end gap-3">
           <div className="flex-1">
-            <div className="text-sm text-muted-foreground">Recent decisions</div>
+            <div className="text-sm text-muted-foreground">
+              Recent decisions
+            </div>
             <div className="overflow-auto max-h-40 border rounded">
               <table className="w-full text-xs">
                 <thead>
@@ -118,18 +146,32 @@ export default function ExplainabilityPanel() {
                 </thead>
                 <tbody>
                   {items.map((it, idx) => (
-                    <tr key={it.id} className={`border-b cursor-pointer ${idx===selected? 'bg-muted/50':''}`} onClick={()=> setSelected(idx)}>
-                      <td className="p-2 whitespace-nowrap">{new Date(it.timestamp).toLocaleString()}</td>
+                    <tr
+                      key={it.id}
+                      className={`border-b cursor-pointer ${idx === selected ? "bg-muted/50" : ""}`}
+                      onClick={() => setSelected(idx)}
+                    >
+                      <td className="p-2 whitespace-nowrap">
+                        {new Date(it.timestamp).toLocaleString()}
+                      </td>
                       <td className="p-2 font-medium">{it.symbol}</td>
                       <td className="p-2">
-                        <Badge variant={it.side === 'BUY' ? 'default' : 'secondary'}>{it.side}</Badge>
+                        <Badge
+                          variant={it.side === "BUY" ? "default" : "secondary"}
+                        >
+                          {it.side}
+                        </Badge>
                       </td>
                       <td className="p-2 capitalize">{it.decision}</td>
                       <td className="p-2">{it.prediction.toFixed(3)}</td>
                     </tr>
                   ))}
-                  {items.length===0 && (
-                    <tr><td className="p-3 text-muted-foreground" colSpan={5}>No data</td></tr>
+                  {items.length === 0 && (
+                    <tr>
+                      <td className="p-3 text-muted-foreground" colSpan={5}>
+                        No data
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>
@@ -137,8 +179,27 @@ export default function ExplainabilityPanel() {
           </div>
           <div>
             <Label className="block text-xs mb-1">Limit</Label>
-            <input type="number" min={1} max={50} value={limit} onChange={(e)=> setLimit(Math.max(1, Math.min(50, parseInt(e.target.value)||10)))} className="w-24 border rounded px-2 py-1 text-sm bg-background" />
-            <Button size="sm" variant="outline" className="ml-2" onClick={load} disabled={loading}>{loading? 'Loading…':'Refresh'}</Button>
+            <input
+              type="number"
+              min={1}
+              max={50}
+              value={limit}
+              onChange={(e) =>
+                setLimit(
+                  Math.max(1, Math.min(50, parseInt(e.target.value) || 10)),
+                )
+              }
+              className="w-24 border rounded px-2 py-1 text-sm bg-background"
+            />
+            <Button
+              size="sm"
+              variant="outline"
+              className="ml-2"
+              onClick={load}
+              disabled={loading}
+            >
+              {loading ? "Loading…" : "Refresh"}
+            </Button>
           </div>
         </div>
 
@@ -148,16 +209,36 @@ export default function ExplainabilityPanel() {
               <div className="font-medium mb-1">Feature Impact (Waterfall)</div>
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <ComposedChart data={wf} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                  <ComposedChart
+                    data={wf}
+                    margin={{ top: 10, right: 20, left: 0, bottom: 20 }}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="name" angle={-20} textAnchor="end" height={50} interval={0} />
+                    <XAxis
+                      dataKey="name"
+                      angle={-20}
+                      textAnchor="end"
+                      height={50}
+                      interval={0}
+                    />
                     <YAxis />
-                    <Tooltip formatter={(value: any, name: any, props: any) => {
-                      if (name === 'delta') return [`${props.payload.raw ?? props.payload.delta}`, 'Δ'];
-                      return [value, name];
-                    }} />
+                    <Tooltip
+                      formatter={(value: any, name: any, props: any) => {
+                        if (name === "delta")
+                          return [
+                            `${props.payload.raw ?? props.payload.delta}`,
+                            "Δ",
+                          ];
+                        return [value, name];
+                      }}
+                    />
                     <Legend />
-                    <Bar dataKey="start" stackId="a" fill="transparent" isAnimationActive={false} />
+                    <Bar
+                      dataKey="start"
+                      stackId="a"
+                      fill="transparent"
+                      isAnimationActive={false}
+                    />
                     <Bar dataKey="delta" stackId="a">
                       {wf.map((entry, index) => (
                         <Cell key={`c-${index}`} fill={entry.color} />
@@ -172,22 +253,36 @@ export default function ExplainabilityPanel() {
               <div className="space-y-1 text-sm">
                 {current.features
                   .slice()
-                  .sort((a,b)=> Math.abs(b.contribution) - Math.abs(a.contribution))
-                  .slice(0,6)
-                  .map((f)=> (
-                    <div key={f.name} className="flex items-center justify-between p-2 border rounded">
+                  .sort(
+                    (a, b) =>
+                      Math.abs(b.contribution) - Math.abs(a.contribution),
+                  )
+                  .slice(0, 6)
+                  .map((f) => (
+                    <div
+                      key={f.name}
+                      className="flex items-center justify-between p-2 border rounded"
+                    >
                       <div>
                         <div className="font-medium">{f.name}</div>
-                        <div className="text-xs text-muted-foreground">value: {f.value}</div>
+                        <div className="text-xs text-muted-foreground">
+                          value: {f.value}
+                        </div>
                       </div>
-                      <Badge variant={f.contribution>=0? 'outline':'destructive'}>
-                        {f.contribution>=0? '+':''}{f.contribution.toFixed(3)}
+                      <Badge
+                        variant={
+                          f.contribution >= 0 ? "outline" : "destructive"
+                        }
+                      >
+                        {f.contribution >= 0 ? "+" : ""}
+                        {f.contribution.toFixed(3)}
                       </Badge>
                     </div>
                   ))}
               </div>
               <div className="mt-2 text-xs text-muted-foreground">
-                Base: {current.base_value.toFixed(3)} • Prediction: {current.prediction.toFixed(3)}
+                Base: {current.base_value.toFixed(3)} • Prediction:{" "}
+                {current.prediction.toFixed(3)}
               </div>
             </div>
           </div>

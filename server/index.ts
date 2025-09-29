@@ -230,9 +230,16 @@ export function createServer() {
 
   // Admin models registry/retrain
   {
-    const { handleAdminModelsRegistry, handleAdminModelsRetrain } = require("./routes/models");
+    const {
+      handleAdminModelsRegistry,
+      handleAdminModelsRetrain,
+    } = require("./routes/models");
     app.get("/api/admin/models/registry", handleAdminModelsRegistry);
-    app.post("/api/admin/models/retrain", requireAdminKey, handleAdminModelsRetrain);
+    app.post(
+      "/api/admin/models/retrain",
+      requireAdminKey,
+      handleAdminModelsRetrain,
+    );
   }
 
   // Generic v1 compatibility: redirect /api/v1/* -> /api/* preserving method
@@ -283,7 +290,11 @@ export function createServer() {
 
   // Portfolio optimizer routes
   {
-    const { handleUploadCovariance, handleRunOptimizer, handleGetLastOptimization } = require("./routes/optimizer");
+    const {
+      handleUploadCovariance,
+      handleRunOptimizer,
+      handleGetLastOptimization,
+    } = require("./routes/optimizer");
     app.post("/api/optimizer/covariance", handleUploadCovariance);
     app.post("/api/optimizer/run", handleRunOptimizer);
     app.get("/api/optimizer/last", handleGetLastOptimization);
@@ -359,11 +370,22 @@ export function createServer() {
 
   // Data retention admin
   {
-    const { handleGetDataRetention, handlePatchDataRetention, handlePostManualPurge } = require("./routes/retention");
+    const {
+      handleGetDataRetention,
+      handlePatchDataRetention,
+      handlePostManualPurge,
+    } = require("./routes/retention");
     app.get("/api/admin/config/data-retention", handleGetDataRetention);
-    app.patch("/api/admin/config/data-retention", requireAdminKey, handlePatchDataRetention);
+    app.patch(
+      "/api/admin/config/data-retention",
+      requireAdminKey,
+      handlePatchDataRetention,
+    );
     app.post("/api/admin/data/purge", requireAdminKey, handlePostManualPurge);
-    app.get("/api/metrics/retention", require("./routes/retention").handleRetentionMetrics);
+    app.get(
+      "/api/metrics/retention",
+      require("./routes/retention").handleRetentionMetrics,
+    );
   }
   // UK tax-year report (v1 prefix)
   app.get(
@@ -442,7 +464,10 @@ export function createServer() {
 
   // Risk config and live metrics
   {
-    const { handleGetRiskConfig, handleGetLiveMetrics } = require("./routes/risk");
+    const {
+      handleGetRiskConfig,
+      handleGetLiveMetrics,
+    } = require("./routes/risk");
     app.get("/api/config/risk", handleGetRiskConfig);
     app.get("/api/metrics/live", handleGetLiveMetrics);
   }

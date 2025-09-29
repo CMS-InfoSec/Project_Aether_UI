@@ -84,9 +84,11 @@ export default function Observability() {
   // Pollers
   const pollReadiness = useCallback(async () => {
     try {
-      const r = await apiFetch("/api/v1/system/health/ready", { cache: "no-cache" });
+      const r = await apiFetch("/api/v1/system/health/ready", {
+        cache: "no-cache",
+      });
       if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
-      const j = await r.json().catch(() => ({} as any));
+      const j = await r.json().catch(() => ({}) as any);
       const ok = j?.ok === true || j?.data?.ok === true;
       setReady(!!ok);
       localStorage.setItem("aether-ready", String(!!ok));
@@ -104,9 +106,13 @@ export default function Observability() {
   const pollDependencies = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const d = await apiFetch("/api/v1/system/health/dependencies", { cache: "no-cache" });
-      const j = await d.json().catch(() => ({} as any));
-      const list: DependencyRow[] = Object.entries(j || {}).map(([id, v]: any) => ({ id, ...(v || {}) }));
+      const d = await apiFetch("/api/v1/system/health/dependencies", {
+        cache: "no-cache",
+      });
+      const j = await d.json().catch(() => ({}) as any);
+      const list: DependencyRow[] = Object.entries(j || {}).map(
+        ([id, v]: any) => ({ id, ...(v || {}) }),
+      );
       setDeps(list);
       setDepsErr(null);
     } catch (e: any) {
@@ -117,7 +123,9 @@ export default function Observability() {
   const pollLiveness = useCallback(async () => {
     if (!isPrivileged) return;
     try {
-      const r = await apiFetch("/api/v1/system/health/live", { cache: "no-cache" });
+      const r = await apiFetch("/api/v1/system/health/live", {
+        cache: "no-cache",
+      });
       if (!r.ok) setLiveErr(`${r.status} ${r.statusText}`);
       const j = await r.json().catch(() => null);
       setLiveDetails(j);
@@ -589,7 +597,9 @@ export default function Observability() {
                 disabled={cooldownUser > 0}
                 onClick={async () => {
                   try {
-                    await apiFetch("/api/tasks/data-refresh", { method: "POST" });
+                    await apiFetch("/api/tasks/data-refresh", {
+                      method: "POST",
+                    });
                     setCooldownUser(30);
                   } catch {}
                 }}
