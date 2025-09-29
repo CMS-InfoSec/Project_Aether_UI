@@ -299,6 +299,12 @@ export function createServer() {
     app.post("/api/optimizer/run", handleRunOptimizer);
     app.get("/api/optimizer/last", handleGetLastOptimization);
   }
+  // New unified portfolio optimize endpoint (v1 alias)
+  {
+    const { handlePortfolioOptimize } = require("./routes/portfolio_optimize");
+    app.post("/api/portfolio/optimize", handlePortfolioOptimize);
+    app.post("/api/v1/portfolio/optimize", handlePortfolioOptimize);
+  }
 
   // Hedge & Wallet routes
   app.get("/api/wallet/hedges", handleGetWalletHedges);
