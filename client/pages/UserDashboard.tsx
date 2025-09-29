@@ -303,6 +303,39 @@ export default function UserDashboard() {
     } catch {}
   }, [regimeRange]);
 
+  useEffect(() => {
+    if (alertsLive) return;
+    let timer: any;
+    const poll = async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("limit", "50");
+        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, { cache: "no-cache" });
+        const j = await r.json().catch(() => null as any);
+        const list: any[] = j?.data?.items || j?.items || [];
+        if (Array.isArray(list) && list.length) {
+          const mapped = list.map((it: any) => ({
+            id: String(it.id || `${Date.now()}_${Math.random()}`),
+            timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
+            title: `${it.source || 'alert'}: ${it.event || 'event'}`,
+            message: it.message || '',
+            severity: (String(it.severity || 'info').toLowerCase() as any),
+            read: false,
+            source: 'alerts',
+          }));
+          setAlerts((prev) => {
+            const merged = [...mapped, ...prev];
+            merged.sort((a,b)=> b.timestamp - a.timestamp);
+            return merged.slice(0, 200);
+          });
+        }
+      } catch {}
+      timer = setTimeout(poll, 3000);
+    };
+    poll();
+    return () => clearTimeout(timer);
+  }, [alertsLive]);
+
   const loadDailyReport = async () => {
     if (!mounted) return;
     setIsRefreshing((prev) => ({ ...prev, daily: true }));
