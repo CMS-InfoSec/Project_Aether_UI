@@ -460,7 +460,7 @@ export default function ModelComparisonTab() {
                   <thead>
                     <tr className="border-b">
                       <th className="text-left p-2">Model</th>
-                      <th className="text-right p-2">{sampleMode === "oos" ? "OOS PnL" : "IS PnL"}</th>
+                      <th className="text-right p-2">{sourceMode === 'live' ? 'Live PnL' : (backtestMode === "oos" ? "OOS PnL" : "IS PnL")}</th>
                       <th className="text-right p-2">Sharpe</th>
                       <th className="text-right p-2">Sortino</th>
                       <th className="text-right p-2">CVaR</th>
