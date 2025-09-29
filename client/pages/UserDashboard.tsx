@@ -118,6 +118,10 @@ export default function UserDashboard() {
     }>
   >([]);
   const [alertsLoading, setAlertsLoading] = useState(false);
+  const [alertsLive, setAlertsLive] = useState(false);
+  const alertsEsRef = useState<EventSource | null>(null)[0] as any;
+  const alertsEsRefMutable = { current: null as EventSource | null };
+  const alertsLastTsRef = useState<string | null>(null)[0] as any;
   const [portfolioHoldings, setPortfolioHoldings] = useState<
     Array<{ symbol: string; value: number; allocation: number; pnl: number }>
   >([]);
@@ -173,20 +177,36 @@ export default function UserDashboard() {
     if (!mounted) return;
     setCrossLoading(true);
     try {
-      const vresp = await getJson<any>("/api/venue/health");
-      const aresp = await getJson<any>("/api/arbitrage/opportunities");
-      const vdata = vresp?.data || vresp || [];
+      // Derive venue insights from execution reports
+      let latencyResp: any = null;
+      try {
+        latencyResp = await getJson<any>(`/api/reports/execution/latency?window=1h`);
+      } catch {
+        try { latencyResp = await getJson<any>(`/api/execution/latency?window=1h`); } catch {}
+      }
+      const latItems: any[] = Array.isArray(latencyResp?.data)
+        ? latencyResp.data
+        : Array.isArray(latencyResp)
+          ? latencyResp
+          : Array.isArray(latencyResp?.items)
+            ? latencyResp.items
+            : [];
+      const venueAgg = new Map<string, { name: string; lat: number[]; slip: number[]; depth: number[] }>();
+      for (const it of latItems) {
+        const name = String(it.venue || it.exchange || it.name || "Unknown");
+        const p95Lat = Number(it.p95_latency_ms ?? it.p95 ?? it.lat_p95 ?? 0) || 0;
+        const p95Slip = Number(it.p95_slippage_bps ?? it.slip_p95 ?? 0) || 0;
+        const depth = Number(it.depth_usd ?? it.depthUsd ?? it.market_depth ?? 0) || 0;
+        if (!venueAgg.has(name)) venueAgg.set(name, { name, lat: [], slip: [], depth: [] });
+        const v = venueAgg.get(name)!;
+        v.lat.push(p95Lat);
+        v.slip.push(p95Slip);
+        v.depth.push(depth);
+      }
+
+      let aresp: any = null;
+      try { aresp = await getJson<any>("/api/arbitrage/opportunities"); } catch {}
       const adata = aresp?.data || aresp || [];
-
-      const venuesParsed = Array.isArray(vdata)
-        ? vdata.map((v: any) => ({
-            name: v.name || v.venue || "Unknown",
-            latency: Number(v.latencyMs ?? v.latency ?? 0),
-            spreadBps: Number(v.spreadBps ?? v.spread_bps ?? v.spread ?? 0),
-            depthUsd: Number(v.depthUsd ?? v.depth_usd ?? v.depth ?? 0),
-          }))
-        : [];
-
       const arbsParsed = Array.isArray(adata)
         ? adata.map((o: any) => ({
             symbol: o.symbol || o.pair || "-",
@@ -195,6 +215,13 @@ export default function UserDashboard() {
             spreadPct: Number(o.spreadPct ?? o.spread_pct ?? o.spread ?? 0),
           }))
         : [];
+
+      const venuesParsed = Array.from(venueAgg.values()).map((v) => ({
+        name: v.name,
+        latency: v.lat.length ? v.lat.reduce((a,b)=>a+b,0)/v.lat.length : 0,
+        spreadBps: v.slip.length ? v.slip.reduce((a,b)=>a+b,0)/v.slip.length : 0,
+        depthUsd: v.depth.length ? v.depth.reduce((a,b)=>a+b,0)/v.depth.length : 0,
+      }));
 
       if (!mounted) return;
       setVenues(venuesParsed);
@@ -217,9 +244,54 @@ export default function UserDashboard() {
     loadAlerts();
     loadCrossMarket();
 
+    // Alerts SSE subscription with polling fallback
+    try {
+      const base = (typeof window !== 'undefined' ? window.location.origin : '');
+      const url = `${base.replace(/\/$/, '')}/api/v1/events/alerts/stream`;
+      const es = new EventSource(url);
+      alertsEsRefMutable.current = es;
+      setAlertsLive(true);
+      const push = (arr: any[]) => {
+        const mapped = (Array.isArray(arr) ? arr : [])
+          .map((it: any) => ({
+            id: String(it.id || `${Date.now()}_${Math.random()}`),
+            timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
+            title: `${it.source || 'alert'}: ${it.event || 'event'}`,
+            message: it.message || '',
+            severity: (String(it.severity || 'info').toLowerCase() as any),
+            read: false,
+            source: 'alerts',
+          }));
+        if (mapped.length) {
+          setAlerts((prev) => {
+            const merged = [...mapped, ...prev];
+            merged.sort((a,b)=> b.timestamp - a.timestamp);
+            return merged.slice(0, 200);
+          });
+        }
+      };
+      es.addEventListener('init', (ev: MessageEvent) => {
+        try { push(JSON.parse(ev.data || '[]')); } catch {}
+      });
+      es.addEventListener('alert', (ev: MessageEvent) => {
+        try { push([JSON.parse(ev.data || '{}')]); } catch {}
+      });
+      es.onerror = () => {
+        setAlertsLive(false);
+        try { es.close(); } catch {}
+        alertsEsRefMutable.current = null;
+      };
+    } catch {
+      setAlertsLive(false);
+    }
+
     // Cleanup function
     return () => {
       setMounted(false);
+      if (alertsEsRefMutable.current) {
+        try { alertsEsRefMutable.current.close(); } catch {}
+        alertsEsRefMutable.current = null;
+      }
     };
   }, []);
 
@@ -393,28 +465,6 @@ export default function UserDashboard() {
         source?: string;
       }> = [];
       try {
-        const r = await getJson<any>("/api/alerts");
-        const items = Array.isArray(r?.data)
-          ? r.data
-          : Array.isArray(r)
-            ? r
-            : [];
-        for (const it of items) {
-          aggregated.push({
-            id: String(it.id || `${Date.now()}_${Math.random()}`),
-            timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
-            title: it.title || it.type || "Alert",
-            message: it.message || it.detail || "",
-            severity:
-              (String(
-                it.severity || it.level || "info",
-              ).toLowerCase() as any) || "info",
-            read: !!it.read,
-            source: "alerts",
-          });
-        }
-      } catch {}
-      try {
         const j = await getJson<any>("/api/notifications");
         const data = j?.data || j;
         const items = data?.notifications || data?.items || [];
@@ -477,31 +527,6 @@ export default function UserDashboard() {
           });
         }
       } catch {}
-      // Feed anomalies
-      try {
-        const an = await getJson<any>("/api/data/anomalies");
-        const items = Array.isArray(an?.data)
-          ? an.data
-          : Array.isArray(an)
-            ? an
-            : [];
-        for (const it of items) {
-          const type = String(it.type || it.anomaly_type || "").toLowerCase();
-          const symbol = it.symbol || it.asset || "-";
-          const critical = !!(it.critical || it.severity === "critical");
-          const ts = it.timestamp || it.ts || Date.now();
-          aggregated.push({
-            id: String(it.id || `${Date.now()}_${Math.random()}`),
-            timestamp: new Date(ts).getTime(),
-            title: `Feed anomaly: ${symbol}`,
-            message: `${symbol} • ${type || "unknown"} anomaly`,
-            severity: critical ? "error" : "warning",
-            read: !!it.read,
-            source: "anomalies",
-            acknowledged: !!it.acknowledged,
-          });
-        }
-      } catch {}
       aggregated.sort((a, b) => b.timestamp - a.timestamp);
       setAlerts(aggregated.slice(0, 50));
     } finally {
@@ -539,11 +564,6 @@ export default function UserDashboard() {
   };
 
   const acknowledgeAnomaly = async (id: string) => {
-    try {
-      await apiFetch(`/api/data/anomalies/${encodeURIComponent(id)}/ack`, {
-        method: "POST",
-      });
-    } catch {}
     setAlerts((prev) =>
       prev.map((a) =>
         a.id === id ? { ...a, acknowledged: true, read: true } : a,
@@ -956,7 +976,7 @@ export default function UserDashboard() {
                 </CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <HelpTip content="Aggregates /api/venue/health and /api/arbitrage/opportunities. Green highlights indicate positive expected spread." />
+                <HelpTip content="Derived from /api/v1/reports/execution/latency and /api/v1/arbitrage/opportunities. Green highlights indicate positive expected spread." />
                 <Button
                   variant="outline"
                   size="sm"
@@ -1078,7 +1098,7 @@ export default function UserDashboard() {
                     Discrepancies: {execDiscrepancies}
                   </Badge>
                 )}
-                <HelpTip content="Data merges /api/execution/latency with realized impact logs. Tooltip shows symbol, depth, and predicted vs realized cost." />
+                <HelpTip content="Data from /api/v1/reports/execution/latency and /api/v1/reports/execution. Tooltip shows symbol, depth, and predicted vs realized cost." />
                 <Button
                   variant="outline"
                   size="sm"
