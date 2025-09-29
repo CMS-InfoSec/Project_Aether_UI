@@ -531,6 +531,7 @@ export function createServer() {
   app.get("/api/explain", handleExplain);
   app.get("/api/v1/explain", handleExplain);
   app.post("/api/strategies/backtest", handlePostBacktest);
+  app.post("/api/v1/backtest", handlePostBacktest);
 
   // Federated learning status
   app.get(
