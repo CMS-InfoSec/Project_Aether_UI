@@ -153,6 +153,20 @@ export default function UserDashboard() {
     }
   });
 
+  // Legacy shims for execution heatmap controls (real implementation lives in ExecutionHeatmapPanel)
+  const [execVenue, setExecVenue] = useState<string>("all");
+  const [execSymbol, setExecSymbol] = useState<string>("");
+  const [execWindow, setExecWindow] = useState<string>("1h");
+  const [execBuckets, setExecBuckets] = useState<string[]>([]);
+  const [execRows, setExecRows] = useState<any[]>([]);
+  const [execDiscrepancies, setExecDiscrepancies] = useState<number>(0);
+  const [execLoading, setExecLoading] = useState<boolean>(false);
+  const [execAuto, setExecAuto] = useState<boolean>(false);
+  const loadExecutionHeatmap = async () => {
+    // No-op shim to satisfy legacy UI hooks. The ExecutionHeatmapPanel handles fetching.
+    return;
+  };
+
   const loadCrossMarket = async () => {
     if (!mounted) return;
     setCrossLoading(true);
