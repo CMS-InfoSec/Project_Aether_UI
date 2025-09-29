@@ -245,6 +245,22 @@ export default function ModelComparisonTab() {
   const selectedIds = useMemo(() => Object.keys(selected).filter((k) => selected[k]), [selected]);
   const tooMany = selectedIds.length > 4;
 
+  useEffect(() => {
+    const n = selectedIds.length;
+    if (n >= 2 && n <= 4) {
+      apiFetch('/api/notifications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: 'Governance: Model comparison',
+          message: `Compared ${n} models: ${selectedIds.join(', ')} (source=${sourceMode}${sourceMode==='backtest' ? `/${backtestMode}` : ''})`,
+          category: 'audit',
+          metadata: { models: selectedIds, source: sourceMode, sample: backtestMode }
+        })
+      }).catch(()=>{});
+    }
+  }, [selectedIds.join(','), sourceMode, backtestMode]);
+
   const promoteWithCanary = async (modelId: string) => {
     const m = models.find((mm) => mm.modelId === modelId);
     if (!m) return;
