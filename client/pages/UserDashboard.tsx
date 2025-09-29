@@ -1042,7 +1042,7 @@ export default function UserDashboard() {
           {/* Execution Heatmap */}
           <ExecutionHeatmapPanel regimeRange={regimeRange} />
 
-          <Card>
+          <Card className="legacy-exec-heatmap">
             <CardHeader className="flex items-start justify-between">
               <div>
                 <CardTitle className="inline-flex items-center gap-2">
