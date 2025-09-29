@@ -418,7 +418,7 @@ export default function ModelComparisonTab() {
 
             <div className="md:col-span-2 space-y-6">
               <div className="grid sm:grid-cols-2 gap-4">
-                {[{ key: "pnl", title: sampleMode === "oos" ? "OOS PnL" : "In-sample PnL" }, { key: "sharpe", title: "Sharpe" } as const, { key: "sortino", title: "Sortino" } as const, { key: "cvar", title: "CVaR" } as const].map((cfg, i) => (
+                {[{ key: "pnl", title: sourceMode === 'live' ? 'Live PnL' : (backtestMode === "oos" ? "OOS PnL" : "In-sample PnL") }, { key: "sharpe", title: "Sharpe" } as const, { key: "sortino", title: "Sortino" } as const, { key: "cvar", title: "CVaR" } as const].map((cfg, i) => (
                   <div key={i} className="h-48 border rounded-md p-2">
                     <div className="text-xs text-muted-foreground mb-1">{cfg.title}</div>
                     <ResponsiveContainer width="100%" height="90%">
