@@ -28,6 +28,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import ScenarioLab from "./components/ScenarioLab";
 import PortfolioOptimizerPanel from "./components/PortfolioOptimizerPanel";
 import ExecutionSimulatorPanel from "./components/ExecutionSimulatorPanel";
+import BacktestingConsole from "./components/BacktestingConsole";
 import { toast } from "@/hooks/use-toast";
 import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 import apiFetch from "@/lib/apiClient";
@@ -739,6 +740,9 @@ export default function StrategiesSignals() {
 
             {/* Execution Simulator */}
             <ExecutionSimulatorPanel />
+
+            {/* Backtesting Console */}
+            <BacktestingConsole />
           </div>
         </TabsContent>
 
