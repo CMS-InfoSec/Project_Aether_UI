@@ -83,8 +83,6 @@ interface AuditLogEntry {
   success: boolean;
 }
 
-const API_KEY = "";
-
 export default function AdminSystemControl() {
   // System state
   const [systemState, setSystemState] = useState<SystemState>({
@@ -95,6 +93,9 @@ export default function AdminSystemControl() {
 
   // Audit log
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [auditFilter, setAuditFilter] = useState<{ action?: string; actor?: string; success?: string }>({});
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPageSize] = useState(10);
 
   // Loading states
   const [isLoading, setIsLoading] = useState(true);
@@ -122,6 +123,7 @@ export default function AdminSystemControl() {
   const [backendUrl, setBackendUrl] = useState(() => {
     return localStorage.getItem("aether-backend-url") || window.location.origin;
   });
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem("aether-api-key") || "");
   const [connectionStatus, setConnectionStatus] = useState<
     "unknown" | "connected" | "disconnected" | "testing"
   >("unknown");
@@ -149,40 +151,71 @@ export default function AdminSystemControl() {
     return response;
   };
 
-  // Fetch system mode (backend exposes mode; pause/kill-switch status not queryable)
+  // Fetch system status (paused/kill-switch/mode/audit metadata)
   const fetchSystemState = async () => {
     try {
-      const response = await apiRequest("/api/v1/system/mode");
-      const data = await response.json().catch(() => ({}) as any);
+      const response = await apiRequest("/api/v1/system/status");
+      const j = await response.json().catch(() => ({}) as any);
       if (response.ok) {
-        const mode = data?.mode || systemState.mode;
-        setSystemState((prev) => ({ ...prev, mode }));
+        const d = j?.data || j || {};
+        const mode = d.mode || systemState.mode;
+        setSystemState({
+          isPaused: !!d.isPaused,
+          pausedBy: d.pausedBy,
+          pausedReason: d.pausedReason,
+          pausedAt: d.pausedAt,
+          mode,
+          changedBy: d.changedBy,
+          changedAt: d.changedAt,
+          killSwitchEnabled: !!d.killSwitchEnabled,
+          killSwitchBy: d.killSwitchBy,
+          killSwitchReason: d.killSwitchReason,
+          killSwitchAt: d.killSwitchAt,
+        });
         setSelectedMode(mode);
+      } else {
+        // fallback to mode-only endpoint
+        const r2 = await apiRequest("/api/v1/system/mode");
+        const d2 = await r2.json().catch(() => ({}) as any);
+        if (r2.ok) {
+          const mode = d2?.data?.mode || d2?.mode || systemState.mode;
+          setSystemState((prev) => ({ ...prev, mode }));
+          setSelectedMode(mode);
+        }
       }
     } catch (error) {
-      console.error("Failed to fetch system state:", error);
       setError(
         error instanceof Error ? error.message : "Failed to fetch system state",
       );
     }
   };
 
-  // Fetch current mode
+  // Fetch current mode (fallback)
   const fetchCurrentMode = async () => {
     try {
       const response = await apiRequest("/api/v1/system/mode");
       const data = await response.json().catch(() => ({}) as any);
       if (response.ok) {
-        const mode = data?.mode || systemState.mode;
+        const mode = data?.data?.mode || data?.mode || systemState.mode;
         setSystemState((prev) => ({ ...prev, mode }));
         setSelectedMode(mode);
       }
-    } catch (error) {
-      console.error("Failed to fetch trading mode:", error);
-    }
+    } catch {}
   };
 
-  // Audit log endpoint not available in backend; hiding this feature for now
+  // Fetch audit log
+  const fetchAudit = async () => {
+    const params = new URLSearchParams();
+    if (auditFilter.action) params.set("action", auditFilter.action);
+    if (auditFilter.actor) params.set("actor", auditFilter.actor);
+    if (auditFilter.success) params.set("success", auditFilter.success);
+    try {
+      const r = await apiRequest(`/api/v1/system/audit?${params.toString()}`);
+      const j = await r.json().catch(() => ({}) as any);
+      const arr = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+      setAuditLog(arr);
+    } catch {}
+  };
 
   // Test backend connection
   const testBackendConnection = async () => {
@@ -222,38 +255,58 @@ export default function AdminSystemControl() {
 
   // Save backend URL
   const saveBackendUrl = () => {
-    const cleanUrl = backendUrl.replace(/\/+$/, ""); // Remove trailing slashes
+    const cleanUrl = backendUrl.replace(/\/+$/, "");
+    try {
+      const u = new URL(cleanUrl);
+      if (!/^https?:$/.test(u.protocol)) throw new Error("Invalid protocol");
+    } catch {
+      toast({ title: "Invalid URL", description: "Enter a valid http(s) URL", variant: "destructive" });
+      return;
+    }
     setBackendUrl(cleanUrl);
     localStorage.setItem("aether-backend-url", cleanUrl);
-    setConnectionStatus("unknown"); // Reset connection status when URL changes
-
-    toast({
-      title: "Backend URL Saved",
-      description: `Backend URL updated to: ${cleanUrl}`,
-    });
+    setConnectionStatus("unknown");
+    toast({ title: "Backend URL Saved", description: `Backend URL updated to: ${cleanUrl}` });
   };
 
-  // Load initial data
+  const saveApiKey = () => {
+    const k = (apiKey || "").trim();
+    if (!k) {
+      localStorage.removeItem("aether-api-key");
+      toast({ title: "API key cleared" });
+      return;
+    }
+    if (k.length < 8) {
+      toast({ title: "API key too short", description: "Enter a valid admin key", variant: "destructive" });
+      return;
+    }
+    localStorage.setItem("aether-api-key", k);
+    toast({ title: "API key saved" });
+  };
+
+  // Load initial data + audit polling
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
       setError(null);
-
       try {
-        await Promise.all([fetchSystemState(), fetchCurrentMode()]);
-        setConnectionStatus("connected"); // If we can load data, we're connected
+        await fetchSystemState();
+        await fetchAudit();
+        setConnectionStatus("connected");
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to load data",
-        );
+        setError(error instanceof Error ? error.message : "Failed to load data");
         setConnectionStatus("disconnected");
       } finally {
         setIsLoading(false);
       }
     };
-
     loadData();
-  }, [backendUrl]); // Re-run when backend URL changes
+    const t = window.setInterval(() => {
+      fetchSystemState().catch(() => {});
+      fetchAudit().catch(() => {});
+    }, 10000);
+    return () => window.clearInterval(t);
+  }, [backendUrl, apiKey, auditFilter, auditPage]);
 
   // Handle pause system
   const handlePauseSystem = async () => {
@@ -663,7 +716,7 @@ export default function AdminSystemControl() {
             <HelpTip content="Set which backend server this dashboard controls. Use Test Connection to verify reachability." />
           </div>
           <CardDescription>
-            Configure the backend server URL for system operations
+            Configure the backend server URL and admin API key
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -681,9 +734,20 @@ export default function AdminSystemControl() {
                   onChange={(e) => setBackendUrl(e.target.value)}
                 />
                 <div className="text-xs text-muted-foreground mt-1">
-                  Enter the complete URL including protocol (http:// or
-                  https://)
+                  Enter the complete URL including protocol (http:// or https://)
                 </div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="apiKey">Admin X-API-Key</Label>
+                  <HelpTip content="Admin key sent as X-API-Key for privileged endpoints (stored locally)." />
+                </div>
+                <div className="flex gap-2">
+                  <Input id="apiKey" type="password" placeholder="Enter admin API key" value={apiKey} onChange={(e)=> setApiKey(e.target.value)} />
+                  <Button variant="outline" onClick={()=> { setApiKey(""); localStorage.removeItem("aether-api-key"); toast({ title: "API key cleared" }); }}>Clear</Button>
+                  <Button onClick={saveApiKey} disabled={apiKey === (localStorage.getItem("aether-api-key") || "")}>Save</Button>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">Key persists in this browser only.</div>
               </div>
               <div className="flex items-center space-x-2">
                 <Button
@@ -705,10 +769,7 @@ export default function AdminSystemControl() {
                 </Button>
                 <Button
                   onClick={saveBackendUrl}
-                  disabled={
-                    !backendUrl.trim() ||
-                    backendUrl === localStorage.getItem("aether-backend-url")
-                  }
+                  disabled={!backendUrl.trim() || backendUrl === localStorage.getItem("aether-backend-url")}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   Save URL
@@ -720,8 +781,7 @@ export default function AdminSystemControl() {
                 <div className="mb-2">{getConnectionBadge()}</div>
                 <div className="text-sm text-muted-foreground">
                   {connectionStatus === "connected" && "Backend is reachable"}
-                  {connectionStatus === "disconnected" &&
-                    "Cannot reach backend"}
+                  {connectionStatus === "disconnected" && "Cannot reach backend"}
                   {connectionStatus === "testing" && "Testing connection..."}
                   {connectionStatus === "unknown" && "Connection not tested"}
                 </div>
