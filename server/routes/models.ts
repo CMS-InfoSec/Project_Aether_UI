@@ -1568,3 +1568,24 @@ export function handleGetShadowTests(_req: Request, res: Response) {
     data: shadowTests
   });
 }
+
+// Admin registry: expose models, available policies, last checkpoint
+export function handleAdminModelsRegistry(_req: Request, res: Response) {
+  try {
+    const lastModelTs = models.reduce((max, m) => Math.max(max, new Date(m.createdAt).getTime()), 0);
+    const lastJobTs = trainingJobs.reduce((max, j) => Math.max(max, new Date(j.endTime || j.startTime).getTime()), 0);
+    const lastCheckpoint = new Date(Math.max(0, lastModelTs, lastJobTs)).toISOString();
+    const policies = [
+      'PPO', 'Recurrent PPO', 'SAC', 'TD3', 'A2C', 'DDPG',
+      'LSTM', 'Transformer', 'FinBERT', 'RoBERTa-Financial', 'BERT-Base', 'DistilBERT'
+    ];
+    res.json({ status: 'success', data: { models, policies, lastCheckpoint } });
+  } catch (e: any) {
+    res.status(500).json({ status: 'error', message: e?.message || 'Registry unavailable' });
+  }
+}
+
+// Admin retrain: delegate to training start handler (v1 adapter)
+export function handleAdminModelsRetrain(req: Request, res: Response) {
+  return handleStartTrainingV1(req as any, res as any);
+}
