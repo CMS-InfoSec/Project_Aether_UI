@@ -50,6 +50,7 @@ interface Anomaly {
   samples?: any;
   venue?: string;
   notes?: string;
+  reported_by?: string;
 }
 
 type Severity = Anomaly["severity"];
