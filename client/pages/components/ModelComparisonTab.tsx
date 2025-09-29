@@ -403,7 +403,7 @@ export default function ModelComparisonTab() {
                     <RechartsTooltip />
                     <Bar dataKey="value">
                       {driftData.map((entry, idx) => (
-                        <cell key={`cell-drift-${idx}`} fill={entry.color} />
+                        <Cell key={`cell-drift-${idx}`} fill={entry.color} />
                       ))}
                     </Bar>
                   </RechartsBarChart>
