@@ -74,11 +74,12 @@ export function handlePortfolioOptimize(req: Request, res: Response) {
     let covSymbols: string[] = symbols;
     let cov: number[][] = matrix;
     if ((!covSymbols || !cov) && covarianceId) {
-      if (!lastCovariance || lastCovariance.id !== covarianceId) {
+      const lc = __getLastCovariance?.();
+      if (!lc || lc.id !== covarianceId) {
         return res.status(404).json({ status: "error", message: "covariance not found" });
       }
-      covSymbols = lastCovariance.symbols;
-      cov = lastCovariance.matrix;
+      covSymbols = lc.symbols;
+      cov = lc.matrix;
     }
     if (!Array.isArray(covSymbols) || !isSquareMatrix(cov) || cov.length !== covSymbols.length) {
       return res.status(422).json({ status: "error", message: "valid covariance symbols/matrix required" });
