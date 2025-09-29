@@ -111,48 +111,42 @@ export default function DataQualityTab() {
   const [ackedMap, setAckedMap] = usePersistedMap("dq_ack_map");
   const [suppressMap, setSuppressMap] = usePersistedMap("dq_suppress_map");
   const timerRef = useRef<number | null>(null);
+  const [live, setLive] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+  const lastTsRef = useRef<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      let r = await apiFetch("/api/data/anomalies");
-      if (!r.ok) {
-        r = await apiFetch("/data/anomalies");
-      }
-      if (!r.ok) {
-        if (r.status !== 404) throw new Error(`HTTP ${r.status}`);
-        setAnomalies([]);
-      } else {
-        const j = await r.json().catch(() => ({}));
-        const arr: any[] = Array.isArray(j?.data)
-          ? j.data
-          : Array.isArray(j)
-            ? j
-            : Array.isArray((j as any).items)
-              ? (j as any).items
-              : [];
-        const items: Anomaly[] = arr.map((a: any) => ({
-          id: String(
-            a.id ??
-              `${a.symbol || a.venue || "item"}_${a.type || "anomaly"}_${a.detected_at || Date.now()}`,
-          ),
-          symbol: String(a.symbol || "UNKNOWN"),
-          type: String(a.type || a.kind || "anomaly"),
-          severity: String(a.severity || a.level || "medium").toLowerCase(),
-          detected_at: String(
-            a.detected_at || a.timestamp || new Date().toISOString(),
-          ),
-          auto_mitigation: (a.auto_mitigation || a.mitigation || "none")
-            .toString()
-            .replace("-", "_") as any,
-          sample_url: a.sample_url,
-          samples: a.samples,
-          venue: a.venue,
-          notes: a.notes,
-        }));
-        setAnomalies(items);
-      }
+      const params = new URLSearchParams();
+      params.set("limit", "100");
+      if (lastTsRef.current) params.set("since", lastTsRef.current);
+      const r = await apiFetch(`/api/events/alerts?${params.toString()}`, { cache: "no-cache" });
+      const j = await r.json().catch(() => null as any);
+      const list: AlertItem[] = j?.data?.items || j?.items || [];
+      const items: Anomaly[] = (Array.isArray(list) ? list : [])
+        .filter((i) => i && (i.event === "data_anomaly" || /anomal/i.test(i.event) || /anomal/i.test(i.message || "")))
+        .map((i) => {
+          const d = i.details || {};
+          const sev = String(i.severity || "warning").toLowerCase();
+          const mappedSev: any = sev === "critical" ? "critical" : sev === "error" ? "high" : sev === "warning" ? "medium" : "low";
+          return {
+            id: String(i.id),
+            symbol: String(d.symbol || d.asset || d.pair || "UNKNOWN"),
+            type: String(d.type || i.event || "anomaly"),
+            severity: mappedSev,
+            detected_at: String(i.timestamp),
+            auto_mitigation: String(d.auto_mitigation || "none").replace("-", "_") as any,
+            sample_url: d.sample_url,
+            samples: d.samples,
+            venue: d.venue || d.exchange,
+            notes: i.message,
+            reported_by: d.reported_by || d.reporter,
+          } as Anomaly;
+        });
+      if (items.length) lastTsRef.current = list[0]?.timestamp || lastTsRef.current;
+      setAnomalies(items);
     } catch (e: any) {
       setError(e?.message || "Failed to load anomalies");
     } finally {
@@ -160,13 +154,79 @@ export default function DataQualityTab() {
     }
   };
 
+  // Establish SSE stream; fallback to polling when not live
   useEffect(() => {
-    load();
-    timerRef.current = window.setInterval(load, 15000) as any; // 15s
+    const base = getBaseUrl();
+    try {
+      const es = new EventSource(`${base}/api/v1/events/alerts/stream`);
+      esRef.current = es;
+      setLive(true);
+      const push = (arr: AlertItem[]) => {
+        const anomalies = (Array.isArray(arr) ? arr : [])
+          .filter((i) => i && (i.event === "data_anomaly" || /anomal/i.test(i.event) || /anomal/i.test(i.message || "")))
+          .map((i) => {
+            const d = i.details || {};
+            const sev = String(i.severity || "warning").toLowerCase();
+            const mappedSev: any = sev === "critical" ? "critical" : sev === "error" ? "high" : sev === "warning" ? "medium" : "low";
+            return {
+              id: String(i.id),
+              symbol: String(d.symbol || d.asset || d.pair || "UNKNOWN"),
+              type: String(d.type || i.event || "anomaly"),
+              severity: mappedSev,
+              detected_at: String(i.timestamp),
+              auto_mitigation: String(d.auto_mitigation || "none").replace("-", "_") as any,
+              sample_url: d.sample_url,
+              samples: d.samples,
+              venue: d.venue || d.exchange,
+              notes: i.message,
+              reported_by: d.reported_by || d.reporter,
+            } as Anomaly;
+          });
+        if (anomalies.length) {
+          setAnomalies((prev) => {
+            const map = new Map(prev.map((a) => [a.id, a]));
+            for (const a of anomalies) map.set(a.id, a);
+            const out = Array.from(map.values());
+            out.sort((a,b)=> new Date(b.detected_at).getTime() - new Date(a.detected_at).getTime());
+            return out.slice(0, 200);
+          });
+          if (arr[0]?.timestamp) lastTsRef.current = arr[0].timestamp;
+        }
+      };
+      es.addEventListener("init", (ev: MessageEvent) => {
+        try { push(JSON.parse(ev.data || "[]")); } catch {}
+      });
+      es.addEventListener("alert", (ev: MessageEvent) => {
+        try { push([JSON.parse(ev.data || "{}")] as any); } catch {}
+      });
+      es.onerror = () => {
+        setLive(false);
+        try { es.close(); } catch {}
+        esRef.current = null;
+      };
+    } catch {
+      setLive(false);
+    }
     return () => {
-      if (timerRef.current) window.clearInterval(timerRef.current);
+      if (esRef.current) {
+        try { esRef.current.close(); } catch {}
+        esRef.current = null;
+      }
     };
   }, []);
+
+  useEffect(() => {
+    if (live) return;
+    let timer: any;
+    const poll = async () => {
+      await load();
+      timer = window.setTimeout(poll, 10000);
+    };
+    poll();
+    return () => {
+      if (timer) window.clearTimeout(timer);
+    };
+  }, [live]);
 
   const filtered = useMemo(() => {
     let arr = [...anomalies];
@@ -424,6 +484,12 @@ export default function DataQualityTab() {
                       <div>
                         <div className="text-muted-foreground">Venue</div>
                         <div className="font-mono">{a.venue}</div>
+                      </div>
+                    )}
+                    {a.reported_by && (
+                      <div>
+                        <div className="text-muted-foreground">Reported by</div>
+                        <div className="font-mono">{a.reported_by}</div>
                       </div>
                     )}
                     {a.notes && (
