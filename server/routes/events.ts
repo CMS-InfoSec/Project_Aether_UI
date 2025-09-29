@@ -26,8 +26,41 @@ let balances = Array.from({ length: 60 }).map((_, i) => ({
   hmac_verified: Math.random() > 0.1
 }));
 
+// Alerts model and seed data
+export type AlertSeverity = 'info' | 'warning' | 'error' | 'critical';
+interface AlertItem {
+  id: string;
+  timestamp: string;
+  severity: AlertSeverity;
+  source: string;
+  event: string;
+  message: string;
+  details?: Record<string, any>;
+}
+
+const SEVERITIES: AlertSeverity[] = ['info','warning','error','critical'];
+let alerts: AlertItem[] = Array.from({ length: 40 }).map((_, i) => ({
+  id: `alert_${i + 1}`,
+  timestamp: new Date(Date.now() - i * 90_000).toISOString(),
+  severity: SEVERITIES[i % SEVERITIES.length],
+  source: ["monitor","risk","execution","market"][i % 4],
+  event: ["threshold","timeout","slippage","latency"][i % 4],
+  message: [
+    "CPU usage exceeded threshold",
+    "Price feed timeout detected",
+    "Execution slippage above target",
+    "Increased API latency observed"
+  ][i % 4],
+  details: {
+    code: [200, 408, 504, 429][i % 4],
+    symbol: ["BTC/USDT","ETH/USDT","SOL/USDT","ADA/USDT"][i % 4],
+    value: +(Math.random() * 100).toFixed(2)
+  }
+}));
+
 let tradesVersion = Date.now();
 let balancesVersion = Date.now();
+let alertsVersion = Date.now();
 
 function applyEventsQuery<T extends { id:string; timestamp:string }>(source: T[], req: Request) {
   const { limit = '25', cursor, since } = req.query as Record<string,string>;
@@ -83,4 +116,71 @@ export function handleEventsBalances(req: Request, res: Response) {
   res.setHeader('ETag', etag);
   res.setHeader('Last-Modified', lastModified);
   res.json({ status: 'success', data: { items, total, next } });
+}
+
+export function handleEventsAlerts(req: Request, res: Response) {
+  const { severity, source } = req.query as Record<string,string>;
+  let list = alerts;
+  if (severity && SEVERITIES.includes(severity as AlertSeverity)) {
+    list = list.filter(a => a.severity === (severity as AlertSeverity));
+  }
+  if (source) list = list.filter(a => a.source === source);
+  const { items, total, next, etag, lastModified } = applyEventsQuery(list, req);
+  if (preconditionNotModified(req, etag, lastModified)) {
+    res.status(304).end();
+    return;
+  }
+  res.setHeader('ETag', etag);
+  res.setHeader('Last-Modified', lastModified);
+  res.json({ status: 'success', data: { items, total, next } });
+}
+
+export function handleEventsAlertsStream(req: Request, res: Response) {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.flushHeaders?.();
+
+  // Send initial snapshot
+  try {
+    const snapshot = alerts
+      .slice(0, 25)
+      .sort((a,b)=> new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    res.write(`event: init\n`);
+    res.write(`data: ${JSON.stringify(snapshot)}\n\n`);
+  } catch {}
+
+  // Periodically emit a new alert
+  const interval = setInterval(() => {
+    const idx = Math.floor(Math.random() * SEVERITIES.length);
+    const now = new Date();
+    const item: AlertItem = {
+      id: `alert_${Date.now()}`,
+      timestamp: now.toISOString(),
+      severity: SEVERITIES[idx],
+      source: ["monitor","risk","execution","market"][Math.floor(Math.random()*4)],
+      event: ["threshold","timeout","slippage","latency"][Math.floor(Math.random()*4)],
+      message: [
+        "CPU usage exceeded threshold",
+        "Price feed timeout detected",
+        "Execution slippage above target",
+        "Increased API latency observed"
+      ][Math.floor(Math.random()*4)],
+      details: {
+        symbol: ["BTC/USDT","ETH/USDT","SOL/USDT","ADA/USDT"][Math.floor(Math.random()*4)],
+        value: +(Math.random() * 100).toFixed(2)
+      }
+    };
+    alerts.unshift(item);
+    alertsVersion = Date.now();
+    try {
+      res.write(`event: alert\n`);
+      res.write(`data: ${JSON.stringify(item)}\n\n`);
+    } catch {}
+  }, 3000);
+
+  req.on('close', () => {
+    clearInterval(interval);
+    try { res.end(); } catch {}
+  });
 }
