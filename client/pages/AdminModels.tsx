@@ -1197,6 +1197,8 @@ export default function AdminModels() {
   return (
     <TooltipProvider>
       <div className="space-y-6">
+        {/* AI Model Management panel */}
+        <ModelManagementPanel />
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight inline-flex items-center gap-2">
