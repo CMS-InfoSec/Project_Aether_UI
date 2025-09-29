@@ -1,12 +1,7 @@
 import type { Request, Response } from "express";
 import { handleUploadCovariance as _noop } from "./optimizer";
 
-let lastCovariance: {
-  id: string;
-  symbols: string[];
-  matrix: number[][];
-  uploadedAt: string;
-} | null = null;
+import { __getLastCovariance } from "./optimizer";
 
 function isSquareMatrix(m: number[][]): boolean {
   if (!Array.isArray(m) || m.length === 0) return false;
