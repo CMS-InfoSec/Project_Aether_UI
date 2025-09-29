@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import HelpTip from "@/components/ui/help-tip";
 import { useAuth } from "@/contexts/AuthContext";
+import AlertsPanel from "./components/AlertsPanel";
 
 interface DependencyRow {
   id: string;
@@ -297,6 +298,8 @@ export default function Observability() {
           )}
         </CardContent>
       </Card>
+
+      <AlertsPanel />
 
       {/* Dependency Diagnostics (admin only) */}
       {isPrivileged && (
