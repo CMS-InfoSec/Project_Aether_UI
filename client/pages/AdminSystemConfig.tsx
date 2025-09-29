@@ -717,6 +717,7 @@ export default function AdminSystemConfig() {
         {/* Utility Controls Tab */}
         <TabsContent value="utility" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
+            <DataRetentionPanel />
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
