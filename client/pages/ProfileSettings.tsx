@@ -329,10 +329,10 @@ export default function ProfileSettings() {
         "saveProfile",
       );
 
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setUserProfile(data.data);
+      const data = await response.json().catch(()=>({}));
+      const profile: UserProfile = data?.risk_tier ? data : (data?.data || {});
+      if (profile?.risk_tier) {
+        setUserProfile(profile);
         toast({
           title: "Risk Tier Updated",
           description: "Your risk profile has been updated successfully.",
