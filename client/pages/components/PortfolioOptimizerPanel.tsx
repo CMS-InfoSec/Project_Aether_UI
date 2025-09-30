@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import HelpTip from "@/components/ui/help-tip";
 import { useToast } from "@/hooks/use-toast";
-import { postJson, getJson } from "@/lib/apiClient";
+import { postJson } from "@/lib/apiClient";
 import {
   PieChart,
   Pie,
@@ -75,18 +75,7 @@ export default function PortfolioOptimizerPanel() {
   const [allocations, setAllocations] = useState<Array<{ symbol: string; weight: number }>>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const j = await getJson<any>("/api/optimizer/last");
-        if (j?.data?.symbols) {
-          setSymbols(j.data.symbols);
-          setCovarianceId(j.data.covarianceId || null);
-          setExpected(Object.fromEntries(j.data.symbols.map((s: string) => [s, 0.01])));
-        }
-      } catch {}
-    })();
-  }, []);
+  // Removed dependency on backend optimizer state; covariance managed client-side
 
   const handleFile = async (file: File) => {
     try {
@@ -99,11 +88,10 @@ export default function PortfolioOptimizerPanel() {
       } else {
         payload = parseCsvMatrix(text);
       }
-      const r = await postJson<any>("/api/optimizer/covariance", payload);
-      setCovarianceId(r.id);
-      setSymbols(r.symbols || payload.symbols);
+      setCovarianceId(null);
+      setSymbols(payload.symbols);
       setMatrix(payload.matrix);
-      setExpected(Object.fromEntries((r.symbols || payload.symbols).map((s: string) => [s, 0.01])));
+      setExpected(Object.fromEntries(payload.symbols.map((s: string) => [s, 0.01])));
       toast({ title: "Uploaded", description: `Loaded ${payload.symbols.length} assets` });
     } catch (e: any) {
       toast({ title: "Upload failed", description: e?.message || "Invalid file", variant: "destructive" });
@@ -113,33 +101,16 @@ export default function PortfolioOptimizerPanel() {
   };
 
   const run = async () => {
-    if (!covarianceId && !matrix) {
+    if (!matrix || symbols.length === 0) {
       toast({ title: "Missing covariance", description: "Upload a covariance matrix first", variant: "destructive" });
       return;
     }
     setRunning(true);
     try {
-      const body: any = { method, expectedReturns: expected, riskAversion, riskLimits: { maxWeight } };
-      if (covarianceId) body.covarianceId = covarianceId;
-      else body.symbols = symbols, body.matrix = matrix;
-      let r: any;
-      try {
-        r = await postJson<any>("/api/v1/portfolio/optimize", body);
-      } catch (e) {
-        r = await postJson<any>("/api/portfolio/optimize", body);
-      }
+      const body: any = { method, expectedReturns: expected, riskAversion, riskLimits: { maxWeight }, symbols, matrix };
+      const r = await postJson<any>("/api/v1/portfolio/optimize", body);
       if (r?.allocations) setAllocations(r.allocations);
       toast({ title: "Optimization complete", description: `${method === "kelly" ? "Kelly" : method === 'risk-parity' ? 'Risk Parity' : "Markowitz"} allocations ready` });
-      // Audit log
-      try {
-        await postJson("/api/notifications", {
-          title: "Portfolio Optimizer",
-          message: `Ran ${method} optimization for ${symbols.length} assets`,
-          severity: "info",
-          category: "trading",
-          metadata: { method, symbols, riskAversion, expected },
-        });
-      } catch {}
     } catch (e: any) {
       toast({ title: "Optimization failed", description: e?.message || "Error", variant: "destructive" });
     } finally {
