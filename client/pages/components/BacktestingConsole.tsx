@@ -106,19 +106,46 @@ export default function BacktestingConsole() {
       const j = await r.json().catch(() => ({}));
       if (!r.ok && r.status !== 202)
         throw new Error(j.error || j.message || `HTTP ${r.status}`);
-      // Fetch report after short delay
-      setTimeout(async () => {
-        try {
-          const rr = await apiFetch("/api/reports/backtest?format=json");
+
+      const reportPath = j?.report_path || j?.path || null;
+      const fetchOnce = async (): Promise<boolean> => {
+        const qp = new URLSearchParams();
+        qp.set("format", "json");
+        if (reportPath) qp.set("path", String(reportPath).replace(/^.*path=/, ""));
+        const rr = await apiFetch(`/api/v1/reports/backtest?${qp.toString()}`);
+        if (rr.status === 202) return false;
+        if (!rr.ok) {
           const rj = await rr.json().catch(() => ({}));
-          const data = rj?.data || rj || null;
-          setReport(data);
+          if (rr.status >= 400 && rr.status < 500) throw new Error(rj.error || rj.message || `HTTP ${rr.status}`);
+          return false;
+        }
+        const rj = await rr.json().catch(() => ({}));
+        const data = rj?.data || rj || null;
+        setReport(data);
+        return true;
+      };
+
+      let attempts = 0;
+      const poll = async () => {
+        try {
+          const done = await fetchOnce();
+          if (done) {
+            setRunning(false);
+            return;
+          }
         } catch (e: any) {
           setError(e?.message || "Failed to fetch report");
-        } finally {
+          setRunning(false);
+          return;
+        }
+        attempts++;
+        if (attempts < 20) setTimeout(poll, 1000);
+        else {
+          setError("Timed out waiting for report");
           setRunning(false);
         }
-      }, 800);
+      };
+      poll();
     } catch (e: any) {
       setError(e?.message || "Backtest failed");
       setRunning(false);
@@ -152,7 +179,7 @@ export default function BacktestingConsole() {
     <Card>
       <CardHeader className="flex items-start justify-between">
         <CardTitle>Backtesting Console</CardTitle>
-        <HelpTip content="Upload historical data and run simulations. Results fetched from /api/v1/backtest and /api/reports/backtest." />
+        <HelpTip content="Upload historical data and run simulations. Results fetched from /api/v1/backtest and /api/v1/reports/backtest." />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid md:grid-cols-2 gap-3">
