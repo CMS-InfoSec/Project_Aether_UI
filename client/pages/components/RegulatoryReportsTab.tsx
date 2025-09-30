@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Card,
   CardContent,
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import HelpTip from "@/components/ui/help-tip";
-import apiFetch, { getJson } from "@/lib/apiClient";
+import apiFetch, { getJson, getBaseUrl } from "@/lib/apiClient";
 import {
   RefreshCw,
   Download,
@@ -48,6 +48,8 @@ export default function RegulatoryReportsTab() {
   const [generating, setGenerating] = useState(false);
   const [history, setHistory] = useState<ReportHistoryItem[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [degradedAudit, setDegradedAudit] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
 
   const filterSummary = useMemo(() => {
     const parts: string[] = [];
@@ -62,14 +64,16 @@ export default function RegulatoryReportsTab() {
     try {
       // Preferred endpoint
       try {
-        const j = await getJson<any>("/api/reports/history");
-        const items: any[] = Array.isArray(j?.data)
-          ? j.data
-          : Array.isArray(j)
-            ? j
-            : [];
+        const j = await getJson<any>("/api/v1/reports/history");
+        const records: any[] = Array.isArray(j?.records)
+          ? j.records
+          : Array.isArray(j?.data?.records)
+            ? j.data.records
+            : Array.isArray(j)
+              ? j
+              : [];
         setHistory(
-          items.map((it: any) => ({
+          records.map((it: any) => ({
             id: String(it.id || `${Date.now()}_${Math.random()}`),
             timestamp: it.timestamp || it.createdAt || Date.now(),
             operatorId: it.operatorId || it.operator || it.user || undefined,
@@ -81,32 +85,40 @@ export default function RegulatoryReportsTab() {
             status: it.status || it.result || undefined,
           })),
         );
+        setDegradedAudit(false);
         return;
       } catch {}
 
-      // Fallback to audit log filtered by action
+      // Fallback: degraded mode, subscribe to audit SSE
+      setDegradedAudit(true);
       try {
-        const a = await getJson<any>("/api/system/audit");
-        const items: any[] = Array.isArray(a?.data)
-          ? a.data
-          : Array.isArray(a)
-            ? a
-            : [];
-        const mapped = items
-          .filter((it) =>
-            String(it.action || "")
-              .toLowerCase()
-              .includes("report"),
-          )
-          .map((it: any) => ({
-            id: String(it.id || `${Date.now()}_${Math.random()}`),
-            timestamp: it.timestamp || Date.now(),
-            operatorId: it.actor || it.user || undefined,
-            filters: it.details?.filters || undefined,
-            format: it.details?.format || undefined,
-            status: it.success === false ? "failed" : "success",
-          }));
-        setHistory(mapped);
+        if (esRef.current) {
+          try { esRef.current.close(); } catch {}
+          esRef.current = null;
+        }
+        const base = getBaseUrl();
+        const es = new EventSource(`${base}/api/v1/system/audit`);
+        esRef.current = es;
+        es.onmessage = (ev) => {
+          try {
+            const it = JSON.parse(ev.data || '{}');
+            const action = String(it.action || '').toLowerCase();
+            if (!action.includes('report')) return;
+            const h: ReportHistoryItem = {
+              id: String(it.id || `${Date.now()}_${Math.random()}`),
+              timestamp: it.timestamp || Date.now(),
+              operatorId: it.actor || it.user || undefined,
+              filters: it.details?.filters || undefined,
+              format: it.details?.format || undefined,
+              status: it.success === false ? 'failed' : 'success',
+            };
+            setHistory((prev) => [h, ...prev].slice(0, 200));
+          } catch {}
+        };
+        es.onerror = () => {
+          try { es.close(); } catch {}
+          esRef.current = null;
+        };
       } catch {}
     } finally {
       setLoadingHistory(false);
@@ -117,6 +129,10 @@ export default function RegulatoryReportsTab() {
     loadHistory();
   }, []);
 
+  useEffect(() => {
+    return () => { try { esRef.current?.close(); } catch {} };
+  }, []);
+
   const toggle = (key: keyof typeof filters) => (checked: boolean | string) => {
     setFilters((prev) => ({ ...prev, [key]: !!checked }));
   };
@@ -125,7 +141,7 @@ export default function RegulatoryReportsTab() {
     setGenerating(true);
     try {
       const body = { format: fmt, filters };
-      const resp = await apiFetch(`/api/reports/generate`, {
+      const resp = await apiFetch(`/api/v1/reports/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -134,7 +150,7 @@ export default function RegulatoryReportsTab() {
       if (!resp.ok) {
         // Attempt GET fallback
         const alt = await apiFetch(
-          `/api/reports/generate?format=${encodeURIComponent(fmt)}&trades=${filters.trades}&compliance=${filters.compliance}&governance=${filters.governance}`,
+          `/api/v1/reports/generate?format=${encodeURIComponent(fmt)}&trades=${filters.trades}&compliance=${filters.compliance}&governance=${filters.governance}`,
         );
         if (!alt.ok) throw new Error(`HTTP ${resp.status}`);
         await downloadResponse(alt, fmt);
@@ -276,6 +292,11 @@ export default function RegulatoryReportsTab() {
           </Button>
         </CardHeader>
         <CardContent>
+          {degradedAudit && (
+            <div className="p-3 mb-3 border rounded bg-yellow-50 text-yellow-800 text-sm">
+              Degraded: audit history withheld/unavailable; approximating from live audit stream.
+            </div>
+          )}
           <ScrollArea className="h-64">
             <div className="space-y-2">
               {history.length === 0 && (
