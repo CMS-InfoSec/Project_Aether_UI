@@ -582,7 +582,7 @@ export default function ProfileSettings() {
         loadTradingSettings();
         break;
       case "loadApiKeys":
-        loadApiKeys();
+        // deprecated: keys rotation only
         break;
       case "saveProfile":
         handleSaveRiskTier();
