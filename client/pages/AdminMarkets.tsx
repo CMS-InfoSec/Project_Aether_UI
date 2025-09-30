@@ -250,7 +250,7 @@ export default function AdminMarkets() {
         params.append("limit", currentFilters.limit.toString());
         params.append("offset", currentFilters.offset.toString());
 
-        const response = await apiFetch(`/api/markets/eligible?${params}`);
+        const response = await apiFetch(`/api/v1/markets/eligible?${params}`);
 
         if (response.status === 401)
           throw new Error("Unauthorized - please login");
@@ -377,13 +377,10 @@ export default function AdminMarkets() {
       if (filters.symbol) params.append("symbol", filters.symbol);
       params.append("sort", filters.sort);
 
-      // Optionally ask server for export metadata headers
-      const metaResp = await apiFetch(`/api/markets/export?${params}`);
-      let headerLast =
-        metaResp.headers.get("X-Last-Refreshed") || hdrLastRefreshed || "";
-      let headerSrc = metaResp.headers.get("X-Source") || hdrSource || "";
-      let headerVer =
-        metaResp.headers.get("X-Eligibility-Version") || hdrVersion || "";
+      // Derive metadata from eligible endpoint headers while paging
+      let headerLast = hdrLastRefreshed || "";
+      let headerSrc = hdrSource || "";
+      let headerVer = hdrVersion || "";
 
       // Page through dataset
       let all: MarketItem[] = [];
@@ -393,9 +390,14 @@ export default function AdminMarkets() {
         const p = new URLSearchParams(params);
         p.set("limit", String(limit));
         p.set("offset", String(offset));
-        const r = await apiFetch(`/api/markets/eligible?${p.toString()}`);
+        const r = await apiFetch(`/api/v1/markets/eligible?${p.toString()}`);
         if (!r.ok) break;
         const j: MarketResponse = await r.json();
+        if (offset === 0) {
+          headerLast = r.headers.get("X-Last-Refreshed") || headerLast;
+          headerSrc = r.headers.get("X-Source") || headerSrc;
+          headerVer = r.headers.get("X-Eligibility-Version") || headerVer;
+        }
         all = all.concat(j.items);
         if (j.next === null) break;
         offset = j.next;
