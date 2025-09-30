@@ -9,10 +9,20 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import HelpTip from "@/components/ui/help-tip";
 import apiFetch, { getJson, postJson } from "@/lib/apiClient";
 
+interface ModelHistoryItem {
+  modelId: string;
+  name: string;
+  version: string;
+  type: string;
+  status: string;
+  createdAt?: string;
+  logs?: Array<{ timestamp: string; stage?: string; message: string }>;
+}
 interface RegistryData {
-  models: any[];
+  models: ModelHistoryItem[];
   policies: string[];
-  lastCheckpoint: string;
+  lastCheckpoint: string | null;
+  supabase_degraded?: boolean;
 }
 
 export default function ModelManagementPanel() {
@@ -22,37 +32,40 @@ export default function ModelManagementPanel() {
   const [coins, setCoins] = useState<string>("BTC,ETH");
   const [retraining, setRetraining] = useState(false);
   const [logs, setLogs] = useState<Array<{ ts: string; msg: string }>>([]);
+  const [degraded, setDegraded] = useState(false);
 
   useEffect(() => {
-    (async () => {
+    const load = async () => {
       try {
-        const j = await getJson<any>("/api/admin/models/registry", { admin: true });
-        const data = j?.data || j;
-        setRegistry(data);
-        if (Array.isArray(data?.policies) && data.policies.length) setPolicy(data.policies[0]);
+        const r = await apiFetch(`/api/v1/models/history`, { admin: true });
+        const j = await r.json().catch(() => ({}));
+        const items: any[] = Array.isArray(j?.items) ? j.items : Array.isArray(j?.records) ? j.records : [];
+        const models: ModelHistoryItem[] = items.map((m: any) => ({
+          modelId: m.modelId || m.id,
+          name: m.name || m.model || m.id,
+          version: m.version || m.rev || "",
+          type: m.type || m.family || "",
+          status: m.status || m.state || "",
+          createdAt: m.createdAt || m.timestamp,
+          logs: Array.isArray(m.logs) ? m.logs : undefined,
+        }));
+        const policies = Array.from(new Set(models.map((m) => (m.type === 'rl' || m.type === 'rl_agent') ? 'PPO' : 'LSTM')));
+        const lastCheckpoint = j?.metadata?.last_checkpoint || null;
+        setRegistry({ models, policies: policies.length ? policies : ["PPO","LSTM"], lastCheckpoint, supabase_degraded: Boolean(j?.supabase_degraded || j?.metadata?.supabase_degraded) });
+        setDegraded(Boolean(j?.supabase_degraded || j?.metadata?.supabase_degraded));
+        if (!policy && policies.length) setPolicy(policies[0]);
+        const latest = models[0];
+        if (latest?.logs?.length) {
+          setLogs(latest.logs.slice(-100).map((l: any) => ({ ts: l.timestamp, msg: `[${l.stage || 'log'}] ${l.message}` })));
+        }
       } catch {}
-    })();
-  }, []);
+    };
+    load();
+    const t = setInterval(load, 10000);
+    return () => clearInterval(t);
+  }, [policy]);
 
-  useEffect(() => {
-    let es: EventSource | null = null;
-    try {
-      es = new EventSource("/api/v1/models/jobs/stream");
-      es.onmessage = (ev) => {
-        try {
-          const msg = JSON.parse(ev.data || "{}");
-          const jobs = Array.isArray(msg) ? msg : (msg.jobs || msg.data || []);
-          if (Array.isArray(jobs) && jobs.length) {
-            const job = jobs[0];
-            if (Array.isArray(job.logs)) {
-              setLogs(job.logs.slice(-100).map((l: any) => ({ ts: l.timestamp, msg: `[${l.stage}] ${l.message}` })));
-            }
-          }
-        } catch {}
-      };
-    } catch {}
-    return () => { try { es?.close(); } catch {} };
-  }, []);
+  // Poll history for latest logs; SSE removed per API support
 
   const lastCheckpoint = useMemo(() => {
     if (!registry?.lastCheckpoint) return null;
@@ -64,26 +77,19 @@ export default function ModelManagementPanel() {
     if (coinList.length === 0) return;
     setRetraining(true);
     try {
-      const body: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
-      if (modelType === 'rl_agent') body.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
-      else body.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
-      const j = await postJson<any>("/api/admin/models/retrain", body, { admin: true });
-      if (!j || j.status === 'error') throw new Error(j?.message || 'Failed');
-    } catch (e: any) {
-      try {
-        const payload: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
-        if (modelType === 'rl_agent') payload.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
-        else payload.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
-        const r = await apiFetch(`/api/v1/models/train`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-          admin: true,
-        });
-        const j2 = await r.json().catch(() => ({}));
-        if (!r.ok) throw new Error(j2.message || 'Failed');
-      } catch {}
-    } finally {
+      const payload: any = { model_type: modelType === 'rl_agent' ? 'rl' : 'forecast', coin: coinList };
+      if (modelType === 'rl_agent') payload.algorithm = (policy || 'PPO').toLowerCase().replace(/\s+/g, '_');
+      else payload.architecture = policy.toLowerCase() === 'transformer' ? 'transformer' : 'lstm';
+      const r = await apiFetch(`/api/v1/models/train`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        admin: true,
+      });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.message || 'Failed');
+    } catch (e) {}
+    finally {
       setRetraining(false);
     }
   };
@@ -95,6 +101,9 @@ export default function ModelManagementPanel() {
         <HelpTip content="Trigger retraining, view last checkpoint, policies, and live logs." />
       </CardHeader>
       <CardContent className="space-y-4">
+        {degraded && (
+          <div className="p-3 border rounded bg-yellow-50 text-yellow-800 text-sm">Degraded: history storage unavailable; showing partial data.</div>
+        )}
         <div className="grid md:grid-cols-4 gap-3 items-end">
           <div>
             <div className="flex items-center gap-2">
