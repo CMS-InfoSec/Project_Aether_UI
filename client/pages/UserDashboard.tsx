@@ -423,10 +423,9 @@ export default function UserDashboard() {
     if (!mounted) return;
     setIsRefreshing((prev) => ({ ...prev, notifications: true }));
     try {
-      const j = await getJson<any>("/api/notifications");
-      const data = j?.data || j;
-      const items = data?.notifications || data?.items || [];
-      if (Array.isArray(items)) setNotifications(items as any);
+      const j = await getJson<any>("/api/v1/notifications");
+      const items = Array.isArray(j?.items) ? j.items : [];
+      setNotifications(items as any);
     } catch (error) {
       console.error("Error loading notifications:", error);
     } finally {
@@ -497,9 +496,8 @@ export default function UserDashboard() {
         source?: string;
       }> = [];
       try {
-        const j = await getJson<any>("/api/notifications");
-        const data = j?.data || j;
-        const items = data?.notifications || data?.items || [];
+        const j = await getJson<any>("/api/v1/notifications");
+        const items = Array.isArray(j?.items) ? j.items : [];
         for (const n of Array.isArray(items) ? items : []) {
           aggregated.push({
             id: String(n.id || `${Date.now()}_${Math.random()}`),
@@ -636,9 +634,7 @@ export default function UserDashboard() {
     setNotifications((prev) =>
       prev.map((notif) => (notif.id === id ? { ...notif, read: true } : notif)),
     );
-    try {
-      await patchJson(`/api/notifications/${id}/read`, { read: true });
-    } catch {}
+    // Marking read not supported by backend; local-only visual update
   };
 
   const getSeverityIcon = (severity: string) => {
