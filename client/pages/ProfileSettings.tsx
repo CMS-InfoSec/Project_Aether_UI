@@ -205,14 +205,11 @@ export default function ProfileSettings() {
         () => apiFetch("/api/v1/user/profile"),
         "loadProfile",
       );
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setUserProfile(data.data);
-        setSelectedRiskTier(data.data.risk_tier);
-      } else {
-        throw new Error(data.error || "Failed to load profile");
-      }
+      const data = await response.json().catch(()=>({}));
+      const profile: UserProfile = data?.risk_tier ? data : (data?.data || {});
+      if (!profile?.risk_tier) throw new Error("Invalid profile payload");
+      setUserProfile(profile);
+      setSelectedRiskTier(profile.risk_tier);
     } catch (error) {
       console.error("Load profile error:", error);
       setApiError(
