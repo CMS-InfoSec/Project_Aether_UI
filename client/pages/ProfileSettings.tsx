@@ -158,7 +158,6 @@ export default function ProfileSettings() {
   useEffect(() => {
     loadUserProfile();
     loadTradingSettings();
-    loadApiKeys();
   }, []);
 
   // Set default expiration date (90 days from now)
