@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import HelpTip from "@/components/ui/help-tip";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { getBaseUrl } from "@/lib/apiClient";
 import { AlertTriangle, Activity, RefreshCw } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -37,14 +37,13 @@ function parsePrometheus(text: string): Record<string, number> {
   const lines = text.split(/\r?\n/);
   for (const line of lines) {
     if (!line || line.startsWith("#")) continue;
-    // Example: portfolio_pnl 123.45 or metric{label="x"} 1.0
     const sp = line.trim().split(/\s+/);
     if (sp.length < 2) continue;
     const rawName = sp[0];
     const val = Number(sp[sp.length - 1]);
     if (!isFinite(val)) continue;
     const name = rawName.replace(/\{.*\}$/, "");
-    metrics[name] = val; // last sample wins
+    metrics[name] = val;
   }
   return metrics;
 }
@@ -71,6 +70,12 @@ export default function RiskMonitoringPanel({
   const [perf, setPerf] = useState<Array<{ date: string; returns: number }>>(
     [],
   );
+  const [metricsDegraded, setMetricsDegraded] = useState(false);
+  const [live, setLive] = useState(false);
+  const esRef = useRef<EventSource | null>(null);
+  const lastTsRef = useRef<string | null>(null);
+  const stopRef = useRef(false);
+
   const filteredPerf = useMemo(() => {
     if (!range || !range.from || !range.to) return perf;
     return perf.filter((p) => {
@@ -84,44 +89,17 @@ export default function RiskMonitoringPanel({
     setError(null);
     setLoading(true);
     try {
-      // Breaches
-      let breachesData: any = null;
-      try {
-        let r = await apiFetch("/risk/breaches");
-        if (!r.ok) {
-          r = await apiFetch("/api/risk/breaches");
-        }
-        if (r.ok) {
-          breachesData = await r.json().catch(() => null);
-        } else if (r.status !== 404) {
-          const j = await r.json().catch(() => ({}) as any);
-          throw new Error(j?.detail || `Risk breaches HTTP ${r.status}`);
-        }
-      } catch (e: any) {
-        if (String(e?.message || "").includes("Risk breaches"))
-          setError(e.message);
-      }
-      const items: BreachItem[] = Array.isArray(breachesData)
-        ? breachesData
-        : Array.isArray(breachesData?.breaches)
-          ? breachesData?.breaches
-          : [];
-      setBreaches(items.filter(Boolean));
-
-      // Prometheus metrics: try /api/metrics then fallback to /metrics
+      // Prometheus metrics: pull directly from /metrics; surface degraded banner if unavailable
       let metricsText = "";
       try {
-        const r = await apiFetch("/api/metrics");
+        const r = await apiFetch("/metrics");
         if (r.ok) metricsText = await r.text();
       } catch {}
-      if (!metricsText) {
-        try {
-          const r2 = await apiFetch("/metrics");
-          if (r2.ok) metricsText = await r2.text();
-        } catch {}
+      if (!metricsText) setMetricsDegraded(true);
+      else {
+        setMetricsDegraded(false);
+        setPromText(metricsText);
       }
-      if (!metricsText) throw new Error("Metrics endpoint unavailable");
-      setPromText(metricsText);
 
       // Mini performance chart (recent returns)
       try {
@@ -147,6 +125,134 @@ export default function RiskMonitoringPanel({
     }
   };
 
+  // Live breaches via alerts SSE
+  useEffect(() => {
+    const base = getBaseUrl();
+    try {
+      const es = new EventSource(`${base}/api/v1/events/alerts/stream`);
+      esRef.current = es;
+      setLive(true);
+      es.addEventListener("init", (ev: MessageEvent) => {
+        try {
+          const data = JSON.parse(ev.data || "[]") as any[];
+          const breachesInit = data
+            .filter((a: any) => a?.event === "live_metrics_breach")
+            .map((a: any) => ({
+              id: a.id,
+              message: a.message || a.details?.message || "Breach detected",
+              timestamp: a.timestamp,
+              severity: a.severity,
+              metric: a.details?.metric,
+              value: a.details?.value,
+              threshold: a.details?.threshold,
+            })) as BreachItem[];
+          setBreaches((prev) => {
+            const merged = [...breachesInit, ...prev];
+            merged.sort(
+              (a, b) =>
+                new Date(b.timestamp as any).getTime() -
+                new Date(a.timestamp as any).getTime(),
+            );
+            return merged.slice(0, 200);
+          });
+          if (data[0]?.timestamp) lastTsRef.current = data[0].timestamp;
+        } catch {}
+      });
+      es.addEventListener("alert", (ev: MessageEvent) => {
+        try {
+          const a = JSON.parse(ev.data || "{}");
+          if (a?.event !== "live_metrics_breach") return;
+          const breach: BreachItem = {
+            id: a.id,
+            message: a.message || a.details?.message || "Breach detected",
+            timestamp: a.timestamp,
+            severity: a.severity,
+            metric: a.details?.metric,
+            value: a.details?.value,
+            threshold: a.details?.threshold,
+          };
+          setBreaches((prev) => {
+            const merged = [breach, ...prev];
+            merged.sort(
+              (x, y) =>
+                new Date(y.timestamp as any).getTime() -
+                new Date(x.timestamp as any).getTime(),
+            );
+            return merged.slice(0, 200);
+          });
+          lastTsRef.current = a.timestamp;
+        } catch {}
+      });
+      es.onerror = () => {
+        setLive(false);
+        try {
+          es.close();
+        } catch {}
+        esRef.current = null;
+      };
+    } catch {
+      setLive(false);
+    }
+    return () => {
+      stopRef.current = true;
+      if (esRef.current) {
+        try {
+          esRef.current.close();
+        } catch {}
+        esRef.current = null;
+      }
+    };
+  }, []);
+
+  // Fallback polling if SSE not connected
+  useEffect(() => {
+    if (live) return;
+    let timer: any;
+    const poll = async () => {
+      if (stopRef.current) return;
+      const params = new URLSearchParams();
+      params.set("limit", "50");
+      if (lastTsRef.current) params.set("since", lastTsRef.current);
+      try {
+        const r = await apiFetch(`/api/v1/events/alerts?${params.toString()}`, {
+          cache: "no-cache",
+        });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const j = await r.json().catch(() => null as any);
+        const incoming: any[] = j?.data?.items || j?.items || [];
+        if (Array.isArray(incoming) && incoming.length) {
+          const breachesIncoming = incoming
+            .filter((a) => a?.event === "live_metrics_breach")
+            .map((a) => ({
+              id: a.id,
+              message: a.message || a.details?.message || "Breach detected",
+              timestamp: a.timestamp,
+              severity: a.severity,
+              metric: a.details?.metric,
+              value: a.details?.value,
+              threshold: a.details?.threshold,
+            })) as BreachItem[];
+          if (breachesIncoming.length) {
+            setBreaches((prev) => {
+              const merged = [...breachesIncoming, ...prev];
+              merged.sort(
+                (x, y) =>
+                  new Date(y.timestamp as any).getTime() -
+                  new Date(x.timestamp as any).getTime(),
+              );
+              return merged.slice(0, 200);
+            });
+            if (incoming[0]?.timestamp)
+              lastTsRef.current = incoming[0].timestamp;
+          }
+        }
+      } catch {}
+      timer = setTimeout(poll, 3000);
+    };
+    poll();
+    return () => clearTimeout(timer);
+  }, [live]);
+
   useEffect(() => {
     load();
     timerRef.current = window.setInterval(load, 5000) as any;
@@ -158,7 +264,6 @@ export default function RiskMonitoringPanel({
   const prom = useMemo(() => parsePrometheus(promText || ""), [promText]);
 
   const drawdown = useMemo(() => {
-    // Common names: max_drawdown, portfolio_max_drawdown, aether_drawdown
     return pickMetric(prom, [
       "max_drawdown",
       "portfolio_max_drawdown",
@@ -204,7 +309,7 @@ export default function RiskMonitoringPanel({
           <CardTitle className="flex items-center gap-2">
             Risk Monitoring{" "}
             <Badge variant="outline" className="ml-1">
-              Live
+              {live ? "Live" : "Polling"}
             </Badge>
             {range ? (
               <Badge variant="secondary" className="ml-2">
@@ -228,6 +333,13 @@ export default function RiskMonitoringPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {metricsDegraded && (
+          <Alert>
+            <AlertDescription>
+              Metrics endpoint unavailable; showing degraded risk metrics.
+            </AlertDescription>
+          </Alert>
+        )}
         {error && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
@@ -375,7 +487,7 @@ export default function RiskMonitoringPanel({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Last updated:{" "}
+          Last updated: {" "}
           {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "–"}
           {range
             ? ` • Window ${new Date(range.from).toLocaleTimeString()}–${new Date(range.to).toLocaleTimeString()}`
