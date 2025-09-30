@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import apiFetch from "@/lib/apiClient";
+import copy from "@/lib/clipboard";
 import {
   Card,
   CardContent,
@@ -43,6 +44,7 @@ import {
   EyeOff,
   Download,
   FileText,
+  Copy as CopyIcon,
 } from "lucide-react";
 import {
   LineChart,
@@ -432,22 +434,24 @@ export default function AdminDashboard() {
   const loadNotifications = async () => {
     setIsRefreshing((prev) => ({ ...prev, notifications: true }));
     try {
-      const params = new URLSearchParams({
-        limit: "20",
-        unreadOnly: showUnreadOnly.toString(),
-        ...(notificationFilter !== "all" && { severity: notificationFilter }),
-      });
-      const response = await apiFetch(`/api/notifications?${params}`);
-      const data = await response.json();
-      if (data.status === "success") setNotificationData(data.data);
-      else throw new Error(data.error || "Failed to load notifications");
+      const params = new URLSearchParams({ limit: "20" });
+      if (showUnreadOnly) params.set("unreadOnly", "true");
+      if (notificationFilter !== "all") params.set("severity", notificationFilter);
+      const response = await apiFetch(`/api/v1/notifications?${params}`);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const j = await response.json().catch(() => ({ total:0, items:[], next:null }));
+      const items = Array.isArray(j.items) ? j.items : [];
+      const total = Number(j.total) || items.length;
+      const summary = {
+        total,
+        unread: items.filter((n: any) => !n.read).length,
+        actionRequired: items.filter((n: any) => n.actionRequired && !n.read).length,
+        severityCounts: items.reduce((acc: any, n: any) => { acc[n.severity] = (acc[n.severity]||0)+1; return acc; }, {} as any),
+      } as any;
+      setNotificationData({ notifications: items, summary, pagination: { total, limit: items.length, offset: 0, hasMore: Boolean(j.next) } });
     } catch (error) {
       console.error("Error loading notifications:", error);
-      toast({
-        title: "Notifications Error",
-        description: "Failed to load notifications",
-        variant: "destructive",
-      });
+      toast({ title: "Notifications Error", description: "Failed to load notifications", variant: "destructive" });
     } finally {
       setIsRefreshing((prev) => ({ ...prev, notifications: false }));
     }
@@ -1647,6 +1651,35 @@ export default function AdminDashboard() {
                         <Button
                           variant="outline"
                           size="sm"
+                          onClick={async () => {
+                            const payload = JSON.stringify(notificationData ? { notifications: notificationData.notifications } : { notifications: [] }, null, 2);
+                            const ok = await copy(payload);
+                            toast({ title: ok ? "Copied" : "Copy failed" });
+                          }}
+                        >
+                          <CopyIcon className="h-4 w-4 mr-1" /> Copy JSON
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            const payload = JSON.stringify(notificationData ? { notifications: notificationData.notifications } : { notifications: [] }, null, 2);
+                            const blob = new Blob([payload], { type: "application/json" });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download = "notifications.json";
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            URL.revokeObjectURL(url);
+                          }}
+                        >
+                          <Download className="h-4 w-4 mr-1" /> Download JSON
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
                           onClick={loadNotifications}
                           disabled={isRefreshing.notifications}
                         >
@@ -1825,20 +1858,7 @@ export default function AdminDashboard() {
                                         )}
                                       </Button>
                                     )}
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        markNotificationAsRead(
-                                          notification.id,
-                                          !notification.read,
-                                        )
-                                      }
-                                    >
-                                      {notification.read
-                                        ? "Mark Unread"
-                                        : "Mark Read"}
-                                    </Button>
+                                    <span className="text-xs text-muted-foreground">Mark-as-read not supported</span>
                                   </div>
                                 </div>
                               </div>
