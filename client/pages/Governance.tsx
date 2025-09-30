@@ -135,11 +135,10 @@ export default function Governance() {
   // Fetch proposals
   const fetchProposals = async () => {
     try {
-      const response = await apiFetch("/api/admin/proposals");
+      const response = await apiFetch("/api/v1/governance/proposals");
       const data = await response.json();
-
       if (data.status === "success") {
-        setProposals(data.data);
+        setProposals(data.data || []);
       } else {
         console.error("Failed to fetch proposals:", data.error);
       }
@@ -151,7 +150,7 @@ export default function Governance() {
   // Fetch feedback summary
   const fetchFeedbackSummary = async () => {
     try {
-      const response = await apiFetch("/api/admin/feedback");
+      const response = await apiFetch("/api/v1/admin/feedback");
       const data = await response.json();
 
       if (data.status === "success") {
