@@ -1227,6 +1227,11 @@ export default function UserManagement() {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {settingsDegraded && (
+                <Alert className="mb-4">
+                  <AlertDescription>Settings service degraded; changes may be delayed.</AlertDescription>
+                </Alert>
+              )}
               <form onSubmit={handleSettingsSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
