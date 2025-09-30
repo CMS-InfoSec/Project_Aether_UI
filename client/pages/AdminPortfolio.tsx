@@ -231,15 +231,23 @@ export default function AdminPortfolio() {
     }
     const totalPortfolios = items.length;
     const totalValue = items.reduce((s, p) => s + (p.total_balance || 0), 0);
-    const totalUsdtBalance = items.reduce((s, p) => s + (p.usdt_balance || 0), 0);
-    const totalHedgedBalance = items.reduce((s, p) => s + (p.hedged_balance || 0), 0);
+    const totalUsdtBalance = items.reduce(
+      (s, p) => s + (p.usdt_balance || 0),
+      0,
+    );
+    const totalHedgedBalance = items.reduce(
+      (s, p) => s + (p.hedged_balance || 0),
+      0,
+    );
     const modeDistribution = {
       live: items.filter((p) => p.mode === "live").length,
       demo: items.filter((p) => p.mode === "demo").length,
       paper: items.filter((p) => p.mode === "paper").length,
     };
     const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-    const needsRebalancing = items.filter((p) => new Date(p.last_updated).getTime() < weekAgo).length;
+    const needsRebalancing = items.filter(
+      (p) => new Date(p.last_updated).getTime() < weekAgo,
+    ).length;
     setStats({
       totalPortfolios,
       totalValue,
@@ -1047,7 +1055,8 @@ export default function AdminPortfolio() {
                   <span>Recent Rebalances</span>
                 </CardTitle>
                 <CardDescription>
-                  History of recent rebalancing operations. If empty, backend does not expose historical data.
+                  History of recent rebalancing operations. If empty, backend
+                  does not expose historical data.
                 </CardDescription>
               </div>
               <HelpTip content="Timeline of rebalance runs with who triggered them, scope, value moved, and status." />

@@ -108,9 +108,15 @@ export default function CopilotDock() {
       }
       let ex: any = null;
       try {
-        ex = await getJson<any>(`/api/v1/explain/${encodeURIComponent(last.id)}`);
+        ex = await getJson<any>(
+          `/api/v1/explain/${encodeURIComponent(last.id)}`,
+        );
       } catch {
-        try { ex = await getJson<any>(`/api/ai/explain/${encodeURIComponent(last.id)}`); } catch {}
+        try {
+          ex = await getJson<any>(
+            `/api/ai/explain/${encodeURIComponent(last.id)}`,
+          );
+        } catch {}
       }
       const shap = ex?.data || ex || {};
       const why = `Trade ${last.id} rationale: ${shap.summary || shap.reason || shap?.shap?.summary || "explanation unavailable"}`;

@@ -62,16 +62,26 @@ export default function ComplianceAuditTab() {
       // Compliance checks for a specific trade
       if (tradeId && tradeId.trim()) {
         try {
-          const j = await getJson<any>(`/api/v1/compliance/checks/${encodeURIComponent(tradeId.trim())}`);
-          const items = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+          const j = await getJson<any>(
+            `/api/v1/compliance/checks/${encodeURIComponent(tradeId.trim())}`,
+          );
+          const items = Array.isArray(j?.data)
+            ? j.data
+            : Array.isArray(j)
+              ? j
+              : [];
           setCompliance(items as ComplianceLog[]);
         } catch {
           setCompliance([]);
-          setNotice("Failed to fetch compliance checks for the given trade ID.");
+          setNotice(
+            "Failed to fetch compliance checks for the given trade ID.",
+          );
         }
       } else {
         setCompliance([]);
-        setNotice("Enter a trade ID to fetch compliance details. Historical logs unavailable.");
+        setNotice(
+          "Enter a trade ID to fetch compliance details. Historical logs unavailable.",
+        );
       }
     } finally {
       setLoading(false);
@@ -86,10 +96,12 @@ export default function ComplianceAuditTab() {
     const normalize = (e: any): AuditLog | null => {
       const d = e?.data || e || {};
       const ts = String(d.timestamp || d.ts || new Date().toISOString());
-      const id = String(d.id || `${d.type || d.action || 'event'}_${ts}`);
-      const actor = String(d.user || d.actor || d.account || '-');
-      const action = String(d.action || d.type || 'event');
-      const details = d.symbol ? `${d.symbol} ${d.side || ''} ${d.qty || d.amount || ''}`.trim() : d.details || '';
+      const id = String(d.id || `${d.type || d.action || "event"}_${ts}`);
+      const actor = String(d.user || d.actor || d.account || "-");
+      const action = String(d.action || d.type || "event");
+      const details = d.symbol
+        ? `${d.symbol} ${d.side || ""} ${d.qty || d.amount || ""}`.trim()
+        : d.details || "";
       const success = d.success !== false;
       return { id, timestamp: ts, action, actor, details, success };
     };
@@ -99,32 +111,49 @@ export default function ComplianceAuditTab() {
       setAudit((prev) => [n, ...prev].slice(0, 200));
     };
     try {
-      es1 = new EventSource('/api/v1/events/trades');
+      es1 = new EventSource("/api/v1/events/trades");
       es1.onmessage = (ev) => {
-        try { add(JSON.parse(ev.data || '{}')); } catch {}
+        try {
+          add(JSON.parse(ev.data || "{}"));
+        } catch {}
       };
     } catch {}
     try {
-      es2 = new EventSource('/api/v1/events/balances');
+      es2 = new EventSource("/api/v1/events/balances");
       es2.onmessage = (ev) => {
-        try { add(JSON.parse(ev.data || '{}')); } catch {}
+        try {
+          add(JSON.parse(ev.data || "{}"));
+        } catch {}
       };
     } catch {}
     // Polling fallback if SSE fails to connect
     pollTimer = setInterval(async () => {
       if (!es1 && !es2) {
         try {
-          const t = await getJson<any>(`/api/v1/events/trades?limit=50`).catch(()=>([]));
-          const b = await getJson<any>(`/api/v1/events/balances?limit=50`).catch(()=>([]));
-          const arr = ([] as any[]).concat(Array.isArray(t?.data)?t.data:t||[], Array.isArray(b?.data)?b.data:b||[]);
-          arr.slice(0,50).forEach(add);
+          const t = await getJson<any>(`/api/v1/events/trades?limit=50`).catch(
+            () => [],
+          );
+          const b = await getJson<any>(
+            `/api/v1/events/balances?limit=50`,
+          ).catch(() => []);
+          const arr = ([] as any[]).concat(
+            Array.isArray(t?.data) ? t.data : t || [],
+            Array.isArray(b?.data) ? b.data : b || [],
+          );
+          arr.slice(0, 50).forEach(add);
         } catch {}
       }
     }, 8000);
     return () => {
-      try { es1?.close(); } catch {}
-      try { es2?.close(); } catch {}
-      try { clearInterval(pollTimer); } catch {}
+      try {
+        es1?.close();
+      } catch {}
+      try {
+        es2?.close();
+      } catch {}
+      try {
+        clearInterval(pollTimer);
+      } catch {}
     };
   }, []);
 
@@ -159,7 +188,8 @@ export default function ComplianceAuditTab() {
               Compliance & Audit
             </CardTitle>
             <CardDescription>
-              Enter a trade ID to fetch compliance details; audit activity streams from events
+              Enter a trade ID to fetch compliance details; audit activity
+              streams from events
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">

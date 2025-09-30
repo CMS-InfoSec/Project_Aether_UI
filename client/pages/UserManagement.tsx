@@ -386,11 +386,18 @@ export default function UserManagement() {
         const j = await response.json().catch(() => ({}));
         if (response.ok) {
           const d = j?.data || j || {};
-          if (typeof d.supabase_degraded === "boolean") setSettingsDegraded(!!d.supabase_degraded);
+          if (typeof d.supabase_degraded === "boolean")
+            setSettingsDegraded(!!d.supabase_degraded);
           const mapped: UserSettings = {
-            stopLossMultiplier: Number(d.stopLossMultiplier ?? d.stop_loss_multiplier ?? 0.2),
-            takeProfitMultiplier: Number(d.takeProfitMultiplier ?? d.take_profit_multiplier ?? 2.0),
-            newsAnalysisEnabled: Boolean(d.newsAnalysisEnabled ?? d.news_analysis_enabled ?? true),
+            stopLossMultiplier: Number(
+              d.stopLossMultiplier ?? d.stop_loss_multiplier ?? 0.2,
+            ),
+            takeProfitMultiplier: Number(
+              d.takeProfitMultiplier ?? d.take_profit_multiplier ?? 2.0,
+            ),
+            newsAnalysisEnabled: Boolean(
+              d.newsAnalysisEnabled ?? d.news_analysis_enabled ?? true,
+            ),
             trailingStop: Number(d.trailingStop ?? d.trailing_stop ?? 0.05),
             riskTier: (d.riskTier ?? d.risk_tier ?? "medium") as any,
           };
@@ -448,7 +455,9 @@ export default function UserManagement() {
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(data.error || "Failed to save settings");
-      setSettingsDegraded(Boolean(data?.supabase_degraded || data?.data?.supabase_degraded));
+      setSettingsDegraded(
+        Boolean(data?.supabase_degraded || data?.data?.supabase_degraded),
+      );
       toast({ title: "Settings Saved", description: "Preferences updated." });
     } catch (error) {
       toast({
@@ -626,7 +635,10 @@ export default function UserManagement() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <UserPlus className="h-5 w-5" />
-                <span className="inline-flex items-center gap-2">Invite New User <HelpTip content="Send invites that require founder approvals. Admin invites require all 5 founders." /></span>
+                <span className="inline-flex items-center gap-2">
+                  Invite New User{" "}
+                  <HelpTip content="Send invites that require founder approvals. Admin invites require all 5 founders." />
+                </span>
               </CardTitle>
               <CardDescription>
                 Governance-gated invitation orchestration
@@ -636,7 +648,13 @@ export default function UserManagement() {
               <form onSubmit={handleInviteSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-3">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="inline-flex items-center gap-2">Email Address <HelpTip content="Recipient email to invite." /></Label>
+                    <Label
+                      htmlFor="email"
+                      className="inline-flex items-center gap-2"
+                    >
+                      Email Address{" "}
+                      <HelpTip content="Recipient email to invite." />
+                    </Label>
                     <Input
                       id="email"
                       type="email"
@@ -652,7 +670,10 @@ export default function UserManagement() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="inline-flex items-center gap-2">Initial Role <HelpTip content="Role granted on activation. Admin requires 5 founder approvals and counts toward admin cap." /></Label>
+                    <Label className="inline-flex items-center gap-2">
+                      Initial Role{" "}
+                      <HelpTip content="Role granted on activation. Admin requires 5 founder approvals and counts toward admin cap." />
+                    </Label>
                     <Select
                       value={inviteForm.role}
                       onValueChange={(value: "user" | "admin") =>
@@ -669,7 +690,13 @@ export default function UserManagement() {
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="expiry" className="inline-flex items-center gap-2">Expiry (days) <HelpTip content="Days before the invite link expires." /></Label>
+                    <Label
+                      htmlFor="expiry"
+                      className="inline-flex items-center gap-2"
+                    >
+                      Expiry (days){" "}
+                      <HelpTip content="Days before the invite link expires." />
+                    </Label>
                     <Input
                       id="expiry"
                       type="number"
@@ -696,7 +723,8 @@ export default function UserManagement() {
                   <div className="flex items-center justify-between">
                     <Label className="inline-flex items-center gap-2">
                       Founder Approvals ({inviteForm.founderApprovals.length}/5
-                      selected) <HelpTip content="Select founders to authorize this invite. Admins require all 5; users require at least 3." />
+                      selected){" "}
+                      <HelpTip content="Select founders to authorize this invite. Admins require all 5; users require at least 3." />
                     </Label>
                     <Badge
                       variant={
@@ -780,7 +808,10 @@ export default function UserManagement() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="inline-flex items-center gap-2">Pending Users <HelpTip content="Invited users awaiting governance approval. Approve once quorum is met." /></CardTitle>
+                  <CardTitle className="inline-flex items-center gap-2">
+                    Pending Users{" "}
+                    <HelpTip content="Invited users awaiting governance approval. Approve once quorum is met." />
+                  </CardTitle>
                   <CardDescription>
                     Paginated queue with governance status
                   </CardDescription>
@@ -936,7 +967,10 @@ export default function UserManagement() {
           <Dialog open={approveOpen} onOpenChange={setApproveOpen}>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle className="inline-flex items-center gap-2">Approve User <HelpTip content="Confirm role and finalize activation for the selected user." /></DialogTitle>
+                <DialogTitle className="inline-flex items-center gap-2">
+                  Approve User{" "}
+                  <HelpTip content="Confirm role and finalize activation for the selected user." />
+                </DialogTitle>
                 <DialogDescription>
                   Verify quorum, role, and proceed
                 </DialogDescription>
@@ -948,7 +982,10 @@ export default function UserManagement() {
                     {selectedUser.requestedRole}
                   </div>
                   <div className="space-y-2">
-                    <Label className="inline-flex items-center gap-2">Assigned Role <HelpTip content="Role to grant on activation. Admin may be blocked if admin cap (3) is reached." /></Label>
+                    <Label className="inline-flex items-center gap-2">
+                      Assigned Role{" "}
+                      <HelpTip content="Role to grant on activation. Admin may be blocked if admin cap (3) is reached." />
+                    </Label>
                     <Select
                       value={assignedRole}
                       onValueChange={(v: "user" | "admin") =>
@@ -1032,7 +1069,10 @@ export default function UserManagement() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <CheckCircle className="h-5 w-5" />
-                <span className="inline-flex items-center gap-2">Approve Users <HelpTip content="Review pending registrations and finalize activation once approvals meet requirements." /></span>
+                <span className="inline-flex items-center gap-2">
+                  Approve Users{" "}
+                  <HelpTip content="Review pending registrations and finalize activation once approvals meet requirements." />
+                </span>
               </CardTitle>
               <CardDescription>
                 Review and approve pending registrations
@@ -1040,7 +1080,10 @@ export default function UserManagement() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="inline-flex items-center gap-2">Select User to Approve <HelpTip content="Choose a user who has reached the required approval threshold." /></Label>
+                <Label className="inline-flex items-center gap-2">
+                  Select User to Approve{" "}
+                  <HelpTip content="Choose a user who has reached the required approval threshold." />
+                </Label>
                 <Select
                   value={selectedUser?.id || ""}
                   onValueChange={(id) => {
@@ -1083,7 +1126,10 @@ export default function UserManagement() {
         <TabsContent value="founders" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="inline-flex items-center gap-2">Founders Roster <HelpTip content="Manage founder accounts and bootstrap initial access if not yet set up." /></CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">
+                Founders Roster{" "}
+                <HelpTip content="Manage founder accounts and bootstrap initial access if not yet set up." />
+              </CardTitle>
               <CardDescription>
                 Manage founder records and bootstrap
               </CardDescription>
@@ -1104,7 +1150,10 @@ export default function UserManagement() {
               {!bootstrapStatus?.foundersExist && (
                 <div className="grid gap-3 md:grid-cols-3 items-end">
                   <div className="space-y-1">
-                    <Label className="inline-flex items-center gap-2">Email <HelpTip content="Email for the new founder to bootstrap the system." /></Label>
+                    <Label className="inline-flex items-center gap-2">
+                      Email{" "}
+                      <HelpTip content="Email for the new founder to bootstrap the system." />
+                    </Label>
                     <Input
                       value={newFounder.email}
                       onChange={(e) =>
@@ -1117,7 +1166,10 @@ export default function UserManagement() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="inline-flex items-center gap-2">Name <HelpTip content="Display name for the founder account." /></Label>
+                    <Label className="inline-flex items-center gap-2">
+                      Name{" "}
+                      <HelpTip content="Display name for the founder account." />
+                    </Label>
                     <Input
                       value={newFounder.name}
                       onChange={(e) =>
@@ -1177,7 +1229,10 @@ export default function UserManagement() {
         <TabsContent value="profile" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="inline-flex items-center gap-2">Operator Identity <HelpTip content="Current session identity and role." /></CardTitle>
+              <CardTitle className="inline-flex items-center gap-2">
+                Operator Identity{" "}
+                <HelpTip content="Current session identity and role." />
+              </CardTitle>
               <CardDescription>Session and profile context</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
@@ -1192,7 +1247,10 @@ export default function UserManagement() {
                 )}
               </div>
               <div className="space-y-2">
-                <Label className="inline-flex items-center gap-2">Risk Tier <HelpTip content="Set your global risk appetite for strategy behavior." /></Label>
+                <Label className="inline-flex items-center gap-2">
+                  Risk Tier{" "}
+                  <HelpTip content="Set your global risk appetite for strategy behavior." />
+                </Label>
                 <Select
                   value={profile?.risk_tier || "balanced"}
                   onValueChange={(
@@ -1220,7 +1278,10 @@ export default function UserManagement() {
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
                 <Settings className="h-5 w-5" />
-                <span className="inline-flex items-center gap-2">Trading Preferences <HelpTip content="Configure personal trade and risk parameters for this account." /></span>
+                <span className="inline-flex items-center gap-2">
+                  Trading Preferences{" "}
+                  <HelpTip content="Configure personal trade and risk parameters for this account." />
+                </span>
               </CardTitle>
               <CardDescription>
                 Configure your personal trading settings and risk parameters
@@ -1229,13 +1290,21 @@ export default function UserManagement() {
             <CardContent>
               {settingsDegraded && (
                 <Alert className="mb-4">
-                  <AlertDescription>Settings service degraded; changes may be delayed.</AlertDescription>
+                  <AlertDescription>
+                    Settings service degraded; changes may be delayed.
+                  </AlertDescription>
                 </Alert>
               )}
               <form onSubmit={handleSettingsSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="stopLoss" className="inline-flex items-center gap-2">Stop-loss Multiplier <HelpTip content="Fraction of entry price for stop-loss; valid range 0.1–1.0." /></Label>
+                    <Label
+                      htmlFor="stopLoss"
+                      className="inline-flex items-center gap-2"
+                    >
+                      Stop-loss Multiplier{" "}
+                      <HelpTip content="Fraction of entry price for stop-loss; valid range 0.1–1.0." />
+                    </Label>
                     <Input
                       id="stopLoss"
                       type="number"
@@ -1255,7 +1324,13 @@ export default function UserManagement() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="takeProfit" className="inline-flex items-center gap-2">Take-profit Multiplier <HelpTip content="Target profit multiple; must be at least 1.0." /></Label>
+                    <Label
+                      htmlFor="takeProfit"
+                      className="inline-flex items-center gap-2"
+                    >
+                      Take-profit Multiplier{" "}
+                      <HelpTip content="Target profit multiple; must be at least 1.0." />
+                    </Label>
                     <Input
                       id="takeProfit"
                       type="number"
@@ -1274,7 +1349,13 @@ export default function UserManagement() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="trailingStop" className="inline-flex items-center gap-2">Trailing Stop <HelpTip content="Dynamic stop that trails price by a percentage; must be greater than 0." /></Label>
+                    <Label
+                      htmlFor="trailingStop"
+                      className="inline-flex items-center gap-2"
+                    >
+                      Trailing Stop{" "}
+                      <HelpTip content="Dynamic stop that trails price by a percentage; must be greater than 0." />
+                    </Label>
                     <Input
                       id="trailingStop"
                       type="number"
@@ -1293,7 +1374,10 @@ export default function UserManagement() {
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="inline-flex items-center gap-2">Risk Tier <HelpTip content="Overall trading risk preference: Low, Medium, or High." /></Label>
+                    <Label className="inline-flex items-center gap-2">
+                      Risk Tier{" "}
+                      <HelpTip content="Overall trading risk preference: Low, Medium, or High." />
+                    </Label>
                     <Select
                       value={userSettings.riskTier}
                       onValueChange={(value: "low" | "medium" | "high") =>
@@ -1327,8 +1411,12 @@ export default function UserManagement() {
                     }
                   />
                   <div className="flex-1">
-                    <Label htmlFor="newsAnalysis" className="cursor-pointer inline-flex items-center gap-2">
-                      Enable News Analysis <HelpTip content="Toggle inclusion of news sentiment in signal generation." />
+                    <Label
+                      htmlFor="newsAnalysis"
+                      className="cursor-pointer inline-flex items-center gap-2"
+                    >
+                      Enable News Analysis{" "}
+                      <HelpTip content="Toggle inclusion of news sentiment in signal generation." />
                     </Label>
                     <p className="text-xs text-muted-foreground">
                       Include news sentiment analysis in trading signals

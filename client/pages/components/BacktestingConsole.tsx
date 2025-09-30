@@ -111,12 +111,14 @@ export default function BacktestingConsole() {
       const fetchOnce = async (): Promise<boolean> => {
         const qp = new URLSearchParams();
         qp.set("format", "json");
-        if (reportPath) qp.set("path", String(reportPath).replace(/^.*path=/, ""));
+        if (reportPath)
+          qp.set("path", String(reportPath).replace(/^.*path=/, ""));
         const rr = await apiFetch(`/api/v1/reports/backtest?${qp.toString()}`);
         if (rr.status === 202) return false;
         if (!rr.ok) {
           const rj = await rr.json().catch(() => ({}));
-          if (rr.status >= 400 && rr.status < 500) throw new Error(rj.error || rj.message || `HTTP ${rr.status}`);
+          if (rr.status >= 400 && rr.status < 500)
+            throw new Error(rj.error || rj.message || `HTTP ${rr.status}`);
           return false;
         }
         const rj = await rr.json().catch(() => ({}));

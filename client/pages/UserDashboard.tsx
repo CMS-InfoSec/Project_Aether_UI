@@ -179,9 +179,13 @@ export default function UserDashboard() {
       // Derive venue insights from execution reports
       let latencyResp: any = null;
       try {
-        latencyResp = await getJson<any>(`/api/reports/execution/latency?window=1h`);
+        latencyResp = await getJson<any>(
+          `/api/reports/execution/latency?window=1h`,
+        );
       } catch {
-        try { latencyResp = await getJson<any>(`/api/execution/latency?window=1h`); } catch {}
+        try {
+          latencyResp = await getJson<any>(`/api/execution/latency?window=1h`);
+        } catch {}
       }
       const latItems: any[] = Array.isArray(latencyResp?.data)
         ? latencyResp.data
@@ -190,13 +194,19 @@ export default function UserDashboard() {
           : Array.isArray(latencyResp?.items)
             ? latencyResp.items
             : [];
-      const venueAgg = new Map<string, { name: string; lat: number[]; slip: number[]; depth: number[] }>();
+      const venueAgg = new Map<
+        string,
+        { name: string; lat: number[]; slip: number[]; depth: number[] }
+      >();
       for (const it of latItems) {
         const name = String(it.venue || it.exchange || it.name || "Unknown");
-        const p95Lat = Number(it.p95_latency_ms ?? it.p95 ?? it.lat_p95 ?? 0) || 0;
+        const p95Lat =
+          Number(it.p95_latency_ms ?? it.p95 ?? it.lat_p95 ?? 0) || 0;
         const p95Slip = Number(it.p95_slippage_bps ?? it.slip_p95 ?? 0) || 0;
-        const depth = Number(it.depth_usd ?? it.depthUsd ?? it.market_depth ?? 0) || 0;
-        if (!venueAgg.has(name)) venueAgg.set(name, { name, lat: [], slip: [], depth: [] });
+        const depth =
+          Number(it.depth_usd ?? it.depthUsd ?? it.market_depth ?? 0) || 0;
+        if (!venueAgg.has(name))
+          venueAgg.set(name, { name, lat: [], slip: [], depth: [] });
         const v = venueAgg.get(name)!;
         v.lat.push(p95Lat);
         v.slip.push(p95Slip);
@@ -204,7 +214,9 @@ export default function UserDashboard() {
       }
 
       let aresp: any = null;
-      try { aresp = await getJson<any>("/api/arbitrage/opportunities"); } catch {}
+      try {
+        aresp = await getJson<any>("/api/arbitrage/opportunities");
+      } catch {}
       const adata = aresp?.data || aresp || [];
       const arbsParsed = Array.isArray(adata)
         ? adata.map((o: any) => ({
@@ -217,9 +229,15 @@ export default function UserDashboard() {
 
       const venuesParsed = Array.from(venueAgg.values()).map((v) => ({
         name: v.name,
-        latency: v.lat.length ? v.lat.reduce((a,b)=>a+b,0)/v.lat.length : 0,
-        spreadBps: v.slip.length ? v.slip.reduce((a,b)=>a+b,0)/v.slip.length : 0,
-        depthUsd: v.depth.length ? v.depth.reduce((a,b)=>a+b,0)/v.depth.length : 0,
+        latency: v.lat.length
+          ? v.lat.reduce((a, b) => a + b, 0) / v.lat.length
+          : 0,
+        spreadBps: v.slip.length
+          ? v.slip.reduce((a, b) => a + b, 0) / v.slip.length
+          : 0,
+        depthUsd: v.depth.length
+          ? v.depth.reduce((a, b) => a + b, 0) / v.depth.length
+          : 0,
       }));
 
       if (!mounted) return;
@@ -245,39 +263,44 @@ export default function UserDashboard() {
 
     // Alerts SSE subscription with polling fallback
     try {
-      const base = (typeof window !== 'undefined' ? window.location.origin : '');
-      const url = `${base.replace(/\/$/, '')}/api/v1/events/alerts/stream`;
+      const base = typeof window !== "undefined" ? window.location.origin : "";
+      const url = `${base.replace(/\/$/, "")}/api/v1/events/alerts/stream`;
       const es = new EventSource(url);
       alertsEsRef.current = es;
       setAlertsLive(true);
       const push = (arr: any[]) => {
-        const mapped = (Array.isArray(arr) ? arr : [])
-          .map((it: any) => ({
-            id: String(it.id || `${Date.now()}_${Math.random()}`),
-            timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
-            title: `${it.source || 'alert'}: ${it.event || 'event'}`,
-            message: it.message || '',
-            severity: (String(it.severity || 'info').toLowerCase() as any),
-            read: false,
-            source: 'alerts',
-          }));
+        const mapped = (Array.isArray(arr) ? arr : []).map((it: any) => ({
+          id: String(it.id || `${Date.now()}_${Math.random()}`),
+          timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
+          title: `${it.source || "alert"}: ${it.event || "event"}`,
+          message: it.message || "",
+          severity: String(it.severity || "info").toLowerCase() as any,
+          read: false,
+          source: "alerts",
+        }));
         if (mapped.length) {
           setAlerts((prev) => {
             const merged = [...mapped, ...prev];
-            merged.sort((a,b)=> b.timestamp - a.timestamp);
+            merged.sort((a, b) => b.timestamp - a.timestamp);
             return merged.slice(0, 200);
           });
         }
       };
-      es.addEventListener('init', (ev: MessageEvent) => {
-        try { push(JSON.parse(ev.data || '[]')); } catch {}
+      es.addEventListener("init", (ev: MessageEvent) => {
+        try {
+          push(JSON.parse(ev.data || "[]"));
+        } catch {}
       });
-      es.addEventListener('alert', (ev: MessageEvent) => {
-        try { push([JSON.parse(ev.data || '{}')]); } catch {}
+      es.addEventListener("alert", (ev: MessageEvent) => {
+        try {
+          push([JSON.parse(ev.data || "{}")]);
+        } catch {}
       });
       es.onerror = () => {
         setAlertsLive(false);
-        try { es.close(); } catch {}
+        try {
+          es.close();
+        } catch {}
         alertsEsRef.current = null;
       };
     } catch {
@@ -288,7 +311,9 @@ export default function UserDashboard() {
     return () => {
       setMounted(false);
       if (alertsEsRef.current) {
-        try { alertsEsRef.current.close(); } catch {}
+        try {
+          alertsEsRef.current.close();
+        } catch {}
         alertsEsRef.current = null;
       }
     };
@@ -309,22 +334,24 @@ export default function UserDashboard() {
       try {
         const params = new URLSearchParams();
         params.set("limit", "50");
-        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, { cache: "no-cache" });
+        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, {
+          cache: "no-cache",
+        });
         const j = await r.json().catch(() => null as any);
         const list: any[] = j?.data?.items || j?.items || [];
         if (Array.isArray(list) && list.length) {
           const mapped = list.map((it: any) => ({
             id: String(it.id || `${Date.now()}_${Math.random()}`),
             timestamp: new Date(it.timestamp || it.ts || Date.now()).getTime(),
-            title: `${it.source || 'alert'}: ${it.event || 'event'}`,
-            message: it.message || '',
-            severity: (String(it.severity || 'info').toLowerCase() as any),
+            title: `${it.source || "alert"}: ${it.event || "event"}`,
+            message: it.message || "",
+            severity: String(it.severity || "info").toLowerCase() as any,
             read: false,
-            source: 'alerts',
+            source: "alerts",
           }));
           setAlerts((prev) => {
             const merged = [...mapped, ...prev];
-            merged.sort((a,b)=> b.timestamp - a.timestamp);
+            merged.sort((a, b) => b.timestamp - a.timestamp);
             return merged.slice(0, 200);
           });
         }

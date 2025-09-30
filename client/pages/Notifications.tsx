@@ -24,7 +24,11 @@ export default function Notifications() {
     setLoading(true);
     try {
       const j = await getJson<any>("/api/notifications?limit=50");
-      const list: NotificationItem[] = (j?.data?.notifications || j?.notifications || []).map((n: any) => ({
+      const list: NotificationItem[] = (
+        j?.data?.notifications ||
+        j?.notifications ||
+        []
+      ).map((n: any) => ({
         id: String(n.id),
         title: String(n.title || "Notification"),
         message: String(n.message || ""),
@@ -41,13 +45,19 @@ export default function Notifications() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const unread = useMemo(() => items.filter((i) => !i.read).length, [items]);
 
   const markRead = async (id: string) => {
-    try { await patchJson(`/api/notifications/${id}/read`, { read: true }); } catch {}
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, read: true } : i)));
+    try {
+      await patchJson(`/api/notifications/${id}/read`, { read: true });
+    } catch {}
+    setItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, read: true } : i)),
+    );
   };
 
   return (
@@ -67,22 +77,35 @@ export default function Notifications() {
           <ScrollArea className="h-[420px]">
             <div className="space-y-3">
               {items.map((n) => (
-                <div key={n.id} className={`p-3 border rounded-md ${n.read ? "bg-muted/30" : "bg-card"}`}>
+                <div
+                  key={n.id}
+                  className={`p-3 border rounded-md ${n.read ? "bg-muted/30" : "bg-card"}`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="font-medium">{n.title}</div>
-                    <div className="text-xs text-muted-foreground">{new Date(n.timestamp).toLocaleString()}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(n.timestamp).toLocaleString()}
+                    </div>
                   </div>
                   <div className="text-sm mt-1">{n.message}</div>
                   <div className="flex items-center justify-between mt-2">
                     <Badge variant="outline">{n.severity}</Badge>
                     {!n.read && (
-                      <Button size="sm" variant="outline" onClick={() => markRead(n.id)}>Mark read</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => markRead(n.id)}
+                      >
+                        Mark read
+                      </Button>
                     )}
                   </div>
                 </div>
               ))}
               {items.length === 0 && (
-                <div className="text-sm text-muted-foreground p-6">{loading ? "Loading…" : "No notifications"}</div>
+                <div className="text-sm text-muted-foreground p-6">
+                  {loading ? "Loading…" : "No notifications"}
+                </div>
               )}
             </div>
           </ScrollArea>

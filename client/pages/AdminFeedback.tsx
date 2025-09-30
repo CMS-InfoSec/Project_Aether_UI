@@ -1,30 +1,57 @@
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useEffect, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   MessageSquare,
   Send,
   CheckCircle2,
   AlertTriangle,
-  RefreshCw
-} from 'lucide-react';
-import { toast } from '@/hooks/use-toast';
-import { getJson, postJson } from '@/lib/apiClient';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+  RefreshCw,
+} from "lucide-react";
+import { toast } from "@/hooks/use-toast";
+import { getJson, postJson } from "@/lib/apiClient";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export default function AdminFeedback() {
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitCount, setSubmitCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [feedback, setFeedback] = useState<Array<{id:string; comment:string; submittedBy:string; submittedAt:string; status:string}>>([]);
-  const [summary, setSummary] = useState<{ totalSubmissions:number; reviewed:number; pending:number; highPriority:number; recentEntries:any[] } | null>(null);
-  
+  const [feedback, setFeedback] = useState<
+    Array<{
+      id: string;
+      comment: string;
+      submittedBy: string;
+      submittedAt: string;
+      status: string;
+    }>
+  >([]);
+  const [summary, setSummary] = useState<{
+    totalSubmissions: number;
+    reviewed: number;
+    pending: number;
+    highPriority: number;
+    recentEntries: any[];
+  } | null>(null);
+
   // Character limits
   const maxCharacters = 2000;
   const charactersRemaining = maxCharacters - comment.length;
@@ -35,24 +62,38 @@ export default function AdminFeedback() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await getJson<any>('/api/v1/admin/feedback', { admin: true });
+      const res = await getJson<any>("/api/v1/admin/feedback", { admin: true });
       const sum = res?.data || res || {};
       setSummary({
         totalSubmissions: sum.totalSubmissions || 0,
         reviewed: sum.reviewed || 0,
         pending: sum.pending || 0,
         highPriority: sum.highPriority || 0,
-        recentEntries: Array.isArray(sum.recentEntries) ? sum.recentEntries : [],
+        recentEntries: Array.isArray(sum.recentEntries)
+          ? sum.recentEntries
+          : [],
       });
-      setFeedback((Array.isArray(sum.recentEntries) ? sum.recentEntries : []).map((e:any)=> ({ id:e.id, comment:e.comment, submittedBy:e.submittedBy, submittedAt:e.submittedAt, status:e.status })));
+      setFeedback(
+        (Array.isArray(sum.recentEntries) ? sum.recentEntries : []).map(
+          (e: any) => ({
+            id: e.id,
+            comment: e.comment,
+            submittedBy: e.submittedBy,
+            submittedAt: e.submittedAt,
+            status: e.status,
+          }),
+        ),
+      );
     } catch (e: any) {
-      setLoadError(e?.message || 'Failed to load feedback');
+      setLoadError(e?.message || "Failed to load feedback");
     } finally {
       setIsLoading(false);
     }
   };
 
-  useEffect(() => { loadFeedback(); }, []);
+  useEffect(() => {
+    loadFeedback();
+  }, []);
 
   // Submit feedback
   const handleSubmit = async () => {
@@ -60,16 +101,16 @@ export default function AdminFeedback() {
       toast({
         title: "Error",
         description: "Please enter a comment before submitting",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
     if (isOverLimit) {
       toast({
-        title: "Error", 
+        title: "Error",
         description: `Comment exceeds maximum length by ${Math.abs(charactersRemaining)} characters`,
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
@@ -77,30 +118,36 @@ export default function AdminFeedback() {
     setIsSubmitting(true);
 
     try {
-      const res = await postJson<any>('/api/feedback', { comment: comment.trim() });
-      if (res?.status && res.status !== 'success') {
-        throw new Error(res.error || res.message || 'Submission failed');
+      const res = await postJson<any>("/api/feedback", {
+        comment: comment.trim(),
+      });
+      if (res?.status && res.status !== "success") {
+        throw new Error(res.error || res.message || "Submission failed");
       }
       const created = res?.data || res;
-      setComment('');
-      setSubmitCount(prev => prev + 1);
+      setComment("");
+      setSubmitCount((prev) => prev + 1);
       // Prepend to list for immediate feedback
       if (created && created.id) {
-        setFeedback(prev => [created, ...prev]);
+        setFeedback((prev) => [created, ...prev]);
       } else {
         // fallback reload
         loadFeedback();
       }
       toast({
         title: "Feedback Submitted",
-        description: "Thank you for your feedback. It has been successfully submitted.",
-        duration: 5000
+        description:
+          "Thank you for your feedback. It has been successfully submitted.",
+        duration: 5000,
       });
     } catch (error) {
       toast({
         title: "Submission Failed",
-        description: error instanceof Error ? error.message : "Failed to submit feedback. Please try again.",
-        variant: "destructive"
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to submit feedback. Please try again.",
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -109,7 +156,7 @@ export default function AdminFeedback() {
 
   // Handle key shortcuts
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.ctrlKey && e.key === 'Enter') {
+    if (e.ctrlKey && e.key === "Enter") {
       handleSubmit();
     }
   };
@@ -120,7 +167,8 @@ export default function AdminFeedback() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Feedback</h1>
           <p className="text-muted-foreground">
-            Share your thoughts, suggestions, or report issues with the admin system
+            Share your thoughts, suggestions, or report issues with the admin
+            system
           </p>
         </div>
         <div className="flex items-center space-x-2">
@@ -128,8 +176,15 @@ export default function AdminFeedback() {
           <span className="text-sm text-muted-foreground">
             Submissions: {submitCount}
           </span>
-          <Button variant="ghost" size="sm" onClick={loadFeedback} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadFeedback}
+            disabled={isLoading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+            />
           </Button>
         </div>
       </div>
@@ -142,7 +197,8 @@ export default function AdminFeedback() {
               <span>Submit Feedback</span>
             </CardTitle>
             <CardDescription>
-              Your feedback helps us improve the system. Please be as detailed as possible.
+              Your feedback helps us improve the system. Please be as detailed
+              as possible.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -155,31 +211,33 @@ export default function AdminFeedback() {
                 onChange={(e) => setComment(e.target.value)}
                 onKeyDown={handleKeyDown}
                 rows={8}
-                className={`resize-none ${isOverLimit ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                className={`resize-none ${isOverLimit ? "border-red-500 focus-visible:ring-red-500" : ""}`}
               />
-              
+
               {/* Character Counter */}
               <div className="flex items-center justify-between text-sm">
                 <div className="text-muted-foreground">
                   Tip: Use Ctrl+Enter to submit quickly
                 </div>
-                <div className={`${
-                  isOverLimit 
-                    ? 'text-red-600 font-medium' 
-                    : charactersRemaining < 100 
-                      ? 'text-yellow-600' 
-                      : 'text-muted-foreground'
-                }`}>
+                <div
+                  className={`${
+                    isOverLimit
+                      ? "text-red-600 font-medium"
+                      : charactersRemaining < 100
+                        ? "text-yellow-600"
+                        : "text-muted-foreground"
+                  }`}
+                >
                   {charactersRemaining} characters remaining
                 </div>
               </div>
-              
+
               {isOverLimit && (
                 <Alert variant="destructive">
                   <AlertTriangle className="h-4 w-4" />
                   <AlertDescription>
-                    Your comment is {Math.abs(charactersRemaining)} characters over the limit. 
-                    Please shorten it before submitting.
+                    Your comment is {Math.abs(charactersRemaining)} characters
+                    over the limit. Please shorten it before submitting.
                   </AlertDescription>
                 </Alert>
               )}
@@ -187,13 +245,15 @@ export default function AdminFeedback() {
 
             <div className="flex items-center justify-between pt-4">
               <div className="text-sm text-muted-foreground">
-                {comment.trim() ? `${comment.trim().length} / ${maxCharacters} characters` : 'No content entered'}
+                {comment.trim()
+                  ? `${comment.trim().length} / ${maxCharacters} characters`
+                  : "No content entered"}
               </div>
-              
+
               <div className="flex items-center space-x-2">
                 <Button
                   variant="outline"
-                  onClick={() => setComment('')}
+                  onClick={() => setComment("")}
                   disabled={!comment || isSubmitting}
                 >
                   Clear
@@ -226,10 +286,26 @@ export default function AdminFeedback() {
             <CardTitle className="text-lg">Recent Feedback</CardTitle>
             {summary && (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm">
-                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.totalSubmissions}</div><div className="text-muted-foreground">Total</div></div>
-                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.reviewed}</div><div className="text-muted-foreground">Reviewed</div></div>
-                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.pending}</div><div className="text-muted-foreground">Pending</div></div>
-                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.highPriority}</div><div className="text-muted-foreground">High Priority</div></div>
+                <div className="p-2 bg-muted/50 rounded">
+                  <div className="text-xl font-bold">
+                    {summary.totalSubmissions}
+                  </div>
+                  <div className="text-muted-foreground">Total</div>
+                </div>
+                <div className="p-2 bg-muted/50 rounded">
+                  <div className="text-xl font-bold">{summary.reviewed}</div>
+                  <div className="text-muted-foreground">Reviewed</div>
+                </div>
+                <div className="p-2 bg-muted/50 rounded">
+                  <div className="text-xl font-bold">{summary.pending}</div>
+                  <div className="text-muted-foreground">Pending</div>
+                </div>
+                <div className="p-2 bg-muted/50 rounded">
+                  <div className="text-xl font-bold">
+                    {summary.highPriority}
+                  </div>
+                  <div className="text-muted-foreground">High Priority</div>
+                </div>
               </div>
             )}
             {loadError && (
@@ -242,10 +318,13 @@ export default function AdminFeedback() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 mr-2" /> Loading…
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 mr-2" />{" "}
+                Loading…
               </div>
             ) : feedback.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No detailed submissions available. Showing summary only.</div>
+              <div className="text-sm text-muted-foreground">
+                No detailed submissions available. Showing summary only.
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
@@ -258,7 +337,7 @@ export default function AdminFeedback() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {feedback.map(item => (
+                    {feedback.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="whitespace-nowrap text-sm">
                           {new Date(item.submittedAt).toLocaleString()}
@@ -267,12 +346,22 @@ export default function AdminFeedback() {
                           {item.submittedBy}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">
-                          <Badge variant={item.status === 'high_priority' ? 'destructive' : item.status === 'reviewed' ? 'secondary' : 'outline'}>
+                          <Badge
+                            variant={
+                              item.status === "high_priority"
+                                ? "destructive"
+                                : item.status === "reviewed"
+                                  ? "secondary"
+                                  : "outline"
+                            }
+                          >
                             {item.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="max-w-[700px]">
-                          <div className="text-sm whitespace-pre-wrap break-words">{item.comment}</div>
+                          <div className="text-sm whitespace-pre-wrap break-words">
+                            {item.comment}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

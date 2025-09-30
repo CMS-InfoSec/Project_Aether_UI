@@ -487,7 +487,7 @@ export default function RiskMonitoringPanel({
         </div>
 
         <div className="text-xs text-muted-foreground">
-          Last updated: {" "}
+          Last updated:{" "}
           {lastUpdated ? new Date(lastUpdated).toLocaleTimeString() : "–"}
           {range
             ? ` • Window ${new Date(range.from).toLocaleTimeString()}–${new Date(range.to).toLocaleTimeString()}`

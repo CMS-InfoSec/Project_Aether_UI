@@ -113,7 +113,12 @@ import {
 import { toast } from "@/hooks/use-toast";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import ModelManagementPanel from "./components/ModelManagementPanel";
 
 // Enhanced Types for AI Training Workflow
@@ -370,7 +375,10 @@ export default function AdminModels() {
   }, []);
   useEffect(() => {
     try {
-      sessionStorage.setItem("aether_convo", JSON.stringify(aetherMsgs.slice(-20)));
+      sessionStorage.setItem(
+        "aether_convo",
+        JSON.stringify(aetherMsgs.slice(-20)),
+      );
     } catch {}
   }, [aetherMsgs]);
 
@@ -399,15 +407,8 @@ export default function AdminModels() {
 
   // Enhanced algorithm options based on model type and AI training specification
   const algorithmOptions = {
-    forecast: [
-      "LSTM",
-      "Transformer"
-    ],
-    rl_agent: [
-      "PPO",
-      "Recurrent PPO",
-      "SAC"
-    ],
+    forecast: ["LSTM", "Transformer"],
+    rl_agent: ["PPO", "Recurrent PPO", "SAC"],
     sentiment: [
       "FinBERT",
       "RoBERTa-Financial",
@@ -469,12 +470,15 @@ export default function AdminModels() {
   const fetchModels = useCallback(async () => {
     try {
       const params = new URLSearchParams();
-      params.set('limit','100');
-      params.set('offset','0');
-      if ((modelSearch || '').trim()) params.set('search', (modelSearch || '').trim());
-      if (modelStatus) params.set('status', modelStatus);
-      if (modelType) params.set('type', modelType);
-      const response = await apiFetch(`/api/v1/models/history?${params.toString()}`);
+      params.set("limit", "100");
+      params.set("offset", "0");
+      if ((modelSearch || "").trim())
+        params.set("search", (modelSearch || "").trim());
+      if (modelStatus) params.set("status", modelStatus);
+      if (modelType) params.set("type", modelType);
+      const response = await apiFetch(
+        `/api/v1/models/history?${params.toString()}`,
+      );
       const data = await response.json();
       if (data.status === "success") {
         const merged = (data.data || []).map((h: any) => ({
@@ -569,9 +573,9 @@ export default function AdminModels() {
   const [audit, setAudit] = useState<any[]>([]);
   const fetchAudit = useCallback(async () => {
     try {
-      const r = await apiFetch('/api/models/audit', { admin: true });
+      const r = await apiFetch("/api/models/audit", { admin: true });
       const j = await r.json();
-      if (j.status === 'success') setAudit(j.data || []);
+      if (j.status === "success") setAudit(j.data || []);
     } catch {}
   }, []);
 
@@ -600,11 +604,11 @@ export default function AdminModels() {
       es.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data || "{}");
-          const jobs = Array.isArray(msg) ? msg : (msg.jobs || msg.data || []);
+          const jobs = Array.isArray(msg) ? msg : msg.jobs || msg.data || [];
           if (Array.isArray(jobs)) {
             setTrainingJobs(jobs);
           } else if ((msg.job && msg.job.jobId) || msg.jobId) {
-            const up = (msg.job && msg.job.jobId) ? msg.job : msg;
+            const up = msg.job && msg.job.jobId ? msg.job : msg;
             setTrainingJobs((prev) => {
               const idx = prev.findIndex((j) => j.jobId === up.jobId);
               if (idx >= 0) {
@@ -619,7 +623,9 @@ export default function AdminModels() {
       };
     } catch {}
     return () => {
-      try { es?.close(); } catch {}
+      try {
+        es?.close();
+      } catch {}
     };
   }, []);
 
@@ -689,10 +695,15 @@ export default function AdminModels() {
     }
 
     // Map to Project_Aether API schema
-    const model_type = trainingForm.modelType === 'rl_agent' ? 'rl' : trainingForm.modelType === 'forecast' ? 'forecast' : trainingForm.modelType;
+    const model_type =
+      trainingForm.modelType === "rl_agent"
+        ? "rl"
+        : trainingForm.modelType === "forecast"
+          ? "forecast"
+          : trainingForm.modelType;
 
     // Guard unsupported types for backend training
-    if (model_type !== 'forecast' && model_type !== 'rl') {
+    if (model_type !== "forecast" && model_type !== "rl") {
       toast({
         title: "Unsupported",
         description: "Backend training supports Forecast or RL models.",
@@ -703,13 +714,13 @@ export default function AdminModels() {
 
     // Algorithm/architecture mapping
     const rlAlgoMap: Record<string, string> = {
-      'PPO': 'ppo',
-      'Recurrent PPO': 'recurrent_ppo',
-      'SAC': 'sac',
+      PPO: "ppo",
+      "Recurrent PPO": "recurrent_ppo",
+      SAC: "sac",
     };
-    const archMap: Record<string, 'lstm' | 'transformer'> = {
-      'LSTM': 'lstm',
-      'Transformer': 'transformer',
+    const archMap: Record<string, "lstm" | "transformer"> = {
+      LSTM: "lstm",
+      Transformer: "transformer",
     } as const;
 
     const payload: any = {
@@ -719,31 +730,41 @@ export default function AdminModels() {
       interval: trainingForm.interval,
     };
 
-    if (model_type === 'rl') {
-      payload.algorithm = rlAlgoMap[trainingForm.algorithm] || 'ppo';
+    if (model_type === "rl") {
+      payload.algorithm = rlAlgoMap[trainingForm.algorithm] || "ppo";
     } else {
-      payload.architecture = archMap[trainingForm.algorithm] || 'lstm';
+      payload.architecture = archMap[trainingForm.algorithm] || "lstm";
     }
 
-    if (trainingForm.callbackUrl) payload.callback_url = trainingForm.callbackUrl;
+    if (trainingForm.callbackUrl)
+      payload.callback_url = trainingForm.callbackUrl;
 
     setIsProcessing(true);
 
     try {
-      const response = await apiFetch(`/api/v1/models/train${trainingForm.tuneFlag ? '?tune=true' : ''}` as string, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await apiFetch(
+        `/api/v1/models/train${trainingForm.tuneFlag ? "?tune=true" : ""}` as string,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+          admin: true,
         },
-        body: JSON.stringify(payload),
-        admin: true,
-      });
+      );
 
       if (response.status === 422) {
         const err = await response.json();
         const fields = err.fields || {};
-        const msgs = Object.entries(fields).map(([k,v])=> `${k}: ${v}`).join(', ');
-        toast({ title: 'Validation Error', description: msgs || err.message || 'Invalid inputs', variant:'destructive' });
+        const msgs = Object.entries(fields)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", ");
+        toast({
+          title: "Validation Error",
+          description: msgs || err.message || "Invalid inputs",
+          variant: "destructive",
+        });
         setIsProcessing(false);
         return;
       }
@@ -779,8 +800,10 @@ export default function AdminModels() {
       } else {
         if (response.status === 400) {
           const err = data;
-          const msg = err?.message || 'Failed to start training';
-          const running = err?.runningJob ? ` (running job: ${err.runningJob})` : '';
+          const msg = err?.message || "Failed to start training";
+          const running = err?.runningJob
+            ? ` (running job: ${err.runningJob})`
+            : "";
           throw new Error(msg + running);
         }
         throw new Error(data.message || "Failed to start training");
@@ -837,7 +860,12 @@ export default function AdminModels() {
       });
       return;
     }
-    if (!window.confirm(`Deploy model ${modelId}? This replaces current production.`)) return;
+    if (
+      !window.confirm(
+        `Deploy model ${modelId}? This replaces current production.`,
+      )
+    )
+      return;
     try {
       const response = await apiFetch(`/api/models/deploy/${modelId}`, {
         method: "POST",
@@ -943,7 +971,8 @@ export default function AdminModels() {
 
   const rollbackModel = async (fromModelId: string, toModelId: string) => {
     if (!toModelId) return;
-    if (!window.confirm(`Rollback from ${fromModelId} to ${toModelId}?`)) return;
+    if (!window.confirm(`Rollback from ${fromModelId} to ${toModelId}?`))
+      return;
     if (!founderApproval) {
       toast({
         title: "Approval Required",
@@ -983,11 +1012,11 @@ export default function AdminModels() {
   useEffect(() => {
     (async () => {
       try {
-        const r = await apiFetch('/api/config/runtime');
+        const r = await apiFetch("/api/config/runtime");
         const j = await r.json();
         const data = j?.data || {};
-        setMlflowUrl(String(data['mlflow.ui_url'] || ''));
-        setDvcUrl(String(data['dvc.registry_url'] || ''));
+        setMlflowUrl(String(data["mlflow.ui_url"] || ""));
+        setDvcUrl(String(data["dvc.registry_url"] || ""));
       } catch {}
     })();
   }, []);
@@ -1185,7 +1214,8 @@ export default function AdminModels() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold tracking-tight inline-flex items-center gap-2">
-              AI Model Management <HelpTip content="End-to-end workflows to train, evaluate, and deploy trading models with governance controls." />
+              AI Model Management{" "}
+              <HelpTip content="End-to-end workflows to train, evaluate, and deploy trading models with governance controls." />
             </h1>
             <p className="text-muted-foreground">
               Train, deploy and manage AI models for algorithmic trading with
@@ -1207,7 +1237,11 @@ export default function AdminModels() {
               <RefreshCw className="h-4 w-4 mr-2" />
               Refresh All
             </Button>
-            <Button className="rounded-full" variant="outline" onClick={() => setAetherOpen(true)}>
+            <Button
+              className="rounded-full"
+              variant="outline"
+              onClick={() => setAetherOpen(true)}
+            >
               <Sparkles className="h-4 w-4 mr-2" /> Ask Aether
             </Button>
             <Dialog>
@@ -1220,15 +1254,22 @@ export default function AdminModels() {
                 <DialogHeader>
                   <DialogTitle>How to Train the AI</DialogTitle>
                   <DialogDescription>
-                    Step-by-step guide to configure, launch, and monitor training jobs.
+                    Step-by-step guide to configure, launch, and monitor
+                    training jobs.
                   </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 text-sm">
                   <div>
                     <h3 className="font-medium">Prerequisites</h3>
                     <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                      <li>Ensure at least one dataset version is available under the Datasets tab.</li>
-                      <li>Decide the model type: Forecast, Reinforcement Learning, Sentiment, or Ensemble.</li>
+                      <li>
+                        Ensure at least one dataset version is available under
+                        the Datasets tab.
+                      </li>
+                      <li>
+                        Decide the model type: Forecast, Reinforcement Learning,
+                        Sentiment, or Ensemble.
+                      </li>
                     </ul>
                   </div>
                   <div>
@@ -1240,41 +1281,73 @@ export default function AdminModels() {
                       <li>Set Lookback Days and Interval.</li>
                       <li>Pick Dataset Version and Risk Profile.</li>
                       <li>Paste/adjust Architecture JSON.</li>
-                      <li>(RL only) Pick Curriculum Level and fill Environment Config JSON.</li>
-                      <li>(Optional) Enable Hyperparameter Tuning and set a Callback URL.</li>
-                      <li>Click Start Training and monitor progress in Training Jobs.</li>
+                      <li>
+                        (RL only) Pick Curriculum Level and fill Environment
+                        Config JSON.
+                      </li>
+                      <li>
+                        (Optional) Enable Hyperparameter Tuning and set a
+                        Callback URL.
+                      </li>
+                      <li>
+                        Click Start Training and monitor progress in Training
+                        Jobs.
+                      </li>
                     </ol>
                   </div>
                   <div>
                     <h3 className="font-medium">Example Architecture JSON</h3>
-                    <pre className="bg-muted p-3 rounded text-xs overflow-auto"><code>{`{
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto">
+                      <code>{`{
   "layers": [128, 64, 32],
   "dropout": 0.3,
   "attention": true,
   "learning_rate": 0.0005
-}`}</code></pre>
+}`}</code>
+                    </pre>
                   </div>
                   <div>
-                    <h3 className="font-medium">Example RL Environment Config</h3>
-                    <pre className="bg-muted p-3 rounded text-xs overflow-auto"><code>{`{
+                    <h3 className="font-medium">
+                      Example RL Environment Config
+                    </h3>
+                    <pre className="bg-muted p-3 rounded text-xs overflow-auto">
+                      <code>{`{
   "reward_weights": { "profit": 0.7, "drawdown": 0.2, "duration": 0.1 },
   "max_position": 1.0,
   "transaction_cost": 0.0005
-}`}</code></pre>
+}`}</code>
+                    </pre>
                   </div>
                   <div>
                     <h3 className="font-medium">Monitoring & Next Steps</h3>
                     <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
-                      <li>Watch stage progress (Data Prep → Forecasting/RL → Backtesting → Validation).</li>
-                      <li>Review metrics like Sharpe, Win Rate, Drawdown, and Total Reward.</li>
-                      <li>Use Model Registry to inspect artifacts and experiment tracking details.</li>
-                      <li>Before production, try Shadow mode to validate live behavior without impact.</li>
-                      <li>Deploy/Promote requires founder approval; changes affect live trading.</li>
+                      <li>
+                        Watch stage progress (Data Prep → Forecasting/RL →
+                        Backtesting → Validation).
+                      </li>
+                      <li>
+                        Review metrics like Sharpe, Win Rate, Drawdown, and
+                        Total Reward.
+                      </li>
+                      <li>
+                        Use Model Registry to inspect artifacts and experiment
+                        tracking details.
+                      </li>
+                      <li>
+                        Before production, try Shadow mode to validate live
+                        behavior without impact.
+                      </li>
+                      <li>
+                        Deploy/Promote requires founder approval; changes affect
+                        live trading.
+                      </li>
                     </ul>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button variant="outline" data-radix-dialog-close>Close</Button>
+                  <Button variant="outline" data-radix-dialog-close>
+                    Close
+                  </Button>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
@@ -1290,7 +1363,10 @@ export default function AdminModels() {
               </DialogTrigger>
               <DialogContent className="max-w-5xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
-                  <DialogTitle className="inline-flex items-center gap-2">Start AI Model Training <HelpTip content="Configure training parameters, datasets, and optional RL curriculum before launching the job." /></DialogTitle>
+                  <DialogTitle className="inline-flex items-center gap-2">
+                    Start AI Model Training{" "}
+                    <HelpTip content="Configure training parameters, datasets, and optional RL curriculum before launching the job." />
+                  </DialogTitle>
                   <DialogDescription>
                     Configure and launch a comprehensive training job with data
                     preprocessing, forecasting, RL policy search, and
@@ -1301,7 +1377,10 @@ export default function AdminModels() {
                 <div className="grid gap-6 py-4">
                   {/* Model Type Selection with tooltips */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center inline-flex items-center gap-2">Model Type <HelpTip content="Choose forecasting, reinforcement learning, sentiment, or an ensemble approach." /></Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Model Type{" "}
+                      <HelpTip content="Choose forecasting, reinforcement learning, sentiment, or an ensemble approach." />
+                    </Label>
                     <div className="col-span-3">
                       <Select
                         value={trainingForm.modelType}
@@ -1348,7 +1427,10 @@ export default function AdminModels() {
 
                   {/* Algorithm Selection */}
                   <div className="grid grid-cols-4 gap-4">
-                    <Label className="text-right self-center inline-flex items-center gap-2">Algorithm <HelpTip content="Specific learning algorithm used by the model type (e.g., LSTM, PPO, FinBERT)." /></Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Algorithm{" "}
+                      <HelpTip content="Specific learning algorithm used by the model type (e.g., LSTM, PPO, FinBERT)." />
+                    </Label>
                     <div className="col-span-3">
                       <Select
                         value={trainingForm.algorithm}
@@ -1386,7 +1468,8 @@ export default function AdminModels() {
                   {/* Asset Selection (multi-select with universe rotation) */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
-                      Trading Pairs <HelpTip content="Assets to train on. Multi-asset RL agents can learn cross-market behavior." />
+                      Trading Pairs{" "}
+                      <HelpTip content="Assets to train on. Multi-asset RL agents can learn cross-market behavior." />
                     </Label>
                     <div className="col-span-3">
                       <div className="grid grid-cols-4 gap-2 mb-2">
@@ -1428,7 +1511,8 @@ export default function AdminModels() {
                   {/* Training Parameters */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-center inline-flex items-center gap-2">
-                      Lookback Days <HelpTip content="History window used as input features for training (1–365)." />
+                      Lookback Days{" "}
+                      <HelpTip content="History window used as input features for training (1–365)." />
                     </Label>
                     <div className="col-span-1">
                       <Input
@@ -1447,7 +1531,10 @@ export default function AdminModels() {
                         1-365 days
                       </p>
                     </div>
-                    <Label className="text-right self-center inline-flex items-center gap-2">Interval <HelpTip content="Sampling period for candles/features (e.g., 1h)." /></Label>
+                    <Label className="text-right self-center inline-flex items-center gap-2">
+                      Interval{" "}
+                      <HelpTip content="Sampling period for candles/features (e.g., 1h)." />
+                    </Label>
                     <div className="col-span-1">
                       <Select
                         value={trainingForm.interval}
@@ -1475,7 +1562,8 @@ export default function AdminModels() {
                   {/* Dataset and Curriculum */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-center inline-flex items-center gap-2">
-                      Dataset Version <HelpTip content="Choose the DVC-versioned dataset used for training and evaluation." />
+                      Dataset Version{" "}
+                      <HelpTip content="Choose the DVC-versioned dataset used for training and evaluation." />
                     </Label>
                     <div className="col-span-1">
                       <Select
@@ -1503,7 +1591,8 @@ export default function AdminModels() {
                       </Select>
                     </div>
                     <Label className="text-right self-center inline-flex items-center gap-2">
-                      Risk Profile <HelpTip content="Controls aggressiveness of strategies (conservative, moderate, aggressive)." />
+                      Risk Profile{" "}
+                      <HelpTip content="Controls aggressiveness of strategies (conservative, moderate, aggressive)." />
                     </Label>
                     <div className="col-span-1">
                       <Select
@@ -1539,7 +1628,8 @@ export default function AdminModels() {
 
                       <div className="grid grid-cols-4 gap-4">
                         <Label className="text-right self-center inline-flex items-center gap-2">
-                          Curriculum Level <HelpTip content="Progressively harder environments for RL: simple → volatile → multi-asset." />
+                          Curriculum Level{" "}
+                          <HelpTip content="Progressively harder environments for RL: simple → volatile → multi-asset." />
                         </Label>
                         <div className="col-span-3">
                           <Select
@@ -1571,7 +1661,8 @@ export default function AdminModels() {
 
                       <div className="grid grid-cols-4 gap-4">
                         <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
-                          Environment Config <HelpTip content="JSON for RL environment and reward weights (profit, drawdown, duration, win rate)." />
+                          Environment Config{" "}
+                          <HelpTip content="JSON for RL environment and reward weights (profit, drawdown, duration, win rate)." />
                         </Label>
                         <div className="col-span-3">
                           <Textarea
@@ -1598,7 +1689,8 @@ export default function AdminModels() {
                   {/* Architecture Configuration */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-start pt-2 inline-flex items-center gap-2">
-                      Architecture <HelpTip content="Model architecture JSON (layers, dropout, attention, learning rate, etc.)." />
+                      Architecture{" "}
+                      <HelpTip content="Model architecture JSON (layers, dropout, attention, learning rate, etc.)." />
                     </Label>
                     <div className="col-span-3">
                       <Textarea
@@ -1623,7 +1715,8 @@ export default function AdminModels() {
                   {/* Advanced Options */}
                   <div className="grid grid-cols-4 gap-4">
                     <Label className="text-right self-center inline-flex items-center gap-2">
-                      Callback URL <HelpTip content="Optional webhook to be notified when training completes or fails." />
+                      Callback URL{" "}
+                      <HelpTip content="Optional webhook to be notified when training completes or fails." />
                     </Label>
                     <div className="col-span-2">
                       <Input
@@ -1649,7 +1742,13 @@ export default function AdminModels() {
                             }))
                           }
                         />
-                        <Label htmlFor="tuning" className="inline-flex items-center gap-2">Hyperparameter Tuning <HelpTip content="Run Optuna to search over hyperparameters; increases training time but can improve performance." /></Label>
+                        <Label
+                          htmlFor="tuning"
+                          className="inline-flex items-center gap-2"
+                        >
+                          Hyperparameter Tuning{" "}
+                          <HelpTip content="Run Optuna to search over hyperparameters; increases training time but can improve performance." />
+                        </Label>
                       </div>
                     </div>
                   </div>
@@ -1682,41 +1781,121 @@ export default function AdminModels() {
         </div>
 
         <Sheet open={aetherOpen} onOpenChange={setAetherOpen}>
-          <SheetContent side="right" className="w-full sm:max-w-[420px] p-0 flex flex-col">
+          <SheetContent
+            side="right"
+            className="w-full sm:max-w-[420px] p-0 flex flex-col"
+          >
             <div className="p-4 border-b flex items-center justify-between sticky top-0 bg-background z-10">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-primary" />
                 <div className="font-medium">Ask Aether</div>
               </div>
-              <div className="text-xs text-muted-foreground">Assistant can recommend training and deployment steps</div>
+              <div className="text-xs text-muted-foreground">
+                Assistant can recommend training and deployment steps
+              </div>
             </div>
             {aetherError && (
-              <div className="p-3 bg-destructive/10 text-destructive text-xs border-b">{aetherError}</div>
+              <div className="p-3 bg-destructive/10 text-destructive text-xs border-b">
+                {aetherError}
+              </div>
             )}
             <div className="p-3 border-b grid grid-cols-2 gap-2 text-xs">
-              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeSignals} onChange={e=>setIncludeSignals(e.target.checked)} /> Latest signals</label>
-              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeTrades} onChange={e=>setIncludeTrades(e.target.checked)} /> Recent trades</label>
-              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeSentiment} onChange={e=>setIncludeSentiment(e.target.checked)} /> Sentiment snapshot</label>
-              <label className="inline-flex items-center gap-2"><input type="checkbox" checked={includeRegime} onChange={e=>setIncludeRegime(e.target.checked)} /> Market regime</label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={includeSignals}
+                  onChange={(e) => setIncludeSignals(e.target.checked)}
+                />{" "}
+                Latest signals
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={includeTrades}
+                  onChange={(e) => setIncludeTrades(e.target.checked)}
+                />{" "}
+                Recent trades
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={includeSentiment}
+                  onChange={(e) => setIncludeSentiment(e.target.checked)}
+                />{" "}
+                Sentiment snapshot
+              </label>
+              <label className="inline-flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={includeRegime}
+                  onChange={(e) => setIncludeRegime(e.target.checked)}
+                />{" "}
+                Market regime
+              </label>
             </div>
             <div className="p-2 border-b flex items-center justify-end">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">Export</Button>
+                  <Button variant="outline" size="sm">
+                    Export
+                  </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={()=>{ const blob = new Blob([JSON.stringify(aetherMsgs, null, 2)], { type:'application/json' }); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aether_transcript.json'; a.click(); }}>Download JSON</DropdownMenuItem>
-                  <DropdownMenuItem onClick={()=>{ const rows=["ts,role,text", ...aetherMsgs.map(m=>`${new Date(m.ts).toISOString()},${m.role},"${m.text.replace(/\"/g,'\"\"')}"`)]; const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([rows.join('\n')],{type:'text/csv'})); a.download='aether_transcript.csv'; a.click(); }}>Download CSV</DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const blob = new Blob(
+                        [JSON.stringify(aetherMsgs, null, 2)],
+                        { type: "application/json" },
+                      );
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = "aether_transcript.json";
+                      a.click();
+                    }}
+                  >
+                    Download JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
+                      const rows = [
+                        "ts,role,text",
+                        ...aetherMsgs.map(
+                          (m) =>
+                            `${new Date(m.ts).toISOString()},${m.role},"${m.text.replace(/\"/g, '\"\"')}"`,
+                        ),
+                      ];
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(
+                        new Blob([rows.join("\n")], { type: "text/csv" }),
+                      );
+                      a.download = "aether_transcript.csv";
+                      a.click();
+                    }}
+                  >
+                    Download CSV
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
             <ScrollArea className="flex-1">
               <div className="p-4 space-y-3">
-                {aetherMsgs.length===0 && (<div className="text-xs text-muted-foreground">Ask for training guidance, tuning suggestions, or deployment next steps.</div>)}
-                {aetherMsgs.map((m, i)=> (
-                  <div key={i} className={`flex ${m.role==='user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role==='user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-                      <div className="opacity-70 text-[10px] mb-1">{new Date(m.ts).toLocaleString()}</div>
+                {aetherMsgs.length === 0 && (
+                  <div className="text-xs text-muted-foreground">
+                    Ask for training guidance, tuning suggestions, or deployment
+                    next steps.
+                  </div>
+                )}
+                {aetherMsgs.map((m, i) => (
+                  <div
+                    key={i}
+                    className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${m.role === "user" ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                    >
+                      <div className="opacity-70 text-[10px] mb-1">
+                        {new Date(m.ts).toLocaleString()}
+                      </div>
                       <div>{m.text}</div>
                     </div>
                   </div>
@@ -1725,35 +1904,88 @@ export default function AdminModels() {
             </ScrollArea>
             <div className="p-3 border-t sticky bottom-0 bg-background">
               <div className="space-y-2">
-                <textarea rows={3} className="w-full border rounded-md p-2 text-sm resize-y min-h-[72px]" placeholder="Type your question for Aether" value={aetherInput} onChange={e=>setAetherInput(e.target.value)} />
+                <textarea
+                  rows={3}
+                  className="w-full border rounded-md p-2 text-sm resize-y min-h-[72px]"
+                  placeholder="Type your question for Aether"
+                  value={aetherInput}
+                  onChange={(e) => setAetherInput(e.target.value)}
+                />
                 <div className="flex justify-end">
-                  <Button onClick={async()=>{
-                    if (!aetherInput.trim()) return;
-                    setAetherError(null);
-                    const userMsg = { role: 'user' as const, text: aetherInput.trim(), ts: Date.now() };
-                    setAetherMsgs(prev=> [...prev, userMsg].slice(-20));
-                    setAetherInput('');
-                    setAetherLoading(true);
-                    try {
-                      const r = await apiFetch('/api/v1/llm/ask', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ question: userMsg.text, includeSignals, includeTrades, includeSentiment, includeRegime }) });
-                      const status = r.status;
-                      const txt = await r.text();
-                      let answer = '';
-                      try { const j = JSON.parse(txt); answer = j.answer || j.output || j.message || j.content || txt; } catch { answer = txt; }
-                      if (!r.ok) {
-                        if (status===413) setAetherError('Request too large (token limit). Reduce context or shorten your question.');
-                        else if (status===500) setAetherError('Server error: missing key or misconfiguration.');
-                        else if (status===502) setAetherError('Upstream failure. Please retry.');
-                        else setAetherError(`Error ${status}`);
-                      } else {
-                        const botMsg = { role: 'assistant' as const, text: answer || 'No response', ts: Date.now() };
-                        setAetherMsgs(prev=> [...prev, botMsg].slice(-20));
+                  <Button
+                    onClick={async () => {
+                      if (!aetherInput.trim()) return;
+                      setAetherError(null);
+                      const userMsg = {
+                        role: "user" as const,
+                        text: aetherInput.trim(),
+                        ts: Date.now(),
+                      };
+                      setAetherMsgs((prev) => [...prev, userMsg].slice(-20));
+                      setAetherInput("");
+                      setAetherLoading(true);
+                      try {
+                        const r = await apiFetch("/api/v1/llm/ask", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            question: userMsg.text,
+                            includeSignals,
+                            includeTrades,
+                            includeSentiment,
+                            includeRegime,
+                          }),
+                        });
+                        const status = r.status;
+                        const txt = await r.text();
+                        let answer = "";
+                        try {
+                          const j = JSON.parse(txt);
+                          answer =
+                            j.answer ||
+                            j.output ||
+                            j.message ||
+                            j.content ||
+                            txt;
+                        } catch {
+                          answer = txt;
+                        }
+                        if (!r.ok) {
+                          if (status === 413)
+                            setAetherError(
+                              "Request too large (token limit). Reduce context or shorten your question.",
+                            );
+                          else if (status === 500)
+                            setAetherError(
+                              "Server error: missing key or misconfiguration.",
+                            );
+                          else if (status === 502)
+                            setAetherError("Upstream failure. Please retry.");
+                          else setAetherError(`Error ${status}`);
+                        } else {
+                          const botMsg = {
+                            role: "assistant" as const,
+                            text: answer || "No response",
+                            ts: Date.now(),
+                          };
+                          setAetherMsgs((prev) => [...prev, botMsg].slice(-20));
+                        }
+                      } catch (e: any) {
+                        setAetherError(e?.message || "Network error");
+                      } finally {
+                        setAetherLoading(false);
                       }
-                    } catch (e:any) {
-                      setAetherError(e?.message || 'Network error');
-                    } finally { setAetherLoading(false); }
-                  }} disabled={aetherLoading}>
-                    {aetherLoading ? (<><RefreshCw className="h-4 w-4 mr-2 animate-spin" />Send</>) : 'Send'}
+                    }}
+                    disabled={aetherLoading}
+                  >
+                    {aetherLoading ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Send
+                      </>
+                    ) : (
+                      "Send"
+                    )}
                   </Button>
                 </div>
               </div>
@@ -1763,19 +1995,52 @@ export default function AdminModels() {
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab}>
           <TabsList className="grid w-full grid-cols-6">
-            <TabsTrigger value="training"><span className="inline-flex items-center gap-1">Training Jobs <HelpTip content="Launch and monitor training pipelines." /></span></TabsTrigger>
-            <TabsTrigger value="models"><span className="inline-flex items-center gap-1">Model Registry <HelpTip content="Browse models, metrics, and deployment status." /></span></TabsTrigger>
-            <TabsTrigger value="curriculum"><span className="inline-flex items-center gap-1">Curriculum <HelpTip content="RL stage progression and results." /></span></TabsTrigger>
-            <TabsTrigger value="datasets"><span className="inline-flex items-center gap-1">Datasets <HelpTip content="Manage dataset versions and metadata." /></span></TabsTrigger>
-            <TabsTrigger value="sentiment"><span className="inline-flex items-center gap-1">Sentiment <HelpTip content="Social/news ingestion pipelines and health." /></span></TabsTrigger>
-            <TabsTrigger value="experiments"><span className="inline-flex items-center gap-1">Experiments <HelpTip content="MLflow tracking and reproducibility." /></span></TabsTrigger>
+            <TabsTrigger value="training">
+              <span className="inline-flex items-center gap-1">
+                Training Jobs{" "}
+                <HelpTip content="Launch and monitor training pipelines." />
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="models">
+              <span className="inline-flex items-center gap-1">
+                Model Registry{" "}
+                <HelpTip content="Browse models, metrics, and deployment status." />
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="curriculum">
+              <span className="inline-flex items-center gap-1">
+                Curriculum{" "}
+                <HelpTip content="RL stage progression and results." />
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="datasets">
+              <span className="inline-flex items-center gap-1">
+                Datasets{" "}
+                <HelpTip content="Manage dataset versions and metadata." />
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="sentiment">
+              <span className="inline-flex items-center gap-1">
+                Sentiment{" "}
+                <HelpTip content="Social/news ingestion pipelines and health." />
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="experiments">
+              <span className="inline-flex items-center gap-1">
+                Experiments{" "}
+                <HelpTip content="MLflow tracking and reproducibility." />
+              </span>
+            </TabsTrigger>
           </TabsList>
 
           {/* Training Jobs Tab - Enhanced with real-time workflow visualization */}
           <TabsContent value="training" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Active Training Jobs <HelpTip content="Real-time view of training pipelines across data prep, forecasting/RL, backtesting, and validation." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Active Training Jobs{" "}
+                  <HelpTip content="Real-time view of training pipelines across data prep, forecasting/RL, backtesting, and validation." />
+                </CardTitle>
                 <CardDescription>
                   Monitor comprehensive AI model training workflows with data
                   preprocessing, forecasting, RL policy search, and validation
@@ -1842,7 +2107,8 @@ export default function AdminModels() {
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
                             <span className="text-sm font-medium inline-flex items-center gap-2">
-                              Training Pipeline Progress <HelpTip content="Overall completion of the multi-stage training workflow." />
+                              Training Pipeline Progress{" "}
+                              <HelpTip content="Overall completion of the multi-stage training workflow." />
                             </span>
                             <span className="text-sm text-muted-foreground">
                               {job.progress}% complete
@@ -2126,18 +2392,27 @@ export default function AdminModels() {
           <TabsContent value="models" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Model Registry <HelpTip content="Catalog of trained models with metrics, explainability, and deployment controls." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Model Registry{" "}
+                  <HelpTip content="Catalog of trained models with metrics, explainability, and deployment controls." />
+                </CardTitle>
                 <CardDescription>
                   Manage trained models with comprehensive performance metrics,
                   explainability, and deployment controls
                 </CardDescription>
                 <div className="mt-3 grid grid-cols-1 md:grid-cols-5 gap-2">
                   <div className="md:col-span-2">
-                    <Input placeholder="Search by name or ID" value={modelSearch} onChange={(e)=> setModelSearch(e.target.value)} />
+                    <Input
+                      placeholder="Search by name or ID"
+                      value={modelSearch}
+                      onChange={(e) => setModelSearch(e.target.value)}
+                    />
                   </div>
                   <div>
                     <Select value={modelStatus} onValueChange={setModelStatus}>
-                      <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="trained">Trained</SelectItem>
                         <SelectItem value="deployed">Deployed</SelectItem>
@@ -2148,7 +2423,9 @@ export default function AdminModels() {
                   </div>
                   <div>
                     <Select value={modelType} onValueChange={setModelType}>
-                      <SelectTrigger><SelectValue placeholder="Type" /></SelectTrigger>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Type" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="forecast">Forecast</SelectItem>
                         <SelectItem value="rl_agent">RL Agent</SelectItem>
@@ -2158,7 +2435,16 @@ export default function AdminModels() {
                     </Select>
                   </div>
                   <div className="flex gap-2 justify-end">
-                    <Button variant="outline" onClick={()=>{ setModelSearch(""); setModelStatus(""); setModelType(""); }}>Clear</Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setModelSearch("");
+                        setModelStatus("");
+                        setModelType("");
+                      }}
+                    >
+                      Clear
+                    </Button>
                     <Button onClick={fetchModels}>Apply</Button>
                   </div>
                 </div>
@@ -2547,10 +2833,17 @@ export default function AdminModels() {
                   <div className="space-y-4">
                     <div className="border rounded-lg p-4 space-y-3">
                       <div className="font-medium inline-flex items-center gap-2">
-                        Explainability & Diagnostics <HelpTip content="Inspect feature importance and compute SHAP values to understand model decisions." />
+                        Explainability & Diagnostics{" "}
+                        <HelpTip content="Inspect feature importance and compute SHAP values to understand model decisions." />
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="diagModel" className="inline-flex items-center gap-2">Model ID <HelpTip content="Enter the model identifier to analyze (e.g., model_001)." /></Label>
+                        <Label
+                          htmlFor="diagModel"
+                          className="inline-flex items-center gap-2"
+                        >
+                          Model ID{" "}
+                          <HelpTip content="Enter the model identifier to analyze (e.g., model_001)." />
+                        </Label>
                         <Input
                           id="diagModel"
                           value={diagModelId}
@@ -2685,25 +2978,45 @@ export default function AdminModels() {
 
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Recent Model Actions <HelpTip content="Latest admin actions for training, deployment, shadow, and rollback." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Recent Model Actions{" "}
+                  <HelpTip content="Latest admin actions for training, deployment, shadow, and rollback." />
+                </CardTitle>
                 <CardDescription>
                   Server-side audit of sensitive model operations
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex justify-between items-center mb-3">
-                  <div className="text-sm text-muted-foreground">Showing latest {Math.min(200, audit.length)} events</div>
-                  <Button variant="outline" size="sm" onClick={fetchAudit}>Refresh</Button>
+                  <div className="text-sm text-muted-foreground">
+                    Showing latest {Math.min(200, audit.length)} events
+                  </div>
+                  <Button variant="outline" size="sm" onClick={fetchAudit}>
+                    Refresh
+                  </Button>
                 </div>
                 <div className="text-xs space-y-1 max-h-64 overflow-auto">
                   {audit.length === 0 ? (
-                    <div className="text-muted-foreground">No recent actions</div>
+                    <div className="text-muted-foreground">
+                      No recent actions
+                    </div>
                   ) : (
                     audit.slice(0, 200).map((e: any, idx: number) => (
-                      <div key={idx} className="grid grid-cols-5 gap-2 border-t pt-1">
-                        <div><span className="font-mono">{new Date(e.at).toLocaleString()}</span></div>
+                      <div
+                        key={idx}
+                        className="grid grid-cols-5 gap-2 border-t pt-1"
+                      >
+                        <div>
+                          <span className="font-mono">
+                            {new Date(e.at).toLocaleString()}
+                          </span>
+                        </div>
                         <div className="col-span-2">{e.type}</div>
-                        <div>{e.modelId || e.jobId || `${e.from || ''}${e.to ? '→'+e.to : ''}`}</div>
+                        <div>
+                          {e.modelId ||
+                            e.jobId ||
+                            `${e.from || ""}${e.to ? "→" + e.to : ""}`}
+                        </div>
                         <div className="text-muted-foreground">{e.actor}</div>
                       </div>
                     ))
@@ -2717,7 +3030,10 @@ export default function AdminModels() {
           <TabsContent value="curriculum" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Curriculum Learning <HelpTip content="Stage-based RL training with advancement criteria like win ratio, drawdown, and Sharpe." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Curriculum Learning{" "}
+                  <HelpTip content="Stage-based RL training with advancement criteria like win ratio, drawdown, and Sharpe." />
+                </CardTitle>
                 <CardDescription>
                   Progressive training stages for reinforcement learning agents
                   with adaptive advancement criteria
@@ -2870,7 +3186,10 @@ export default function AdminModels() {
           <TabsContent value="datasets" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Dataset Management <HelpTip content="DVC-versioned datasets with metadata, feature lists, and quality scoring." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Dataset Management{" "}
+                  <HelpTip content="DVC-versioned datasets with metadata, feature lists, and quality scoring." />
+                </CardTitle>
                 <CardDescription>
                   DVC-versioned datasets with comprehensive metadata and feature
                   tracking
@@ -3054,7 +3373,10 @@ export default function AdminModels() {
           <TabsContent value="sentiment" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Sentiment Ingestion Pipelines <HelpTip content="Ingest and score social/news data to augment models and generate signals." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Sentiment Ingestion Pipelines{" "}
+                  <HelpTip content="Ingest and score social/news data to augment models and generate signals." />
+                </CardTitle>
                 <CardDescription>
                   Monitor Twitter and RSS news feeds for sentiment analysis and
                   market signal generation
@@ -3209,7 +3531,10 @@ export default function AdminModels() {
           <TabsContent value="experiments" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="inline-flex items-center gap-2">Experiment Tracking <HelpTip content="Track MLflow runs, datasets, and reproducibility artifacts for every experiment." /></CardTitle>
+                <CardTitle className="inline-flex items-center gap-2">
+                  Experiment Tracking{" "}
+                  <HelpTip content="Track MLflow runs, datasets, and reproducibility artifacts for every experiment." />
+                </CardTitle>
                 <CardDescription>
                   MLflow experiments, DVC datasets, and reproducibility tracking
                 </CardDescription>
@@ -3225,11 +3550,20 @@ export default function AdminModels() {
                     with full reproducibility
                   </p>
                   <div className="flex justify-center space-x-4">
-                    <Button onClick={() => mlflowUrl && window.open(mlflowUrl, '_blank')} disabled={!mlflowUrl}>
+                    <Button
+                      onClick={() =>
+                        mlflowUrl && window.open(mlflowUrl, "_blank")
+                      }
+                      disabled={!mlflowUrl}
+                    >
                       <ExternalLink className="h-4 w-4 mr-2" />
                       Open MLflow UI
                     </Button>
-                    <Button variant="outline" onClick={() => dvcUrl && window.open(dvcUrl, '_blank')} disabled={!dvcUrl}>
+                    <Button
+                      variant="outline"
+                      onClick={() => dvcUrl && window.open(dvcUrl, "_blank")}
+                      disabled={!dvcUrl}
+                    >
                       <GitBranch className="h-4 w-4 mr-2" />
                       DVC Registry
                     </Button>

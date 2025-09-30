@@ -93,7 +93,9 @@ export default function RegulatoryReportsTab() {
       setDegradedAudit(true);
       try {
         if (esRef.current) {
-          try { esRef.current.close(); } catch {}
+          try {
+            esRef.current.close();
+          } catch {}
           esRef.current = null;
         }
         const base = getBaseUrl();
@@ -101,22 +103,24 @@ export default function RegulatoryReportsTab() {
         esRef.current = es;
         es.onmessage = (ev) => {
           try {
-            const it = JSON.parse(ev.data || '{}');
-            const action = String(it.action || '').toLowerCase();
-            if (!action.includes('report')) return;
+            const it = JSON.parse(ev.data || "{}");
+            const action = String(it.action || "").toLowerCase();
+            if (!action.includes("report")) return;
             const h: ReportHistoryItem = {
               id: String(it.id || `${Date.now()}_${Math.random()}`),
               timestamp: it.timestamp || Date.now(),
               operatorId: it.actor || it.user || undefined,
               filters: it.details?.filters || undefined,
               format: it.details?.format || undefined,
-              status: it.success === false ? 'failed' : 'success',
+              status: it.success === false ? "failed" : "success",
             };
             setHistory((prev) => [h, ...prev].slice(0, 200));
           } catch {}
         };
         es.onerror = () => {
-          try { es.close(); } catch {}
+          try {
+            es.close();
+          } catch {}
           esRef.current = null;
         };
       } catch {}
@@ -130,7 +134,11 @@ export default function RegulatoryReportsTab() {
   }, []);
 
   useEffect(() => {
-    return () => { try { esRef.current?.close(); } catch {} };
+    return () => {
+      try {
+        esRef.current?.close();
+      } catch {}
+    };
   }, []);
 
   const toggle = (key: keyof typeof filters) => (checked: boolean | string) => {
@@ -294,7 +302,8 @@ export default function RegulatoryReportsTab() {
         <CardContent>
           {degradedAudit && (
             <div className="p-3 mb-3 border rounded bg-yellow-50 text-yellow-800 text-sm">
-              Degraded: audit history withheld/unavailable; approximating from live audit stream.
+              Degraded: audit history withheld/unavailable; approximating from
+              live audit stream.
             </div>
           )}
           <ScrollArea className="h-64">

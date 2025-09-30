@@ -17,7 +17,10 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-function parseCsvMatrix(text: string): { symbols: string[]; matrix: number[][] } {
+function parseCsvMatrix(text: string): {
+  symbols: string[];
+  matrix: number[][];
+} {
   const rows = text
     .split(/\r?\n/)
     .map((r) => r.trim())
@@ -45,7 +48,8 @@ function parseCsvMatrix(text: string): { symbols: string[]; matrix: number[][] }
     });
     matrix.push(nums);
   }
-  if (matrix.length !== symbols.length) throw new Error("Matrix must be square");
+  if (matrix.length !== symbols.length)
+    throw new Error("Matrix must be square");
   return { symbols, matrix };
 }
 
@@ -68,11 +72,15 @@ export default function PortfolioOptimizerPanel() {
   const [symbols, setSymbols] = useState<string[]>([]);
   const [matrix, setMatrix] = useState<number[][] | null>(null);
   const [expected, setExpected] = useState<Record<string, number>>({});
-  const [method, setMethod] = useState<"kelly" | "markowitz" | "risk-parity">("markowitz");
+  const [method, setMethod] = useState<"kelly" | "markowitz" | "risk-parity">(
+    "markowitz",
+  );
   const [riskAversion, setRiskAversion] = useState<number>(1);
   const [maxWeight, setMaxWeight] = useState<number>(0.5);
   const [running, setRunning] = useState(false);
-  const [allocations, setAllocations] = useState<Array<{ symbol: string; weight: number }>>([]);
+  const [allocations, setAllocations] = useState<
+    Array<{ symbol: string; weight: number }>
+  >([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
   // Removed dependency on backend optimizer state; covariance managed client-side
@@ -83,7 +91,8 @@ export default function PortfolioOptimizerPanel() {
       let payload: { symbols: string[]; matrix: number[][] };
       if (/^\s*\{/.test(text)) {
         const j = JSON.parse(text);
-        if (!Array.isArray(j.symbols) || !Array.isArray(j.matrix)) throw new Error("Invalid JSON format");
+        if (!Array.isArray(j.symbols) || !Array.isArray(j.matrix))
+          throw new Error("Invalid JSON format");
         payload = { symbols: j.symbols, matrix: j.matrix };
       } else {
         payload = parseCsvMatrix(text);
@@ -91,10 +100,19 @@ export default function PortfolioOptimizerPanel() {
       setCovarianceId(null);
       setSymbols(payload.symbols);
       setMatrix(payload.matrix);
-      setExpected(Object.fromEntries(payload.symbols.map((s: string) => [s, 0.01])));
-      toast({ title: "Uploaded", description: `Loaded ${payload.symbols.length} assets` });
+      setExpected(
+        Object.fromEntries(payload.symbols.map((s: string) => [s, 0.01])),
+      );
+      toast({
+        title: "Uploaded",
+        description: `Loaded ${payload.symbols.length} assets`,
+      });
     } catch (e: any) {
-      toast({ title: "Upload failed", description: e?.message || "Invalid file", variant: "destructive" });
+      toast({
+        title: "Upload failed",
+        description: e?.message || "Invalid file",
+        variant: "destructive",
+      });
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -102,24 +120,45 @@ export default function PortfolioOptimizerPanel() {
 
   const run = async () => {
     if (!matrix || symbols.length === 0) {
-      toast({ title: "Missing covariance", description: "Upload a covariance matrix first", variant: "destructive" });
+      toast({
+        title: "Missing covariance",
+        description: "Upload a covariance matrix first",
+        variant: "destructive",
+      });
       return;
     }
     setRunning(true);
     try {
-      const body: any = { method, expectedReturns: expected, riskAversion, riskLimits: { maxWeight }, symbols, matrix };
+      const body: any = {
+        method,
+        expectedReturns: expected,
+        riskAversion,
+        riskLimits: { maxWeight },
+        symbols,
+        matrix,
+      };
       const r = await postJson<any>("/api/v1/portfolio/optimize", body);
       if (r?.allocations) setAllocations(r.allocations);
-      toast({ title: "Optimization complete", description: `${method === "kelly" ? "Kelly" : method === 'risk-parity' ? 'Risk Parity' : "Markowitz"} allocations ready` });
+      toast({
+        title: "Optimization complete",
+        description: `${method === "kelly" ? "Kelly" : method === "risk-parity" ? "Risk Parity" : "Markowitz"} allocations ready`,
+      });
     } catch (e: any) {
-      toast({ title: "Optimization failed", description: e?.message || "Error", variant: "destructive" });
+      toast({
+        title: "Optimization failed",
+        description: e?.message || "Error",
+        variant: "destructive",
+      });
     } finally {
       setRunning(false);
     }
   };
 
   const chartData = useMemo(() => {
-    return allocations.map((a) => ({ name: a.symbol, value: Math.max(0, a.weight) }));
+    return allocations.map((a) => ({
+      name: a.symbol,
+      value: Math.max(0, a.weight),
+    }));
   }, [allocations]);
 
   return (
@@ -135,12 +174,19 @@ export default function PortfolioOptimizerPanel() {
               <Label>Covariance matrix (CSV or JSON)</Label>
               <HelpTip content="CSV with header row/col of symbols, or JSON { symbols, matrix }" />
             </div>
-            <Input ref={fileRef} type="file" accept=".csv,.json,.txt" onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleFile(f);
-            }} />
+            <Input
+              ref={fileRef}
+              type="file"
+              accept=".csv,.json,.txt"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f) handleFile(f);
+              }}
+            />
             {symbols.length > 0 && (
-              <div className="text-xs text-muted-foreground mt-1">Loaded: {symbols.join(", ")}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                Loaded: {symbols.join(", ")}
+              </div>
             )}
           </div>
           <div>
@@ -148,7 +194,10 @@ export default function PortfolioOptimizerPanel() {
               <Label>Method</Label>
               <HelpTip content="Kelly uses w=Σ⁻¹μ clipped to >=0. Markowitz uses mean-variance with risk aversion. Risk-Parity targets equal risk contribution (proxied by inverse-variance)." />
             </div>
-            <RadioGroup value={method} onValueChange={(v) => setMethod(v as any)}>
+            <RadioGroup
+              value={method}
+              onValueChange={(v) => setMethod(v as any)}
+            >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem id="m-mark" value="markowitz" />
                 <Label htmlFor="m-mark">Markowitz</Label>
@@ -172,7 +221,15 @@ export default function PortfolioOptimizerPanel() {
                 <Label>Risk aversion (λ)</Label>
                 <HelpTip content="Higher λ penalizes variance more strongly." />
               </div>
-              <Input type="number" step="0.1" min="0.1" value={riskAversion} onChange={(e) => setRiskAversion(Math.max(0.1, Number(e.target.value) || 1))} />
+              <Input
+                type="number"
+                step="0.1"
+                min="0.1"
+                value={riskAversion}
+                onChange={(e) =>
+                  setRiskAversion(Math.max(0.1, Number(e.target.value) || 1))
+                }
+              />
             </div>
           )}
           <div>
@@ -180,7 +237,18 @@ export default function PortfolioOptimizerPanel() {
               <Label>Max weight</Label>
               <HelpTip content="Cap any single asset weight; post-cap weights are renormalized." />
             </div>
-            <Input type="number" step="0.01" min="0.01" max="1" value={maxWeight} onChange={(e)=> setMaxWeight(Math.max(0.01, Math.min(1, Number(e.target.value)||0.5)))} />
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              max="1"
+              value={maxWeight}
+              onChange={(e) =>
+                setMaxWeight(
+                  Math.max(0.01, Math.min(1, Number(e.target.value) || 0.5)),
+                )
+              }
+            />
           </div>
         </div>
 
@@ -189,10 +257,24 @@ export default function PortfolioOptimizerPanel() {
             <div className="flex items-center justify-between mb-2">
               <div className="font-medium">Expected returns (per period)</div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setExpected(Object.fromEntries(symbols.map((s) => [s, 0.01]))) }>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setExpected(
+                      Object.fromEntries(symbols.map((s) => [s, 0.01])),
+                    )
+                  }
+                >
                   Set all 1%
                 </Button>
-                <Button variant="outline" size="sm" onClick={() => setExpected(Object.fromEntries(symbols.map((s) => [s, 0]))) }>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setExpected(Object.fromEntries(symbols.map((s) => [s, 0])))
+                  }
+                >
                   Set all 0%
                 </Button>
               </div>
@@ -201,7 +283,17 @@ export default function PortfolioOptimizerPanel() {
               {symbols.map((s) => (
                 <div key={s} className="flex items-center gap-2">
                   <Label className="min-w-[64px]">{s}</Label>
-                  <Input type="number" step="0.0001" value={expected[s] ?? 0} onChange={(e) => setExpected((prev) => ({ ...prev, [s]: Number(e.target.value) }))} />
+                  <Input
+                    type="number"
+                    step="0.0001"
+                    value={expected[s] ?? 0}
+                    onChange={(e) =>
+                      setExpected((prev) => ({
+                        ...prev,
+                        [s]: Number(e.target.value),
+                      }))
+                    }
+                  />
                 </div>
               ))}
             </div>
@@ -224,9 +316,19 @@ export default function PortfolioOptimizerPanel() {
                 <PieChart>
                   <RechartsTooltip />
                   <Legend />
-                  <Pie data={chartData} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} label>
+                  <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={50}
+                    outerRadius={80}
+                    label
+                  >
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Pie>
                 </PieChart>
@@ -249,7 +351,9 @@ export default function PortfolioOptimizerPanel() {
                       .map((a) => (
                         <tr key={a.symbol} className="border-t">
                           <td className="p-2">{a.symbol}</td>
-                          <td className="p-2">{(a.weight * 100).toFixed(2)}%</td>
+                          <td className="p-2">
+                            {(a.weight * 100).toFixed(2)}%
+                          </td>
                         </tr>
                       ))}
                   </tbody>

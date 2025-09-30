@@ -244,10 +244,14 @@ export default function ScenarioLab() {
     const volBase = 10;
     for (let i = 0; i < N; i++) {
       const t = new Date(Date.now() + i * 60000).toISOString();
-      const shockPhase = i < Math.min(N, 5) ? 1 : Math.max(0, 1 - (i - 5) / (N - 5));
+      const shockPhase =
+        i < Math.min(N, 5) ? 1 : Math.max(0, 1 - (i - 5) / (N - 5));
       const noise = (Math.random() - 0.5) * (c.volSpikePct / 100) * 0.5;
       const px = base + jump * shockPhase + base * noise;
-      const vol = Math.max(1, volBase * (1 - c.liquidityDrainPct / 100) * (1 + spreadInfl));
+      const vol = Math.max(
+        1,
+        volBase * (1 - c.liquidityDrainPct / 100) * (1 + spreadInfl),
+      );
       points.push({ t, price: +px.toFixed(4), volume: +vol.toFixed(4) });
     }
     return points;
@@ -266,7 +270,8 @@ export default function ScenarioLab() {
       } as any;
       const j = await postJson<any>("/api/v1/execution/simulate", payload);
 
-      const id: string = j?.data?.request_id || `${Date.now()}_${Math.random()}`;
+      const id: string =
+        j?.data?.request_id || `${Date.now()}_${Math.random()}`;
       const mapped = mapResult(j);
       const res: RunResult = {
         id,
@@ -345,7 +350,11 @@ export default function ScenarioLab() {
         }
       }
     } catch (e: any) {
-      toast({ title: "Scenario failed", description: e?.message || "Error", variant: "destructive" });
+      toast({
+        title: "Scenario failed",
+        description: e?.message || "Error",
+        variant: "destructive",
+      });
     } finally {
       setRunning(false);
     }
@@ -444,7 +453,8 @@ export default function ScenarioLab() {
         <div>
           <CardTitle>Scenario Lab</CardTitle>
           <CardDescription>
-            Configure shocks and simulate execution via /api/v1/execution/simulate
+            Configure shocks and simulate execution via
+            /api/v1/execution/simulate
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -894,7 +904,10 @@ export default function ScenarioLab() {
                 <ReBarChart
                   data={runs
                     .filter((r) => selected[r.id])
-                    .map((r, i) => ({ name: r.name, value: r.metrics.finalPnl ?? 0 }))}
+                    .map((r, i) => ({
+                      name: r.name,
+                      value: r.metrics.finalPnl ?? 0,
+                    }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
@@ -911,7 +924,10 @@ export default function ScenarioLab() {
                 <ReBarChart
                   data={runs
                     .filter((r) => selected[r.id])
-                    .map((r) => ({ name: r.name, value: (r.metrics.maxDrawdownPct ?? 0) * 100 }))}
+                    .map((r) => ({
+                      name: r.name,
+                      value: (r.metrics.maxDrawdownPct ?? 0) * 100,
+                    }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
@@ -928,7 +944,10 @@ export default function ScenarioLab() {
                 <ReBarChart
                   data={runs
                     .filter((r) => selected[r.id])
-                    .map((r) => ({ name: r.name, value: (r.metrics.fillQuality ?? 0) * 100 }))}
+                    .map((r) => ({
+                      name: r.name,
+                      value: (r.metrics.fillQuality ?? 0) * 100,
+                    }))}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />

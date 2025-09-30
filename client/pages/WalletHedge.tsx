@@ -460,22 +460,35 @@ export default function WalletHedge() {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const j = await response.json();
       const d = j?.data || j || {};
-      const percent = typeof d.hedge_percent === "number" ? d.hedge_percent : (typeof d.hedgePercent === "number" ? d.hedgePercent : 0);
-      const auto = typeof d.auto_hedge_enabled === "boolean" ? d.auto_hedge_enabled : (typeof d.autoAdjust === "boolean" ? d.autoAdjust : true);
+      const percent =
+        typeof d.hedge_percent === "number"
+          ? d.hedge_percent
+          : typeof d.hedgePercent === "number"
+            ? d.hedgePercent
+            : 0;
+      const auto =
+        typeof d.auto_hedge_enabled === "boolean"
+          ? d.auto_hedge_enabled
+          : typeof d.autoAdjust === "boolean"
+            ? d.autoAdjust
+            : true;
       setHedgePercent((percent || 0) * 100);
       setAutoAdjustEnabled(!!auto);
       setHedgeSettings({
         userId: d.user_id || d.userId || "me",
         hedgePercent: percent || 0,
         autoAdjust: !!auto,
-        lastUpdated: d.last_updated || d.lastUpdated || new Date().toISOString(),
+        lastUpdated:
+          d.last_updated || d.lastUpdated || new Date().toISOString(),
         updatedBy: d.updated_by || d.updatedBy || "system",
         effectivePercent: d.effective_percent || d.effectivePercent,
         marketConditions: d.market_conditions || d.marketConditions,
       });
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch hedge settings";
+        error instanceof Error
+          ? error.message
+          : "Failed to fetch hedge settings";
       setErrors((prev) => ({ ...prev, settings: errorMessage }));
     } finally {
       setLoading((prev) => ({ ...prev, settings: false }));
@@ -487,7 +500,11 @@ export default function WalletHedge() {
     setLoading((prev) => ({ ...prev, executeHedge: true }));
 
     try {
-      if (!withdrawable || hedgeAmount <= 0 || hedgeAmount > (withdrawable?.maxSafeWithdrawal || 0)) {
+      if (
+        !withdrawable ||
+        hedgeAmount <= 0 ||
+        hedgeAmount > (withdrawable?.maxSafeWithdrawal || 0)
+      ) {
         throw new Error("Enter a valid hedge amount within the safe limit");
       }
       const response = await apiFetch("/api/v1/hedge", {
@@ -740,12 +757,17 @@ export default function WalletHedge() {
                   min={0}
                   step="0.01"
                   value={hedgeAmount}
-                  onChange={(e) => setHedgeAmount(parseFloat(e.target.value) || 0)}
+                  onChange={(e) =>
+                    setHedgeAmount(parseFloat(e.target.value) || 0)
+                  }
                   placeholder="Enter amount"
                 />
-                {withdrawable && hedgeAmount > withdrawable.maxSafeWithdrawal && (
-                  <div className="text-xs text-red-600">Exceeds max safe amount</div>
-                )}
+                {withdrawable &&
+                  hedgeAmount > withdrawable.maxSafeWithdrawal && (
+                    <div className="text-xs text-red-600">
+                      Exceeds max safe amount
+                    </div>
+                  )}
               </div>
               <DialogFooter>
                 <Button
@@ -754,7 +776,16 @@ export default function WalletHedge() {
                 >
                   Cancel
                 </Button>
-                <Button onClick={executeHedge} disabled={loading.executeHedge || hedgeAmount <= 0 || (withdrawable ? hedgeAmount > withdrawable.maxSafeWithdrawal : false)}>
+                <Button
+                  onClick={executeHedge}
+                  disabled={
+                    loading.executeHedge ||
+                    hedgeAmount <= 0 ||
+                    (withdrawable
+                      ? hedgeAmount > withdrawable.maxSafeWithdrawal
+                      : false)
+                  }
+                >
                   {loading.executeHedge ? (
                     <>
                       <RefreshCw className="h-4 w-4 mr-2 animate-spin" />

@@ -72,18 +72,34 @@ export default function FederatedLearningTab() {
           throw new Error(`HTTP ${r.status}`);
         }
       } else {
-        const j = await r.json().catch(() => ([]));
-        const roundsArr: RoundInfo[] = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+        const j = await r.json().catch(() => []);
+        const roundsArr: RoundInfo[] = Array.isArray(j?.data)
+          ? j.data
+          : Array.isArray(j)
+            ? j
+            : [];
         // Normalize into status shape
-        const currentRound = roundsArr.reduce((m, rr) => Math.max(m, rr.round || 0), 0) || undefined;
-        const nodes = roundsArr.find((rr) => rr.round === currentRound)?.nodes || [];
-        const latest = roundsArr.find((rr) => rr.round === currentRound) || roundsArr[0];
+        const currentRound =
+          roundsArr.reduce((m, rr) => Math.max(m, rr.round || 0), 0) ||
+          undefined;
+        const nodes =
+          roundsArr.find((rr) => rr.round === currentRound)?.nodes || [];
+        const latest =
+          roundsArr.find((rr) => rr.round === currentRound) || roundsArr[0];
         const status: FederatedStatus = {
           status: roundsArr.length ? "ok" : "empty",
           currentRound,
           totalRounds: roundsArr.length || undefined,
-          globalModel: latest ? { accuracy: latest.accuracy, loss: latest.loss, version: String(latest.round) } : undefined,
-          privacy: latest ? { epsilon: latest.epsilon, delta: latest.delta } : undefined,
+          globalModel: latest
+            ? {
+                accuracy: latest.accuracy,
+                loss: latest.loss,
+                version: String(latest.round),
+              }
+            : undefined,
+          privacy: latest
+            ? { epsilon: latest.epsilon, delta: latest.delta }
+            : undefined,
           rounds: roundsArr,
           nodes,
         };
@@ -146,7 +162,9 @@ export default function FederatedLearningTab() {
         <CardContent>
           {error && <div className="text-sm text-destructive">{error}</div>}
           {!data && !loading && (
-            <div className="text-sm text-muted-foreground mb-3">No dedicated federated status endpoint; showing empty state.</div>
+            <div className="text-sm text-muted-foreground mb-3">
+              No dedicated federated status endpoint; showing empty state.
+            </div>
           )}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-3 border rounded-md">

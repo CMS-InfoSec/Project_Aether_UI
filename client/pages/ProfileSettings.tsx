@@ -205,8 +205,8 @@ export default function ProfileSettings() {
         () => apiFetch("/api/v1/user/profile"),
         "loadProfile",
       );
-      const data = await response.json().catch(()=>({}));
-      const profile: UserProfile = data?.risk_tier ? data : (data?.data || {});
+      const data = await response.json().catch(() => ({}));
+      const profile: UserProfile = data?.risk_tier ? data : data?.data || {};
       if (!profile?.risk_tier) throw new Error("Invalid profile payload");
       setUserProfile(profile);
       setSelectedRiskTier(profile.risk_tier);
@@ -329,8 +329,8 @@ export default function ProfileSettings() {
         "saveProfile",
       );
 
-      const data = await response.json().catch(()=>({}));
-      const profile: UserProfile = data?.risk_tier ? data : (data?.data || {});
+      const data = await response.json().catch(() => ({}));
+      const profile: UserProfile = data?.risk_tier ? data : data?.data || {};
       if (profile?.risk_tier) {
         setUserProfile(profile);
         toast({

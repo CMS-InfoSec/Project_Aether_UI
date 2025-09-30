@@ -436,22 +436,42 @@ export default function AdminDashboard() {
     try {
       const params = new URLSearchParams({ limit: "20" });
       if (showUnreadOnly) params.set("unreadOnly", "true");
-      if (notificationFilter !== "all") params.set("severity", notificationFilter);
+      if (notificationFilter !== "all")
+        params.set("severity", notificationFilter);
       const response = await apiFetch(`/api/v1/notifications?${params}`);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const j = await response.json().catch(() => ({ total:0, items:[], next:null }));
+      const j = await response
+        .json()
+        .catch(() => ({ total: 0, items: [], next: null }));
       const items = Array.isArray(j.items) ? j.items : [];
       const total = Number(j.total) || items.length;
       const summary = {
         total,
         unread: items.filter((n: any) => !n.read).length,
-        actionRequired: items.filter((n: any) => n.actionRequired && !n.read).length,
-        severityCounts: items.reduce((acc: any, n: any) => { acc[n.severity] = (acc[n.severity]||0)+1; return acc; }, {} as any),
+        actionRequired: items.filter((n: any) => n.actionRequired && !n.read)
+          .length,
+        severityCounts: items.reduce((acc: any, n: any) => {
+          acc[n.severity] = (acc[n.severity] || 0) + 1;
+          return acc;
+        }, {} as any),
       } as any;
-      setNotificationData({ notifications: items, summary, pagination: { total, limit: items.length, offset: 0, hasMore: Boolean(j.next) } });
+      setNotificationData({
+        notifications: items,
+        summary,
+        pagination: {
+          total,
+          limit: items.length,
+          offset: 0,
+          hasMore: Boolean(j.next),
+        },
+      });
     } catch (error) {
       console.error("Error loading notifications:", error);
-      toast({ title: "Notifications Error", description: "Failed to load notifications", variant: "destructive" });
+      toast({
+        title: "Notifications Error",
+        description: "Failed to load notifications",
+        variant: "destructive",
+      });
     } finally {
       setIsRefreshing((prev) => ({ ...prev, notifications: false }));
     }
@@ -1652,7 +1672,16 @@ export default function AdminDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const payload = JSON.stringify(notificationData ? { notifications: notificationData.notifications } : { notifications: [] }, null, 2);
+                            const payload = JSON.stringify(
+                              notificationData
+                                ? {
+                                    notifications:
+                                      notificationData.notifications,
+                                  }
+                                : { notifications: [] },
+                              null,
+                              2,
+                            );
                             const ok = await copy(payload);
                             toast({ title: ok ? "Copied" : "Copy failed" });
                           }}
@@ -1663,8 +1692,19 @@ export default function AdminDashboard() {
                           variant="outline"
                           size="sm"
                           onClick={async () => {
-                            const payload = JSON.stringify(notificationData ? { notifications: notificationData.notifications } : { notifications: [] }, null, 2);
-                            const blob = new Blob([payload], { type: "application/json" });
+                            const payload = JSON.stringify(
+                              notificationData
+                                ? {
+                                    notifications:
+                                      notificationData.notifications,
+                                  }
+                                : { notifications: [] },
+                              null,
+                              2,
+                            );
+                            const blob = new Blob([payload], {
+                              type: "application/json",
+                            });
                             const url = URL.createObjectURL(blob);
                             const a = document.createElement("a");
                             a.href = url;
@@ -1858,7 +1898,9 @@ export default function AdminDashboard() {
                                         )}
                                       </Button>
                                     )}
-                                    <span className="text-xs text-muted-foreground">Mark-as-read not supported</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      Mark-as-read not supported
+                                    </span>
                                   </div>
                                 </div>
                               </div>
