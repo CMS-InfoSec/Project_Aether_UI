@@ -202,7 +202,7 @@ export default function ProfileSettings() {
   const loadUserProfile = async () => {
     try {
       const response = await handleApiRequest(
-        () => apiFetch("/api/user/profile"),
+        () => apiFetch("/api/v1/user/profile"),
         "loadProfile",
       );
       const data = await response.json();
