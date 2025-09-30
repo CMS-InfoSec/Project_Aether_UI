@@ -456,26 +456,26 @@ export default function WalletHedge() {
     setErrors((prev) => ({ ...prev, settings: "" }));
 
     try {
-      const response = await apiFetch("/api/hedge/percent");
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-
-      if (data.status === "success") {
-        setHedgeSettings(data.data);
-        setHedgePercent(data.data.hedgePercent * 100);
-        setAutoAdjustEnabled(data.data.autoAdjust);
-      } else {
-        throw new Error(data.message || "Failed to fetch hedge settings");
-      }
+      const response = await apiFetch("/api/v1/hedge/settings");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const j = await response.json();
+      const d = j?.data || j || {};
+      const percent = typeof d.hedge_percent === "number" ? d.hedge_percent : (typeof d.hedgePercent === "number" ? d.hedgePercent : 0);
+      const auto = typeof d.auto_hedge_enabled === "boolean" ? d.auto_hedge_enabled : (typeof d.autoAdjust === "boolean" ? d.autoAdjust : true);
+      setHedgePercent((percent || 0) * 100);
+      setAutoAdjustEnabled(!!auto);
+      setHedgeSettings({
+        userId: d.user_id || d.userId || "me",
+        hedgePercent: percent || 0,
+        autoAdjust: !!auto,
+        lastUpdated: d.last_updated || d.lastUpdated || new Date().toISOString(),
+        updatedBy: d.updated_by || d.updatedBy || "system",
+        effectivePercent: d.effective_percent || d.effectivePercent,
+        marketConditions: d.market_conditions || d.marketConditions,
+      });
     } catch (error) {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to fetch hedge settings";
+        error instanceof Error ? error.message : "Failed to fetch hedge settings";
       setErrors((prev) => ({ ...prev, settings: errorMessage }));
     } finally {
       setLoading((prev) => ({ ...prev, settings: false }));
@@ -490,7 +490,7 @@ export default function WalletHedge() {
       if (!withdrawable || hedgeAmount <= 0 || hedgeAmount > (withdrawable?.maxSafeWithdrawal || 0)) {
         throw new Error("Enter a valid hedge amount within the safe limit");
       }
-      const response = await apiFetch("/api/hedge", {
+      const response = await apiFetch("/api/v1/hedge", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -556,12 +556,12 @@ export default function WalletHedge() {
     setLoading((prev) => ({ ...prev, saveSettings: true }));
 
     try {
-      const response = await apiFetch("/api/hedge/percent", {
+      const response = await apiFetch("/api/v1/hedge/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          hedgePercent: hedgePercent / 100,
-          autoAdjust: autoAdjustEnabled,
+          hedge_percent: hedgePercent / 100,
+          auto_hedge_enabled: autoAdjustEnabled,
         }),
       });
 
