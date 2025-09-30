@@ -321,7 +321,7 @@ export default function ProfileSettings() {
     try {
       const response = await handleApiRequest(
         () =>
-          apiFetch("/api/user/profile", {
+          apiFetch("/api/v1/user/profile", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ risk_tier: selectedRiskTier }),
