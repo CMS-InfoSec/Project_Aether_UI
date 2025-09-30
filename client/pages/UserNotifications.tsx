@@ -22,15 +22,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Bell,
   RefreshCw,
   Filter,
-  CheckCircle,
-  AlertTriangle,
-  Info,
   CheckCircle2,
   Eye,
   EyeOff,
@@ -43,9 +39,12 @@ import {
   User,
   Settings as SettingsIcon,
   Shield,
+  Download,
+  Copy as CopyIcon,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import HelpTip from "@/components/ui/help-tip";
+import copy from "@/lib/clipboard";
 
 // Types
 interface Notification {
@@ -54,26 +53,16 @@ interface Notification {
   message: string;
   severity: "info" | "warning" | "error" | "success";
   timestamp: string;
-  read: boolean;
-  category: "system" | "trading" | "user" | "security";
-  actionRequired: boolean;
+  read?: boolean;
+  category?: "system" | "trading" | "user" | "security" | string;
+  actionRequired?: boolean;
   metadata?: any;
 }
 
-interface NotificationData {
-  notifications: Notification[];
-  summary: {
-    total: number;
-    unread: number;
-    actionRequired: number;
-    severityCounts: Record<string, number>;
-  };
-  pagination: {
-    total: number;
-    limit: number;
-    offset: number;
-    hasMore: boolean;
-  };
+interface NotificationsResponse {
+  total: number;
+  items: Notification[];
+  next: number | null;
 }
 
 const SEVERITY_COLORS = {
@@ -85,8 +74,8 @@ const SEVERITY_COLORS = {
 
 const SEVERITY_ICONS = {
   error: AlertCircle,
-  warning: AlertTriangle,
-  info: Info,
+  warning: AlertCircle,
+  info: AlertCircle,
   success: CheckCircle2,
 };
 
@@ -102,30 +91,17 @@ export default function UserNotifications() {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // State
-  const [notifications, setNotifications] = useState<NotificationData | null>(
-    null,
-  );
+  const [data, setData] = useState<NotificationsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [expandedNotifications, setExpandedNotifications] = useState<
-    Set<string>
-  >(new Set());
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [prefs, setPrefs] = useState<{
     supported_channels: string[];
     channels: Record<string, boolean>;
   } | null>(null);
   const [degraded, setDegraded] = useState(false);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [channelStatus, setChannelStatus] = useState<any | null>(null);
-  const [pushStatus, setPushStatus] = useState<any | null>(null);
-  const [pushForm, setPushForm] = useState({
-    token: "",
-    title: "",
-    body: "",
-    url: "",
-    nonce: "",
-  });
+  const [nextCursor, setNextCursor] = useState<number | null>(null);
 
   // URL-based filter and pagination state
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
@@ -134,66 +110,46 @@ export default function UserNotifications() {
   const categoryFilter = searchParams.get("category") || "all";
   const unreadOnly = searchParams.get("unreadOnly") === "true";
 
-  // Utility functions
   const getSeverityIcon = (severity: string) => {
-    const IconComponent =
-      SEVERITY_ICONS[severity as keyof typeof SEVERITY_ICONS] || Info;
-    return <IconComponent className="h-4 w-4" />;
-  };
-
-  const getCategoryIcon = (category: string) => {
-    const IconComponent =
-      CATEGORY_ICONS[category as keyof typeof CATEGORY_ICONS] || Info;
-    return <IconComponent className="h-4 w-4" />;
+    const Icon = SEVERITY_ICONS[severity as keyof typeof SEVERITY_ICONS] || AlertCircle;
+    return <Icon className="h-4 w-4" />;
+    };
+  const getCategoryIcon = (category?: string) => {
+    const Icon = category ? (CATEGORY_ICONS as any)[category] : null;
+    const C = Icon || AlertCircle;
+    return <C className="h-4 w-4" />;
   };
 
   const formatTimeAgo = (timestamp: string) => {
     const now = new Date();
     const time = new Date(timestamp);
-    const diffInMinutes = Math.floor(
-      (now.getTime() - time.getTime()) / (1000 * 60),
-    );
-
+    const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
     if (diffInMinutes < 1) return "Just now";
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-
     const diffInHours = Math.floor(diffInMinutes / 60);
     if (diffInHours < 24) return `${diffInHours}h ago`;
-
     const diffInDays = Math.floor(diffInHours / 24);
     if (diffInDays < 7) return `${diffInDays}d ago`;
-
     return time.toLocaleDateString();
   };
 
-  // Update URL parameters
   const updateFilters = useCallback(
     (newParams: Record<string, string | null>) => {
       const params = new URLSearchParams(searchParams);
-
       Object.entries(newParams).forEach(([key, value]) => {
-        if (value === null || value === "" || value === "all") {
-          params.delete(key);
-        } else {
-          params.set(key, value);
-        }
+        if (value === null || value === "" || value === "all") params.delete(key);
+        else params.set(key, value);
       });
-
-      // Reset to page 1 when filters change (except when only page changes)
-      if (!newParams.page) {
-        params.delete("page");
-      }
-
+      if (!newParams.page) params.delete("page");
       setSearchParams(params);
     },
     [searchParams, setSearchParams],
   );
 
-
   // Load preferences (graceful)
   const loadPreferences = useCallback(async () => {
     try {
-      const r = await apiFetch("/api/notifications/preferences");
+      const r = await apiFetch("/api/v1/notifications/preferences");
       if (!r.ok) return;
       const j = await r.json().catch(() => null);
       if (j?.status === "success") setPrefs(j.data);
@@ -202,209 +158,53 @@ export default function UserNotifications() {
     }
   }, []);
 
-  // Load notifications with better error handling
   const loadNotifications = useCallback(async () => {
     if (!isLoading) setIsRefreshing(true);
     try {
       const params = new URLSearchParams();
-      const offset = (currentPage - 1) * pageSize;
       params.set("limit", pageSize.toString());
-      params.set("offset", offset.toString());
+      // Best-effort filters; backend may support these
       if (severityFilter !== "all") params.set("severity", severityFilter);
       if (categoryFilter !== "all") params.set("category", categoryFilter);
       if (unreadOnly) params.set("unreadOnly", "true");
+      // Offset-based paging if supported
+      const offset = (currentPage - 1) * pageSize;
+      if (offset > 0) params.set("offset", String(offset));
 
-      let response: Response;
+      let response: Response | null = null;
       try {
-        response = await apiFetch(`/api/notifications?${params}`);
-      } catch (networkErr) {
-        console.warn(
-          "Network error fetching notifications, retrying once",
-          networkErr,
-        );
-        try {
-          await new Promise((res) => setTimeout(res, 700));
-          response = await apiFetch(`/api/notifications?${params}`);
-        } catch (networkErr2) {
-          console.error("Network error fetching notifications", networkErr2);
-          setDegraded(true);
-          toast({
-            title: "Network error",
-            description:
-              "Unable to reach notifications backend. Showing cached data if available.",
-            variant: "destructive",
-          });
-          return;
-        }
+        response = await apiFetch(`/api/v1/notifications?${params}`);
+      } catch (e1) {
+        console.warn("Network error, retrying /api/v1/notifications", e1);
+        await new Promise((r) => setTimeout(r, 600));
+        response = await apiFetch(`/api/v1/notifications?${params}`);
       }
 
-      if (response.status === 503) {
+      if (!response.ok && response.status === 503) {
         setDegraded(true);
-        const cached = await response.json().catch(() => null);
-        if (!notifications && cached?.data) setNotifications(cached.data);
         return;
       }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
+      const j: NotificationsResponse = await response
+        .json()
+        .catch(() => ({ total: 0, items: [], next: null } as NotificationsResponse));
+
+      setData({ total: j.total || 0, items: Array.isArray(j.items) ? j.items : [], next: j.next ?? null });
+      setNextCursor(j.next ?? null);
       setDegraded(false);
-
-      const data = await response.json().catch(() => null);
-      if (!data) throw new Error("Invalid response from notifications API");
-
-      if (data.status === "success" && data.data) {
-        setNotifications(data.data);
-        setNextCursor(data.data.nextCursor || null);
-      } else {
-        throw new Error(data.error || "Failed to load notifications");
-      }
     } catch (error: any) {
       console.error("Load notifications error:", error);
+      setDegraded(true);
       toast({
-        title: "Error",
-        description: error?.message || "Failed to load notifications",
-        variant: "destructive",
+        title: "Notifications",
+        description: "Backend unavailable; showing degraded state.",
       });
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [
-    currentPage,
-    pageSize,
-    severityFilter,
-    categoryFilter,
-    unreadOnly,
-    notifications,
-  ]);
-
-  // Mark notification as read
-  const markAsRead = async (notificationId: string, read: boolean = true) => {
-    try {
-      const response = await apiFetch(
-        `/api/notifications/${notificationId}/read`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ read }),
-        },
-      );
-
-      if (response.ok) {
-        // Update local state
-        setNotifications((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            notifications: prev.notifications.map((n) =>
-              n.id === notificationId ? { ...n, read } : n,
-            ),
-            summary: {
-              ...prev.summary,
-              unread: prev.summary.unread + (read ? -1 : 1),
-            },
-          };
-        });
-
-        toast({
-          title: read ? "Marked as Read" : "Marked as Unread",
-          description: `Notification has been ${read ? "marked as read" : "marked as unread"}.`,
-        });
-      } else {
-        throw new Error("Failed to update notification");
-      }
-    } catch (error) {
-      console.error("Mark as read error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update notification status.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Mark all as read
-  const markAllAsRead = async () => {
-    try {
-      const response = await apiFetch("/api/notifications/mark-all-read", {
-        method: "POST",
-      });
-
-      if (response.ok) {
-        await loadNotifications();
-        toast({
-          title: "All Marked as Read",
-          description: "All notifications have been marked as read.",
-        });
-      } else {
-        throw new Error("Failed to mark all as read");
-      }
-    } catch (error) {
-      console.error("Mark all as read error:", error);
-      toast({
-        title: "Error",
-        description: "Failed to mark all notifications as read.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Toggle notification expansion
-  const toggleExpansion = (notificationId: string) => {
-    setExpandedNotifications((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(notificationId)) {
-        newSet.delete(notificationId);
-      } else {
-        newSet.add(notificationId);
-      }
-      return newSet;
-    });
-  };
-
-  // Pagination controls
-  const totalPages = notifications
-    ? Math.ceil(notifications.pagination.total / pageSize)
-    : 0;
-
-  const goToPage = (page: number) => {
-    updateFilters({ page: page.toString() });
-  };
-
-  const loadMore = async () => {
-    if (!nextCursor) return;
-    try {
-      const params = new URLSearchParams();
-      params.set("limit", pageSize.toString());
-      params.set("offset", nextCursor);
-      if (severityFilter !== "all") params.set("severity", severityFilter);
-      if (categoryFilter !== "all") params.set("category", categoryFilter);
-      if (unreadOnly) params.set("unreadOnly", "true");
-      const r = await apiFetch(`/api/notifications?${params}`);
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const j = await r.json();
-      setNotifications((prev) =>
-        prev
-          ? {
-              ...j.data,
-              notifications: prev.notifications.concat(j.data.notifications),
-              summary: j.data.summary,
-              pagination: j.data.pagination,
-            }
-          : j.data,
-      );
-      setNextCursor(j.data.nextCursor || null);
-    } catch (e: any) {
-      toast({
-        title: "Error",
-        description: e.message || "Load more failed",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const goToFirstPage = () => goToPage(1);
-  const goToLastPage = () => goToPage(totalPages);
-  const goToPrevPage = () => goToPage(Math.max(1, currentPage - 1));
-  const goToNextPage = () => goToPage(Math.min(totalPages, currentPage + 1));
+  }, [currentPage, pageSize, severityFilter, categoryFilter, unreadOnly]);
 
   // Load notifications when filters change
   useEffect(() => {
@@ -419,9 +219,7 @@ export default function UserNotifications() {
   // Auto-refresh polling
   useEffect(() => {
     if (!autoRefresh) return;
-    const t = window.setInterval(() => {
-      loadNotifications();
-    }, 30000);
+    const t = window.setInterval(() => loadNotifications(), 30000);
     return () => window.clearInterval(t);
   }, [autoRefresh, loadNotifications]);
 
@@ -429,14 +227,51 @@ export default function UserNotifications() {
     return (
       <div className="container mx-auto p-6">
         <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            Please log in to view notifications.
-          </AlertDescription>
+          <AlertDescription>Please log in to view notifications.</AlertDescription>
         </Alert>
       </div>
     );
   }
+
+  // Derived summary
+  const total = data?.total || 0;
+  const unread = (data?.items || []).filter((n) => !n.read).length;
+  const actionRequired = (data?.items || []).filter((n) => (n as any).actionRequired && !n.read).length;
+  const severityCounts: Record<string, number> = { error: 0, warning: 0, info: 0, success: 0 };
+  for (const n of data?.items || []) severityCounts[n.severity] = (severityCounts[n.severity] || 0) + 1;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+
+  const goToPage = (page: number) => updateFilters({ page: page.toString() });
+  const goToFirstPage = () => goToPage(1);
+  const goToLastPage = () => goToPage(totalPages);
+  const goToPrevPage = () => goToPage(Math.max(1, currentPage - 1));
+  const goToNextPage = () => goToPage(Math.min(totalPages, currentPage + 1));
+
+  const toggleExpansion = (id: string) => {
+    setExpanded((prev) => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
+  };
+
+  const handleCopyJson = async () => {
+    const payload = JSON.stringify({ total: data?.total || 0, items: data?.items || [], next: data?.next ?? null }, null, 2);
+    const ok = await copy(payload);
+    toast({ title: ok ? "Copied" : "Copy failed", description: ok ? "JSON copied" : "Unable to copy" });
+  };
+  const handleDownloadJson = async () => {
+    const payload = JSON.stringify({ total: data?.total || 0, items: data?.items || [], next: data?.next ?? null }, null, 2);
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "notifications.json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -447,102 +282,43 @@ export default function UserNotifications() {
             <Bell className="h-8 w-8" />
             <span>Notifications</span>
           </h1>
-          <p className="text-muted-foreground">
-            Stay updated with important alerts and system messages
-          </p>
+          <p className="text-muted-foreground">Live system alerts and messages</p>
         </div>
         <div className="flex items-center space-x-2">
           <div className="flex items-center space-x-2 mr-2 text-sm">
-            <Switch
-              id="auto-refresh"
-              checked={autoRefresh}
-              onCheckedChange={setAutoRefresh}
-            />
+            <Switch id="auto-refresh" checked={autoRefresh} onCheckedChange={setAutoRefresh} />
             <Label htmlFor="auto-refresh">Auto-refresh 30s</Label>
           </div>
-                    <Button
-            variant="outline"
-            onClick={async () => {
-              const params = new URLSearchParams();
-              params.set("limit", pageSize.toString());
-              params.set("offset", ((currentPage - 1) * pageSize).toString());
-              if (severityFilter !== "all")
-                params.set("severity", severityFilter);
-              if (categoryFilter !== "all")
-                params.set("category", categoryFilter);
-              if (unreadOnly) params.set("unreadOnly", "true");
-              const r = await apiFetch(
-                `/api/notifications?${params}&format=csv`,
-              );
-              const txt = await r.text();
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(
-                new Blob([txt], { type: "text/csv" }),
-              );
-              a.download = "notifications.csv";
-              a.click();
-            }}
-          >
-            Export CSV
+          <Button variant="outline" onClick={handleCopyJson}>
+            <CopyIcon className="h-4 w-4 mr-2" /> Copy JSON
           </Button>
-          <Button
-            variant="outline"
-            onClick={async () => {
-              const params = new URLSearchParams();
-              params.set("limit", pageSize.toString());
-              params.set("offset", ((currentPage - 1) * pageSize).toString());
-              if (severityFilter !== "all")
-                params.set("severity", severityFilter);
-              if (categoryFilter !== "all")
-                params.set("category", categoryFilter);
-              if (unreadOnly) params.set("unreadOnly", "true");
-              const r = await apiFetch(`/api/notifications?${params}`);
-              const j = await r.json();
-              const a = document.createElement("a");
-              a.href = URL.createObjectURL(
-                new Blob([JSON.stringify(j.data.notifications, null, 2)], {
-                  type: "application/json",
-                }),
-              );
-              a.download = "notifications.json";
-              a.click();
-            }}
-          >
-            Export JSON
+          <Button variant="outline" onClick={handleDownloadJson}>
+            <Download className="h-4 w-4 mr-2" /> Download JSON
           </Button>
-          <Button
-            variant="outline"
-            onClick={loadNotifications}
-            disabled={isRefreshing}
-          >
-            {isRefreshing ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <RefreshCw className="h-4 w-4" />
-            )}
+          <Button variant="outline" onClick={loadNotifications} disabled={isRefreshing}>
+            {isRefreshing ? <RefreshCw className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
         </div>
       </div>
 
       {degraded && (
-        <Alert variant="destructive">
+        <Alert>
           <AlertDescription>
-            Degraded mode: using cached results until backend recovers.
+            Degraded mode: backend notifications API unavailable. Pagination may be limited.
           </AlertDescription>
         </Alert>
       )}
+
       {/* Summary Cards */}
-      {notifications && (
+      {data && (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="pt-6 relative">
               <div className="absolute right-2 top-2">
-                <HelpTip content="Total notifications received." side="left" />
+                <HelpTip content="Total notifications in the system (server-reported)." side="left" />
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold">
-                  {notifications.summary.total}
-                </div>
+                <div className="text-2xl font-bold">{total}</div>
                 <div className="text-xs text-muted-foreground">Total</div>
               </div>
             </CardContent>
@@ -550,15 +326,10 @@ export default function UserNotifications() {
           <Card>
             <CardContent className="pt-6 relative">
               <div className="absolute right-2 top-2">
-                <HelpTip
-                  content="Unread notifications that you haven't viewed yet."
-                  side="left"
-                />
+                <HelpTip content="Unread notifications from the current query." side="left" />
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {notifications.summary.unread}
-                </div>
+                <div className="text-2xl font-bold text-blue-600">{unread}</div>
                 <div className="text-xs text-muted-foreground">Unread</div>
               </div>
             </CardContent>
@@ -566,30 +337,21 @@ export default function UserNotifications() {
           <Card>
             <CardContent className="pt-6 relative">
               <div className="absolute right-2 top-2">
-                <HelpTip
-                  content="Notifications that require your attention or action."
-                  side="left"
-                />
+                <HelpTip content="Requires attention from the current query." side="left" />
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-600">
-                  {notifications.summary.actionRequired}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  Action Required
-                </div>
+                <div className="text-2xl font-bold text-red-600">{actionRequired}</div>
+                <div className="text-xs text-muted-foreground">Action Required</div>
               </div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 relative">
               <div className="absolute right-2 top-2">
-                <HelpTip content="Number of warnings detected." side="left" />
+                <HelpTip content="Count of warnings in the current query." side="left" />
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-yellow-600">
-                  {notifications.summary.severityCounts.warning || 0}
-                </div>
+                <div className="text-2xl font-bold text-yellow-600">{severityCounts.warning || 0}</div>
                 <div className="text-xs text-muted-foreground">Warnings</div>
               </div>
             </CardContent>
@@ -605,10 +367,7 @@ export default function UserNotifications() {
               <Filter className="h-5 w-5" />
               <span>Filters</span>
             </CardTitle>
-            <HelpTip
-              content="Refine your notifications by severity, category, page size, and unread status."
-              side="left"
-            />
+            <HelpTip content="Refine by severity, category, page size, and unread status." side="left" />
           </div>
         </CardHeader>
         <CardContent>
@@ -618,10 +377,7 @@ export default function UserNotifications() {
                 <Label>Severity</Label>
                 <HelpTip content="Filter by severity level." side="right" />
               </div>
-              <Select
-                value={severityFilter}
-                onValueChange={(value) => updateFilters({ severity: value })}
-              >
+              <Select value={severityFilter} onValueChange={(v) => updateFilters({ severity: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -634,19 +390,12 @@ export default function UserNotifications() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>Category</Label>
-                <HelpTip
-                  content="Filter by notification category."
-                  side="right"
-                />
+                <HelpTip content="Filter by category." side="right" />
               </div>
-              <Select
-                value={categoryFilter}
-                onValueChange={(value) => updateFilters({ category: value })}
-              >
+              <Select value={categoryFilter} onValueChange={(v) => updateFilters({ category: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -659,19 +408,12 @@ export default function UserNotifications() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Label>Page Size</Label>
-                <HelpTip
-                  content="How many notifications to show per page."
-                  side="right"
-                />
+                <HelpTip content="How many notifications per page." side="right" />
               </div>
-              <Select
-                value={pageSize.toString()}
-                onValueChange={(value) => updateFilters({ limit: value })}
-              >
+              <Select value={pageSize.toString()} onValueChange={(v) => updateFilters({ limit: v })}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -683,28 +425,16 @@ export default function UserNotifications() {
                 </SelectContent>
               </Select>
             </div>
-
             <div className="flex items-center space-x-2">
-              <Switch
-                id="unread-only"
-                checked={unreadOnly}
-                onCheckedChange={(checked) =>
-                  updateFilters({ unreadOnly: checked ? "true" : null })
-                }
-              />
+              <Switch id="unread-only" checked={unreadOnly} onCheckedChange={(checked) => updateFilters({ unreadOnly: checked ? "true" : null })} />
               <div className="flex items-center gap-2">
                 <Label htmlFor="unread-only">Show unread only</Label>
-                <HelpTip
-                  content="Show only unread notifications."
-                  side="right"
-                />
+                <HelpTip content="Show only unread notifications." side="right" />
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Channel features are not supported by backend; hidden in UI */}
 
       {/* Preferences */}
       {prefs && (
@@ -715,10 +445,7 @@ export default function UserNotifications() {
                 <CardTitle>Notification Preferences</CardTitle>
                 <CardDescription>Select channels for alerts</CardDescription>
               </div>
-              <HelpTip
-                content="Choose which channels deliver your notifications."
-                side="left"
-              />
+              <HelpTip content="Choose which channels deliver your notifications." side="left" />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -731,13 +458,7 @@ export default function UserNotifications() {
                     onChange={(e) =>
                       setPrefs((p) =>
                         p
-                          ? {
-                              ...p,
-                              channels: {
-                                ...p.channels,
-                                email: e.target.checked,
-                              },
-                            }
+                          ? { ...p, channels: { ...p.channels, email: e.target.checked } }
                           : p,
                       )
                     }
@@ -753,13 +474,7 @@ export default function UserNotifications() {
                     onChange={(e) =>
                       setPrefs((p) =>
                         p
-                          ? {
-                              ...p,
-                              channels: {
-                                ...p.channels,
-                                slack: e.target.checked,
-                              },
-                            }
+                          ? { ...p, channels: { ...p.channels, slack: e.target.checked } }
                           : p,
                       )
                     }
@@ -775,13 +490,7 @@ export default function UserNotifications() {
                     onChange={(e) =>
                       setPrefs((p) =>
                         p
-                          ? {
-                              ...p,
-                              channels: {
-                                ...p.channels,
-                                telegram: e.target.checked,
-                              },
-                            }
+                          ? { ...p, channels: { ...p.channels, telegram: e.target.checked } }
                           : p,
                       )
                     }
@@ -794,35 +503,22 @@ export default function UserNotifications() {
               <Button
                 onClick={async () => {
                   try {
-                    const r = await apiFetch(
-                      "/api/notifications/preferences",
-                      {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ channels: prefs.channels }),
-                      },
-                    );
+                    const r = await apiFetch("/api/v1/notifications/preferences", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ channels: prefs.channels }),
+                    });
                     const j = await r.json();
-                    if (!r.ok || j.status !== "success")
-                      throw new Error(j.error || "Failed");
-                    toast({
-                      title: "Saved",
-                      description: "Preferences updated",
-                    });
+                    if (!r.ok || j.status !== "success") throw new Error(j.error || "Failed");
+                    toast({ title: "Saved", description: "Preferences updated" });
                   } catch (e: any) {
-                    toast({
-                      title: "Error",
-                      description: e.message || "Failed",
-                      variant: "destructive",
-                    });
+                    toast({ title: "Error", description: e.message || "Failed", variant: "destructive" });
                   }
                 }}
               >
                 Save Preferences
               </Button>
-              <Button variant="outline" onClick={loadPreferences}>
-                Reload
-              </Button>
+              <Button variant="outline" onClick={loadPreferences}>Reload</Button>
             </div>
           </CardContent>
         </Card>
@@ -832,164 +528,10 @@ export default function UserNotifications() {
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
-            <CardTitle>Mobile / Push Delivery</CardTitle>
-            <HelpTip
-              content="Send a test push notification to your device tokens."
-              side="left"
-            />
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={async () => {
-                try {
-                  const r = await apiFetch("/api/mobile/status");
-                  const j = await r.json().catch(() => ({} as any));
-                  setPushStatus(j?.data || j || null);
-                } catch {}
-              }}
-            >
-              Check Status
-            </Button>
-          </div>
-          {pushStatus && (
-            <div className="text-sm text-muted-foreground">
-              Ready: {String(pushStatus.ready)} • Queue:{" "}
-              {pushStatus.queue_depth} • Last nonce: {pushStatus.last_nonce}
-            </div>
-          )}
-          <div className="grid md:grid-cols-2 gap-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <Label>Token(s) (comma-separated)</Label>
-                <HelpTip
-                  content="Device tokens; separate multiple tokens with commas."
-                  side="right"
-                />
-              </div>
-              <Input
-                value={pushForm.token}
-                onChange={(e) =>
-                  setPushForm((p) => ({ ...p, token: e.target.value }))
-                }
-                placeholder="token1,token2"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <Label>Nonce (must increase)</Label>
-                <HelpTip
-                  content="Monotonically increasing number to prevent replay; must be greater than the last sent."
-                  side="right"
-                />
-              </div>
-              <Input
-                value={pushForm.nonce}
-                onChange={(e) =>
-                  setPushForm((p) => ({ ...p, nonce: e.target.value }))
-                }
-                placeholder="1001"
-              />
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2">
-                <Label>Title</Label>
-                <HelpTip content="Push notification title." side="right" />
-              </div>
-              <Input
-                value={pushForm.title}
-                onChange={(e) =>
-                  setPushForm((p) => ({ ...p, title: e.target.value }))
-                }
-              />
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2">
-                <Label>Body</Label>
-                <HelpTip
-                  content="Main message shown in the notification."
-                  side="right"
-                />
-              </div>
-              <Input
-                value={pushForm.body}
-                onChange={(e) =>
-                  setPushForm((p) => ({ ...p, body: e.target.value }))
-                }
-              />
-            </div>
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2">
-                <Label>URL (optional)</Label>
-                <HelpTip
-                  content="Optional URL to open when the notification is tapped."
-                  side="right"
-                />
-              </div>
-              <Input
-                value={pushForm.url}
-                onChange={(e) =>
-                  setPushForm((p) => ({ ...p, url: e.target.value }))
-                }
-              />
-            </div>
-          </div>
-          <Button
-            onClick={async () => {
-              try {
-                const payload: any = {
-                  token: pushForm.token.includes(",")
-                    ? pushForm.token
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                    : pushForm.token,
-                  title: pushForm.title,
-                  body: pushForm.body,
-                  url: pushForm.url || undefined,
-                  nonce: Number(pushForm.nonce),
-                };
-                const r = await apiFetch("/api/mobile/push", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(payload),
-                });
-                const j = await r.json().catch(() => ({} as any));
-                if (r.ok && (j?.queued === true || j?.data?.queued === true))
-                  toast({
-                    title: "Queued",
-                    description: `Queued ${j?.data?.queued ? 1 : j?.queued ? 1 : ""}`,
-                  });
-                else throw new Error(j.error || j.detail || "Failed");
-              } catch (e: any) {
-                toast({
-                  title: "Error",
-                  description: e.message || "Failed",
-                  variant: "destructive",
-                });
-              }
-            }}
-          >
-            Send Push
-          </Button>
-        </CardContent>
-      </Card>
-
-      {/* Notifications List */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
             <CardTitle>
-              {notifications
-                ? `${notifications.pagination.total} Notification${notifications.pagination.total !== 1 ? "s" : ""}`
-                : "Loading..."}
+              {data ? `${total} Notification${total !== 1 ? "s" : ""}` : "Loading..."}
             </CardTitle>
-            <HelpTip
-              content="View and manage your notifications. Click to expand for details or mark as read."
-              side="left"
-            />
+            <HelpTip content="View notifications. Mark-as-read is not supported by the backend yet." side="left" />
           </div>
         </CardHeader>
         <CardContent>
@@ -997,111 +539,53 @@ export default function UserNotifications() {
             <div className="flex items-center justify-center h-48">
               <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
-          ) : notifications && notifications.notifications.length > 0 ? (
+          ) : data && data.items.length > 0 ? (
             <div className="space-y-4">
-              {notifications.notifications.map((notification) => {
-                const isExpanded = expandedNotifications.has(notification.id);
-
+              {data.items.map((n) => {
+                const isExpanded = expanded.has(n.id);
                 return (
                   <div
-                    key={notification.id}
-                    className={`p-4 border rounded-lg transition-colors ${
-                      notification.read
-                        ? "bg-muted/20"
-                        : "bg-background border-primary/20"
-                    }`}
+                    key={n.id}
+                    className={`p-4 border rounded-lg transition-colors ${n.read ? "bg-muted/20" : "bg-background border-primary/20"}`}
                   >
                     <div className="flex items-start space-x-3">
-                      <div className="mt-1">
-                        {getCategoryIcon(notification.category)}
-                      </div>
-
+                      <div className="mt-1">{getCategoryIcon(n.category)}</div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="flex items-center space-x-2 mb-1">
-                              <h3
-                                className={`font-medium ${notification.read ? "text-muted-foreground" : "text-foreground"}`}
-                              >
-                                {notification.title}
-                              </h3>
-                              <Badge
-                                variant="outline"
-                                className={`${SEVERITY_COLORS[notification.severity]} border`}
-                              >
+                              <h3 className={`font-medium ${n.read ? "text-muted-foreground" : "text-foreground"}`}>{n.title}</h3>
+                              <Badge className={`${SEVERITY_COLORS[n.severity]} border`} variant="outline">
                                 <span className="flex items-center space-x-1">
-                                  {getSeverityIcon(notification.severity)}
-                                  <span className="capitalize">
-                                    {notification.severity}
-                                  </span>
+                                  {getSeverityIcon(n.severity)}
+                                  <span className="capitalize">{n.severity}</span>
                                 </span>
                               </Badge>
-                              {notification.actionRequired && (
-                                <Badge
-                                  variant="destructive"
-                                  className="text-xs"
-                                >
-                                  Action Required
-                                </Badge>
+                              {n.actionRequired && (
+                                <Badge variant="destructive" className="text-xs">Action Required</Badge>
                               )}
                             </div>
-
-                            <p
-                              className={`text-sm ${notification.read ? "text-muted-foreground" : "text-foreground"} ${isExpanded ? "" : "line-clamp-2"}`}
-                            >
-                              {notification.message}
-                            </p>
-
+                            <p className={`text-sm ${n.read ? "text-muted-foreground" : "text-foreground"} ${isExpanded ? "" : "line-clamp-2"}`}>{n.message}</p>
                             <div className="flex items-center space-x-4 mt-2 text-xs text-muted-foreground">
                               <div className="flex items-center space-x-1">
                                 <Clock className="h-3 w-3" />
-                                <span>
-                                  {formatTimeAgo(notification.timestamp)}
-                                </span>
+                                <span>{formatTimeAgo(n.timestamp)}</span>
                               </div>
-                              <Badge variant="outline" className="text-xs">
-                                {notification.category}
-                              </Badge>
+                              {n.category && <Badge variant="outline" className="text-xs">{n.category}</Badge>}
                             </div>
                           </div>
-
                           <div className="flex items-center space-x-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleExpansion(notification.id)}
-                            >
-                              {isExpanded ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                markAsRead(notification.id, !notification.read)
-                              }
-                            >
-                              {notification.read ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <CheckCircle className="h-4 w-4" />
-                              )}
-                            </Button>
+                            {n.metadata && (
+                              <Button variant="ghost" size="sm" onClick={() => toggleExpansion(n.id)}>
+                                {isExpanded ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </Button>
+                            )}
                           </div>
                         </div>
-
-                        {isExpanded && notification.metadata && (
+                        {isExpanded && n.metadata && (
                           <div className="mt-3 p-3 bg-muted/50 rounded-md">
-                            <h4 className="text-xs font-medium text-muted-foreground mb-2">
-                              Additional Details:
-                            </h4>
-                            <pre className="text-xs text-muted-foreground whitespace-pre-wrap">
-                              {JSON.stringify(notification.metadata, null, 2)}
-                            </pre>
+                            <h4 className="text-xs font-medium text-muted-foreground mb-2">Additional Details:</h4>
+                            <pre className="text-xs text-muted-foreground whitespace-pre-wrap">{JSON.stringify(n.metadata, null, 2)}</pre>
                           </div>
                         )}
                       </div>
@@ -1109,76 +593,46 @@ export default function UserNotifications() {
                   </div>
                 );
               })}
+              <div className="mt-3 flex items-center justify-center">
+                <Button variant="outline" disabled={!nextCursor} onClick={() => updateFilters({ page: String(currentPage + 1) })}>
+                  Load more
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
               <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-muted-foreground mb-2">
-                No notifications found
-              </h3>
-              <p className="text-sm text-muted-foreground">
-                {unreadOnly
-                  ? "No unread notifications available."
-                  : "You're all caught up!"}
-              </p>
+              <h3 className="text-lg font-medium text-muted-foreground mb-2">No notifications found</h3>
+              <p className="text-sm text-muted-foreground">{unreadOnly ? "No unread notifications available." : "You're all caught up!"}</p>
             </div>
           )}
-          <div className="mt-3 flex items-center justify-center">
-            <Button variant="outline" disabled={!nextCursor} onClick={loadMore}>
-              Load more
-            </Button>
-          </div>
         </CardContent>
       </Card>
 
       {/* Pagination */}
-      {notifications && totalPages > 1 && (
+      {data && totalPages > 1 && (
         <Card>
           <CardContent className="pt-6 relative">
             <div className="absolute right-2 top-2">
-              <HelpTip
-                content="Pagination controls to navigate through notifications."
-                side="left"
-              />
+              <HelpTip content="Pagination controls to navigate through notifications." side="left" />
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <p className="text-sm text-muted-foreground">
-                  Showing {(currentPage - 1) * pageSize + 1} to{" "}
-                  {Math.min(
-                    currentPage * pageSize,
-                    notifications.pagination.total,
-                  )}{" "}
-                  of {notifications.pagination.total} notifications
+                  Showing {(currentPage - 1) * pageSize + 1} to {Math.min(currentPage * pageSize, total)} of {total} notifications
                 </p>
               </div>
-
               <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToFirstPage}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="sm" onClick={goToFirstPage} disabled={currentPage === 1}>
                   <ChevronsLeft className="h-4 w-4" />
                 </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToPrevPage}
-                  disabled={currentPage === 1}
-                >
+                <Button variant="outline" size="sm" onClick={goToPrevPage} disabled={currentPage === 1}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-
                 <div className="flex items-center space-x-1">
                   <div className="flex items-center gap-1">
                     <span className="text-sm text-muted-foreground">Page</span>
-                    <HelpTip
-                      content="Go to a specific page number."
-                      side="top"
-                    />
+                    <HelpTip content="Go to a specific page number." side="top" />
                   </div>
                   <Input
                     type="number"
@@ -1187,32 +641,16 @@ export default function UserNotifications() {
                     value={currentPage}
                     onChange={(e) => {
                       const page = parseInt(e.target.value, 10);
-                      if (page >= 1 && page <= totalPages) {
-                        goToPage(page);
-                      }
+                      if (page >= 1 && page <= totalPages) goToPage(page);
                     }}
                     className="w-16 h-8 text-center"
                   />
-                  <span className="text-sm text-muted-foreground">
-                    of {totalPages}
-                  </span>
+                  <span className="text-sm text-muted-foreground">of {totalPages}</span>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="sm" onClick={goToNextPage} disabled={currentPage === totalPages}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToLastPage}
-                  disabled={currentPage === totalPages}
-                >
+                <Button variant="outline" size="sm" onClick={goToLastPage} disabled={currentPage === totalPages}>
                   <ChevronsRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -1220,6 +658,8 @@ export default function UserNotifications() {
           </CardContent>
         </Card>
       )}
+
+      <div className="text-xs text-muted-foreground">Mark-as-read is not supported yet by the backend. JSON export available above.</div>
     </div>
   );
 }
