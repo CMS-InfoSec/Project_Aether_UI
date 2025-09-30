@@ -449,7 +449,7 @@ export default function AdminModels() {
   // API integration functions
   const fetchTrainingJobs = useCallback(async () => {
     try {
-      const response = await apiFetch("/api/models/jobs");
+      const response = await apiFetch("/api/v1/models/jobs");
       const data = await response.json();
       if (data.status === "success") {
         setTrainingJobs(data.data);
@@ -474,60 +474,42 @@ export default function AdminModels() {
       if ((modelSearch || '').trim()) params.set('search', (modelSearch || '').trim());
       if (modelStatus) params.set('status', modelStatus);
       if (modelType) params.set('type', modelType);
-      const response = await apiFetch(`/api/models/history?${params.toString()}`);
+      const response = await apiFetch(`/api/v1/models/history?${params.toString()}`);
       const data = await response.json();
       if (data.status === "success") {
-        // history items contain reduced fields; we will refetch full models for rich cards if needed
-        const fullQ = new URLSearchParams();
-        fullQ.set('limit','100');
-        fullQ.set('offset','0');
-        if (modelStatus) fullQ.set('status', modelStatus);
-        if (modelType) fullQ.set('type', modelType);
-        const fullResp = await apiFetch(`/api/models?${fullQ.toString()}`);
-        const full = await fullResp
-          .json()
-          .catch(() => ({ status: "", data: [] }));
-        const map: Record<string, any> = {};
-        if (full.status === "success") {
-          for (const m of full.data) map[m.modelId] = m;
-        }
-        const merged = data.data.map((h: any) =>
-          map[h.modelId]
-            ? map[h.modelId]
-            : {
-                modelId: h.modelId,
-                name: h.name,
-                version: h.version,
-                type: h.type,
-                status: h.status,
-                accuracy: 0,
-                performance: {
-                  sharpeRatio: h.metrics?.sharpeRatio || 0,
-                  maxDrawdown: h.metrics?.maxDrawdown || 0,
-                  winRate: h.metrics?.winRate || 0,
-                  profitFactor: h.metrics?.profitFactor || 0,
-                  sortino: h.metrics?.sortino || 0,
-                  calmar: 0,
-                  volatility: 0,
-                  beta: 0,
-                  alpha: 0,
-                  informationRatio: 0,
-                },
-                algorithmInfo: {
-                  name: "unknown",
-                  architecture: {},
-                  hyperparameters: {},
-                },
-                createdAt: h.createdAt,
-                createdBy: "system",
-                experiment: {
-                  mlflowRunId: "",
-                  dvcHash: "",
-                  datasetVersion: "",
-                  checksum: h.checksum,
-                },
-              },
-        );
+        const merged = (data.data || []).map((h: any) => ({
+          modelId: h.modelId,
+          name: h.name,
+          version: h.version,
+          type: h.type,
+          status: h.status,
+          accuracy: 0,
+          performance: {
+            sharpeRatio: h.metrics?.sharpeRatio || 0,
+            maxDrawdown: h.metrics?.maxDrawdown || 0,
+            winRate: h.metrics?.winRate || 0,
+            profitFactor: h.metrics?.profitFactor || 0,
+            sortino: h.metrics?.sortino || 0,
+            calmar: 0,
+            volatility: 0,
+            beta: 0,
+            alpha: 0,
+            informationRatio: 0,
+          },
+          algorithmInfo: {
+            name: "unknown",
+            architecture: {},
+            hyperparameters: {},
+          },
+          createdAt: h.createdAt,
+          createdBy: "system",
+          experiment: {
+            mlflowRunId: "",
+            dvcHash: "",
+            datasetVersion: "",
+            checksum: h.checksum,
+          },
+        }));
         setModels(merged);
       }
     } catch (error) {
@@ -1031,7 +1013,7 @@ export default function AdminModels() {
     setExplainLoading(true);
     try {
       const r = await apiFetch(
-        `/api/models/explain/${encodeURIComponent(diagModelId)}`,
+        `/api/v1/models/explain/${encodeURIComponent(diagModelId)}`,
       );
       const j = await r.json();
       setExplain(j);
