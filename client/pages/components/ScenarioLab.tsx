@@ -12,8 +12,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import HelpTip from "@/components/ui/help-tip";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import apiFetch from "@/lib/apiClient";
+import apiFetch, { postJson } from "@/lib/apiClient";
 import { RefreshCw, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   BarChart as ReBarChart,
   Bar as ReBar,
@@ -99,11 +100,13 @@ function mapResult(raw: any): {
       ? d.curve
       : Array.isArray(d.series)
         ? d.series
-        : [];
+        : Array.isArray(d.chart)
+          ? d.chart
+          : [];
   const curve = series.map((v: any, i: number) => {
     if (typeof v === "number") return { t: i, pnl: v };
     const t = v.t ?? v.ts ?? v.time ?? i;
-    const pnl = v.pnl ?? v.value ?? v.equity ?? 0;
+    const pnl = v.pnl ?? v.value ?? v.equity ?? v.cumCost ?? 0;
     return { t: Number(t), pnl: Number(pnl) };
   });
   // Metrics
@@ -140,6 +143,7 @@ function mapResult(raw: any): {
 }
 
 export default function ScenarioLab() {
+  const { toast } = useToast();
   const [cfg, setCfg] = useState<ScenarioConfig>({
     name: "Custom",
     priceJumpPct: -5,
@@ -231,95 +235,55 @@ export default function ScenarioLab() {
     delete progressTimers.current[id];
   };
 
-  const pollStatus = async (jobId: string) => {
-    const endpoints = [
-      `/api/sim/status/${encodeURIComponent(jobId)}`,
-      `/api/sim/run/${encodeURIComponent(jobId)}`,
-      `/api/sim/status?id=${encodeURIComponent(jobId)}`,
-      `/sim/status/${encodeURIComponent(jobId)}`,
-      `/sim/run/${encodeURIComponent(jobId)}`,
-      `/sim/status?id=${encodeURIComponent(jobId)}`,
-    ];
-    for (const ep of endpoints) {
-      try {
-        const r = await apiFetch(ep);
-        if (r.ok) return await r.json().catch(() => ({}));
-      } catch {}
+  const buildOrderBook = (c: ScenarioConfig) => {
+    const points: Array<{ t: string; price: number; volume: number }> = [];
+    const N = Math.max(10, Math.min(600, Math.round(c.durationMin * 2)));
+    const base = 100;
+    const jump = base * (c.priceJumpPct / 100);
+    const spreadInfl = Math.max(0, c.spreadWidenBps) / 1e4;
+    const volBase = 10;
+    for (let i = 0; i < N; i++) {
+      const t = new Date(Date.now() + i * 60000).toISOString();
+      const shockPhase = i < Math.min(N, 5) ? 1 : Math.max(0, 1 - (i - 5) / (N - 5));
+      const noise = (Math.random() - 0.5) * (c.volSpikePct / 100) * 0.5;
+      const px = base + jump * shockPhase + base * noise;
+      const vol = Math.max(1, volBase * (1 - c.liquidityDrainPct / 100) * (1 + spreadInfl));
+      points.push({ t, price: +px.toFixed(4), volume: +vol.toFixed(4) });
     }
-    return null;
+    return points;
   };
 
   const runScenario = async () => {
     setRunning(true);
     try {
-      const body = {
-        scenario: {
-          name: cfg.name,
-          price_jump_pct: cfg.priceJumpPct / 100,
-          vol_spike_pct: cfg.volSpikePct / 100,
-          spread_widen_bps: cfg.spreadWidenBps,
-          liquidity_drain_pct: cfg.liquidityDrainPct / 100,
-          duration_min: cfg.durationMin,
-        },
-      };
-      let r = await apiFetch("/api/sim/run", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      if (r.status === 404)
-        r = await apiFetch("/sim/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-      const text = await r.text();
-      let j: any = {};
-      if (text && text.trim()) {
-        try {
-          j = JSON.parse(text);
-        } catch {
-          j = { data: text };
-        }
-      }
+      const orderBook = buildOrderBook(cfg);
+      const payload = {
+        method: "TWAP",
+        side: "buy",
+        quantity: Math.max(1, Math.round((cfg.durationMin / 10) * 10)) / 10,
+        slices: Math.max(5, Math.min(100, Math.round(cfg.durationMin))),
+        orderBook,
+      } as any;
+      const j = await postJson<any>("/api/v1/execution/simulate", payload);
 
-      const id: string =
-        j.id || j.jobId || j.request_id || `${Date.now()}_${Math.random()}`;
-      const base: RunResult = {
+      const id: string = j?.data?.request_id || `${Date.now()}_${Math.random()}`;
+      const mapped = mapResult(j);
+      const res: RunResult = {
         id,
         name: cfg.name,
-        status: r.status === 202 ? "running" : "completed",
-        progress: r.status === 202 ? (j.progress ?? 1) : 100,
-        curve: [],
-        actions: [],
-        metrics: {},
+        status: "completed",
+        progress: 100,
+        curve: mapped.curve,
+        actions: mapped.actions,
+        metrics: mapped.metrics,
         raw: j,
       };
-      setRuns((prev) => [...prev, base]);
-      setSelected((prev) => ({ ...prev, [id]: true }));
-      if (base.status === "running") startProgress(id);
+      setRuns((prev) => [...prev, res]);
+      setSelected((prev) => ({ ...prev, [res.id]: true }));
+      toast({ title: "Scenario complete", description: `${cfg.name}` });
 
-      const finalize = (raw: any) => {
-        const mapped = mapResult(raw);
-        setRuns((prev) =>
-          prev.map((rr) =>
-            rr.id === id
-              ? {
-                  ...rr,
-                  status: "completed",
-                  progress: 100,
-                  curve: mapped.curve,
-                  actions: mapped.actions,
-                  metrics: mapped.metrics,
-                  raw,
-                }
-              : rr,
-          ),
-        );
-        stopProgress(id);
-      };
-
-      if (base.status === "running") {
+      // No polling needed; endpoint returns synchronously
+      if (false) {
         let tries = 0;
         let done = false;
         while (!done && tries < 30) {
@@ -379,15 +343,9 @@ export default function ScenarioLab() {
           );
           stopProgress(id);
         }
-      } else {
-        finalize(j);
       }
-    } catch (e) {
-      setRuns((prev) =>
-        prev.map((r, i) =>
-          i === prev.length - 1 ? { ...r, status: "failed" } : r,
-        ),
-      );
+    } catch (e: any) {
+      toast({ title: "Scenario failed", description: e?.message || "Error", variant: "destructive" });
     } finally {
       setRunning(false);
     }
@@ -486,7 +444,7 @@ export default function ScenarioLab() {
         <div>
           <CardTitle>Scenario Lab</CardTitle>
           <CardDescription>
-            Configure shocks and simulate strategy response via /api/sim/run
+            Configure shocks and simulate execution via /api/v1/execution/simulate
           </CardDescription>
         </div>
         <div className="flex items-center gap-2">
@@ -510,7 +468,7 @@ export default function ScenarioLab() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-3">
+        <div className="space-y-3 hidden">
           <div className="flex items-center justify-between">
             <div>
               <div className="text-lg font-semibold">Market Ecology</div>
