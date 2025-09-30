@@ -132,18 +132,39 @@ export default function ASCModelsPanel() {
 
   const fetchModels = async () => {
     try {
-      const res = await apiFetch(`/api/models?type=rl_agent`);
-      const data = await res.json();
-      if (data.status === "success") setModels(data.data || []);
+      const res = await apiFetch(`/api/v1/models/history`);
+      const j = await res.json().catch(() => ({}));
+      const items: any[] = Array.isArray(j?.items) ? j.items : Array.isArray(j?.records) ? j.records : [];
+      const mapped = items.map((m: any) => ({
+        modelId: m.modelId || m.id,
+        name: m.name || m.model || m.id,
+        version: m.version || m.rev || "",
+        type: m.type || m.family || "",
+        status: (m.status || m.state || "").toLowerCase(),
+        createdAt: m.createdAt || m.timestamp,
+        deployedAt: m.deployedAt || undefined,
+        performance: m.performance || undefined,
+      })).filter((m: any) => m.type === 'rl' || m.type === 'rl_agent');
+      setModels(mapped);
     } catch (e) {
       // ignore
     }
   };
   const fetchProposals = async () => {
     try {
-      const res = await apiFetch(`/api/admin/proposals`);
-      const data = await res.json();
-      if (data.status === "success") setProposals(data.data || []);
+      const res = await apiFetch(`/api/v1/governance/proposals`);
+      const j = await res.json().catch(() => ({}));
+      const items: any[] = Array.isArray(j?.items) ? j.items : Array.isArray(j?.data?.items) ? j.data.items : [];
+      const mapped: ProposalItem[] = items.map((p: any) => ({
+        id: p.id,
+        description: p.description || p.summary || '',
+        status: (p.status || 'pending').toLowerCase(),
+        votes: Array.isArray(p.votes) ? p.votes.map((v: any) => ({ founderId: v.founderId || v.user || '', approve: !!v.approve, votedAt: v.votedAt || v.timestamp || '' })) : [],
+        requiredVotes: Number(p.requiredVotes || p.quorum || 3),
+        createdAt: p.createdAt || p.timestamp || '',
+        createdBy: p.createdBy || p.author || '',
+      }));
+      setProposals(mapped);
     } catch (e) {
       // ignore
     }
@@ -153,31 +174,26 @@ export default function ASCModelsPanel() {
     const pid = modelProposalId(model.modelId);
     const exists = proposals.some((p) => p.id === pid);
     if (exists) return pid;
-    const resp = await apiFetch(`/api/admin/proposals/${pid}`, {
+    const resp = await apiFetch(`/api/v1/governance/proposals`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        proposalId: pid,
-        description: `Deploy model ${model.name} (${model.modelId})`,
-      }),
+      body: JSON.stringify({ id: pid, description: `Deploy model ${model.name} (${model.modelId})` }),
     });
-    const j = await resp.json();
-    if (!resp.ok || j.status !== "success")
-      throw new Error(j.error || "Failed to create proposal");
+    const j = await resp.json().catch(()=>({}));
+    if (!resp.ok) throw new Error(j.error || "Failed to create proposal");
     await fetchProposals();
     return pid;
   };
 
   const castVote = async (proposalId: string, approve: boolean) => {
     const founderId = user?.email || user?.id || "admin";
-    const resp = await apiFetch(`/api/admin/proposals/${proposalId}/vote`, {
+    const resp = await apiFetch(`/api/v1/governance/votes/${encodeURIComponent(proposalId)}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ founderId, approve }),
     });
-    const j = await resp.json();
-    if (!resp.ok || j.status !== "success")
-      throw new Error(j.error || "Vote failed");
+    const j = await resp.json().catch(()=>({}));
+    if (!resp.ok) throw new Error(j.error || "Vote failed");
   };
 
   const onApprove = async (model: ModelItem) => {
@@ -237,7 +253,7 @@ export default function ASCModelsPanel() {
         });
         return;
       }
-      const r = await apiFetch(`/api/models/promote`, {
+      const r = await apiFetch(`/api/v1/models/promote`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ modelId: model.modelId, founderApproval: true }),
@@ -272,7 +288,7 @@ export default function ASCModelsPanel() {
     if (!rbFromModelId || !rbToModelId) return;
     try {
       setLoading(true);
-      const r = await apiFetch(`/api/models/rollback`, {
+      const r = await apiFetch(`/api/v1/models/rollback`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
