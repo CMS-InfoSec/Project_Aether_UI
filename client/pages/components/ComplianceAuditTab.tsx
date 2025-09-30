@@ -59,72 +59,74 @@ export default function ComplianceAuditTab() {
     setLoading(true);
     setNotice(null);
     try {
-      // Compliance logs (optional backend)
-      try {
-        const r = await apiFetch("/api/compliance/logs");
-        if (r.ok) {
-          const j = await r.json();
-          const items = Array.isArray(j?.data)
-            ? j.data
-            : Array.isArray(j)
-              ? j
-              : [];
-          setCompliance(items as ComplianceLog[]);
-        } else if (r.status === 404) {
-          setCompliance([]);
-          setNotice(
-            (n) =>
-              n ||
-              "Compliance logs endpoint not available; showing audit only.",
-          );
-        } else {
-          setCompliance([]);
-        }
-      } catch {
-        setCompliance([]);
-        setNotice(
-          (n) =>
-            n || "Compliance logs endpoint not available; showing audit only.",
-        );
-      }
-
-      // Audit logs (fallback to /api/system/audit)
-      try {
-        const r = await apiFetch("/api/audit/logs");
-        if (r.ok) {
-          const j = await r.json();
-          const items = Array.isArray(j?.data)
-            ? j.data
-            : Array.isArray(j)
-              ? j
-              : [];
-          setAudit(items as AuditLog[]);
-        } else {
-          const j2 = await getJson<any>("/api/system/audit");
-          const items2 = Array.isArray(j2?.data)
-            ? j2.data
-            : Array.isArray(j2)
-              ? j2
-              : [];
-          setAudit(items2 as AuditLog[]);
-        }
-      } catch {
+      // Compliance checks for a specific trade
+      if (tradeId && tradeId.trim()) {
         try {
-          const j2 = await getJson<any>("/api/system/audit");
-          const items2 = Array.isArray(j2?.data)
-            ? j2.data
-            : Array.isArray(j2)
-              ? j2
-              : [];
-          setAudit(items2 as AuditLog[]);
+          const j = await getJson<any>(`/api/v1/compliance/checks/${encodeURIComponent(tradeId.trim())}`);
+          const items = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+          setCompliance(items as ComplianceLog[]);
         } catch {
-          setAudit([]);
+          setCompliance([]);
+          setNotice("Failed to fetch compliance checks for the given trade ID.");
         }
+      } else {
+        setCompliance([]);
+        setNotice("Enter a trade ID to fetch compliance details. Historical logs unavailable.");
       }
     } finally {
       setLoading(false);
     }
   };
+
+  // Stream audit activity from events with SSE, fallback to polling
+  useEffect(() => {
+    let es1: EventSource | null = null;
+    let es2: EventSource | null = null;
+    let pollTimer: any;
+    const normalize = (e: any): AuditLog | null => {
+      const d = e?.data || e || {};
+      const ts = String(d.timestamp || d.ts || new Date().toISOString());
+      const id = String(d.id || `${d.type || d.action || 'event'}_${ts}`);
+      const actor = String(d.user || d.actor || d.account || '-');
+      const action = String(d.action || d.type || 'event');
+      const details = d.symbol ? `${d.symbol} ${d.side || ''} ${d.qty || d.amount || ''}`.trim() : d.details || '';
+      const success = d.success !== false;
+      return { id, timestamp: ts, action, actor, details, success };
+    };
+    const add = (item: any) => {
+      const n = normalize(item);
+      if (!n) return;
+      setAudit((prev) => [n, ...prev].slice(0, 200));
+    };
+    try {
+      es1 = new EventSource('/api/v1/events/trades');
+      es1.onmessage = (ev) => {
+        try { add(JSON.parse(ev.data || '{}')); } catch {}
+      };
+    } catch {}
+    try {
+      es2 = new EventSource('/api/v1/events/balances');
+      es2.onmessage = (ev) => {
+        try { add(JSON.parse(ev.data || '{}')); } catch {}
+      };
+    } catch {}
+    // Polling fallback if SSE fails to connect
+    pollTimer = setInterval(async () => {
+      if (!es1 && !es2) {
+        try {
+          const t = await getJson<any>(`/api/v1/events/trades?limit=50`).catch(()=>([]));
+          const b = await getJson<any>(`/api/v1/events/balances?limit=50`).catch(()=>([]));
+          const arr = ([] as any[]).concat(Array.isArray(t?.data)?t.data:t||[], Array.isArray(b?.data)?b.data:b||[]);
+          arr.slice(0,50).forEach(add);
+        } catch {}
+      }
+    }, 8000);
+    return () => {
+      try { es1?.close(); } catch {}
+      try { es2?.close(); } catch {}
+      try { clearInterval(pollTimer); } catch {}
+    };
+  }, []);
 
   const filteredCompliance = useMemo(() => {
     return compliance.filter((c) => {
@@ -157,7 +159,7 @@ export default function ComplianceAuditTab() {
               Compliance & Audit
             </CardTitle>
             <CardDescription>
-              Filter by trade ID, user, and rule type
+              Enter a trade ID to fetch compliance details; audit activity streams from events
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
