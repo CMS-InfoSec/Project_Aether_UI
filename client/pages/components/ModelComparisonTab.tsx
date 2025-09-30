@@ -94,9 +94,19 @@ export default function ModelComparisonTab() {
 
   const fetchModels = async () => {
     try {
-      const r = await apiFetch(`/api/models?type=rl_agent`);
+      const r = await apiFetch(`/api/v1/models/history?type=rl_agent`);
       const j = await r.json();
-      if (j?.status === "success") setModels(j.data || []);
+      if (j?.status === "success") {
+        const items = (j.data || []).map((h: any) => ({
+          modelId: h.modelId,
+          name: h.name,
+          version: h.version,
+          type: h.type,
+          status: h.status,
+          createdAt: h.createdAt,
+        }));
+        setModels(items);
+      }
     } catch {}
   };
   const fetchProposals = async () => {
@@ -135,7 +145,7 @@ export default function ModelComparisonTab() {
 
   const fetchLineage = async (id: string) => {
     try {
-      const j = await getJson<any>(`/api/governance/models/${encodeURIComponent(id)}/lineage`);
+      const j = await getJson<any>(`/api/v1/governance/models/${encodeURIComponent(id)}/lineage`);
       const d = j?.data || j || {};
       const breaches: number =
         Number(
@@ -159,6 +169,7 @@ export default function ModelComparisonTab() {
 
   const fetchBacktestMetrics = async (id: string) => {
     const tryEndpoints = [
+      `/api/v1/reports/backtest?model_id=${encodeURIComponent(id)}`,
       `/api/models/${encodeURIComponent(id)}/backtest`,
       `/api/models/backtest/${encodeURIComponent(id)}`,
       `/api/backtests/${encodeURIComponent(id)}`,
@@ -200,6 +211,7 @@ export default function ModelComparisonTab() {
 
   const fetchLiveMetrics = async (id: string) => {
     const tryEndpoints = [
+      `/api/v1/reports/execution?model_id=${encodeURIComponent(id)}`,
       `/api/models/${encodeURIComponent(id)}/live`,
       `/api/models/perf/live/${encodeURIComponent(id)}`,
       `/api/models/${encodeURIComponent(id)}/metrics?source=live`,
@@ -246,19 +258,7 @@ export default function ModelComparisonTab() {
   const tooMany = selectedIds.length > 4;
 
   useEffect(() => {
-    const n = selectedIds.length;
-    if (n >= 2 && n <= 4) {
-      apiFetch('/api/notifications', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          title: 'Governance: Model comparison',
-          message: `Compared ${n} models: ${selectedIds.join(', ')} (source=${sourceMode}${sourceMode==='backtest' ? `/${backtestMode}` : ''})`,
-          category: 'audit',
-          metadata: { models: selectedIds, source: sourceMode, sample: backtestMode }
-        })
-      }).catch(()=>{});
-    }
+    // Removed backend notification side-effect; UI now surfaces comparison locally only
   }, [selectedIds.join(','), sourceMode, backtestMode]);
 
   const promoteWithCanary = async (modelId: string) => {
