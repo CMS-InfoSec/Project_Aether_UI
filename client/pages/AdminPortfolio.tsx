@@ -211,6 +211,7 @@ export default function AdminPortfolio() {
 
       const data: PortfolioResponse = await response.json();
       setPortfolioData(data);
+      deriveStats(data.items || []);
       updateUrl();
     } catch (error) {
       console.error("Failed to fetch portfolios:", error);
@@ -222,45 +223,45 @@ export default function AdminPortfolio() {
     }
   }, [limit, offset, updateUrl]);
 
-  // Fetch portfolio statistics
-  const fetchStats = async () => {
-    try {
-      const response = await apiFetch("/api/admin/portfolio/stats");
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === "success") {
-          setStats(result.data);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
+  // Derive statistics from current list
+  const deriveStats = useCallback((items: PortfolioRecord[]) => {
+    if (!items || items.length === 0) {
+      setStats(null);
+      return;
     }
-  };
+    const totalPortfolios = items.length;
+    const totalValue = items.reduce((s, p) => s + (p.total_balance || 0), 0);
+    const totalUsdtBalance = items.reduce((s, p) => s + (p.usdt_balance || 0), 0);
+    const totalHedgedBalance = items.reduce((s, p) => s + (p.hedged_balance || 0), 0);
+    const modeDistribution = {
+      live: items.filter((p) => p.mode === "live").length,
+      demo: items.filter((p) => p.mode === "demo").length,
+      paper: items.filter((p) => p.mode === "paper").length,
+    };
+    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const needsRebalancing = items.filter((p) => new Date(p.last_updated).getTime() < weekAgo).length;
+    setStats({
+      totalPortfolios,
+      totalValue,
+      totalUsdtBalance,
+      totalHedgedBalance,
+      modeDistribution,
+      needsRebalancing,
+      lastGlobalRebalance: null,
+    });
+  }, []);
 
-  // Fetch rebalance history
+  // Historical rebalance stream may not be exposed; keep empty with messaging
   const fetchRebalanceHistory = async () => {
-    try {
-      const response = await apiFetch("/api/admin/portfolio/rebalance-history");
-      if (response.ok) {
-        const result = await response.json();
-        if (result.status === "success") {
-          setRebalanceHistory(result.data);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to fetch rebalance history:", error);
-    }
+    setRebalanceHistory([]);
   };
 
   // Initial data load
   useEffect(() => {
     if (user?.role !== "admin") return;
     const loadData = async () => {
-      await Promise.all([
-        fetchPortfolios(),
-        fetchStats(),
-        fetchRebalanceHistory(),
-      ]);
+      await fetchPortfolios();
+      await fetchRebalanceHistory();
     };
     loadData();
   }, [fetchPortfolios, user]);
@@ -551,7 +552,6 @@ export default function AdminPortfolio() {
             variant="outline"
             onClick={() => {
               fetchPortfolios();
-              fetchStats();
               fetchRebalanceHistory();
             }}
             disabled={isLoading}
@@ -1047,7 +1047,7 @@ export default function AdminPortfolio() {
                   <span>Recent Rebalances</span>
                 </CardTitle>
                 <CardDescription>
-                  History of recent rebalancing operations
+                  History of recent rebalancing operations. If empty, backend does not expose historical data.
                 </CardDescription>
               </div>
               <HelpTip content="Timeline of rebalance runs with who triggered them, scope, value moved, and status." />
