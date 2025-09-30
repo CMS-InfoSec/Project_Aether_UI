@@ -48,7 +48,7 @@ export default function CopilotDock() {
 
   const logCopilot = async (title: string, message: string) => {
     try {
-      await apiFetch("/api/notifications", {
+      await apiFetch("/api/v1/notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -106,15 +106,15 @@ export default function CopilotDock() {
         });
         return;
       }
-      const ex = await getJson<any>(
-        `/api/ai/explain/${encodeURIComponent(last.id)}`,
-      ).catch(
-        async () =>
-          await getJson<any>(`/ai/explain/${encodeURIComponent(last.id)}`),
-      );
+      let ex: any = null;
+      try {
+        ex = await getJson<any>(`/api/v1/explain/${encodeURIComponent(last.id)}`);
+      } catch {
+        try { ex = await getJson<any>(`/api/ai/explain/${encodeURIComponent(last.id)}`); } catch {}
+      }
       const shap = ex?.data || ex || {};
-      const why = `Trade ${last.id} rationale: ${shap.summary || shap.reason || "explanation unavailable"}`;
-      const cites = ["GET /api/trades/recent", "GET /api/ai/explain/{id}"];
+      const why = `Trade ${last.id} rationale: ${shap.summary || shap.reason || shap?.shap?.summary || "explanation unavailable"}`;
+      const cites = ["GET /api/trades/recent", "GET /api/v1/explain/{id}"];
       append({
         role: "assistant",
         text: `${why}\n\nSources: ${cites.join(", ")}`,
@@ -155,26 +155,19 @@ export default function CopilotDock() {
                 duration_min: 45,
               },
       };
-      let r = await apiFetch("/api/sim/run", {
+      const r = await apiFetch("/api/v1/execution/simulate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      if (r.status === 404)
-        r = await apiFetch("/sim/run", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
       const j = await r.json().catch(() => ({}));
       const data = j?.data || j || {};
-      const pnl = Array.isArray(data.pnl)
-        ? data.pnl[data.pnl.length - 1]
-        : data.final_pnl || 0;
-      const dd = data.max_drawdown ?? data.metrics?.max_drawdown;
+      const slippage = data?.summary?.slippageBps ?? data.slippageBps ?? 0;
+      const avgPx = data?.summary?.avgPrice ?? data.avgPrice ?? 0;
+      const totalQty = data?.summary?.totalQty ?? data.totalQty ?? 0;
       append({
         role: "assistant",
-        text: `Scenario '${body.scenario.name}' → Final PnL: ${Number(pnl).toFixed(2)}, Max DD: ${typeof dd === "number" ? (dd * 100).toFixed(2) + "%" : "—"}\n\nSources: POST /api/sim/run`,
+        text: `Scenario '${body.scenario.name}' → Slippage: ${Number(slippage).toFixed(2)} bps, Avg Px: ${Number(avgPx).toFixed(2)}, Qty: ${Number(totalQty).toFixed(4)}\n\nSources: POST /api/v1/execution/simulate`,
         ts: Date.now(),
       });
       await logCopilot("Copilot what-if", body.scenario.name);

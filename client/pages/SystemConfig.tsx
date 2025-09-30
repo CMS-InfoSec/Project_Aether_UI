@@ -1,5 +1,2 @@
-import PlaceholderPage from './PlaceholderPage';
-
-export default function SystemConfig() {
-  return <PlaceholderPage />;
-}
+import AdminSystemConfig from "./AdminSystemConfig";
+export default function SystemConfig(){ return <AdminSystemConfig />; }

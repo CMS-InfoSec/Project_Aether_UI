@@ -1,5 +1,2 @@
-import PlaceholderPage from './PlaceholderPage';
-
-export default function Feedback() {
-  return <PlaceholderPage />;
-}
+import AdminFeedback from "./AdminFeedback";
+export default function Feedback(){ return <AdminFeedback />; }

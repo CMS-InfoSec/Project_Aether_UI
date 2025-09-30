@@ -1,5 +1,2 @@
-import PlaceholderPage from './PlaceholderPage';
-
-export default function SystemControl() {
-  return <PlaceholderPage />;
-}
+import AdminSystemControl from "./AdminSystemControl";
+export default function SystemControl(){ return <AdminSystemControl />; }

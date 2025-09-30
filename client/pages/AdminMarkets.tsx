@@ -288,22 +288,33 @@ export default function AdminMarkets() {
     [updateUrl],
   );
 
-  // Fetch market statistics
-  const fetchStats = async () => {
+  // Derive market statistics from current dataset
+  useEffect(() => {
     try {
-      const response = await apiFetch("/api/markets/stats");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.status === "success") setStats(data.data);
+      if (!marketData || !Array.isArray(marketData.items)) {
+        setStats(null);
+        return;
       }
-    } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      const items = marketData.items;
+      const total_markets = marketData.total || items.length;
+      const active_markets = items.filter((m) => m.status === "active").length;
+      const monitoring_markets = items.filter((m) => m.status === "monitoring").length;
+      const inactive_markets = items.filter((m) => m.status === "inactive").length;
+      const delisted_markets = items.filter((m) => m.status === "delisted").length;
+      const avg_profitability = items.length ? items.reduce((s, m) => s + (m.profitability || 0), 0) / items.length : 0;
+      const avg_realized_vol = items.length ? items.reduce((s, m) => s + (m.realized_vol || 0), 0) / items.length : 0;
+      const total_volume = items.reduce((s, m) => s + (m.volume || 0), 0);
+      const total_market_cap = items.reduce((s, m) => s + (m.cap_usd || 0), 0);
+      setStats({ total_markets, active_markets, monitoring_markets, inactive_markets, delisted_markets, avg_profitability, avg_realized_vol, total_volume, total_market_cap });
+    } catch (e:any) {
+      setStats(null);
+      setError(e?.message || "Failed to aggregate market statistics");
     }
-  };
+  }, [marketData]);
 
   useEffect(() => {
     (async () => {
-      await Promise.all([fetchMarkets(filters), fetchStats()]);
+      await fetchMarkets(filters);
     })();
   }, [filters, fetchMarkets]);
 

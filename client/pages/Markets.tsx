@@ -1,5 +1,2 @@
-import PlaceholderPage from './PlaceholderPage';
-
-export default function Markets() {
-  return <PlaceholderPage />;
-}
+import AdminMarkets from "./AdminMarkets";
+export default function Markets() { return <AdminMarkets />; }

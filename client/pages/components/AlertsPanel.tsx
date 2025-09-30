@@ -129,14 +129,17 @@ export default function AlertsPanel() {
       if (lastTsRef.current) params.set("since", lastTsRef.current);
       if (severity !== "all") params.set("severity", severity);
       try {
-        const r = await apiFetch(`/api/events/alerts?${params.toString()}`, {
+        const r = await apiFetch(`/api/v1/events/alerts?${params.toString()}`, {
           cache: "no-cache",
         });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const j = await r.json().catch(() => null);
-        const list: AlertItem[] = j?.data?.items || j?.items || [];
-        if (Array.isArray(list) && list.length) {
+        const incoming: AlertItem[] = j?.data?.items || j?.items || [];
+        if (Array.isArray(incoming) && incoming.length) {
           setItems((prev) => {
-            const merged = [...list, ...prev];
+            const map = new Map(prev.map((p) => [p.id, p]));
+            for (const a of incoming) map.set(a.id, a);
+            const merged = Array.from(map.values());
             merged.sort(
               (a, b) =>
                 new Date(b.timestamp).getTime() -
@@ -144,7 +147,7 @@ export default function AlertsPanel() {
             );
             return merged.slice(0, 200);
           });
-          if (list[0]?.timestamp) lastTsRef.current = list[0].timestamp;
+          if (incoming[0]?.timestamp) lastTsRef.current = incoming[0].timestamp;
         }
       } catch {}
       timer = setTimeout(poll, 3000);
