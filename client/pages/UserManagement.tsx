@@ -128,7 +128,7 @@ export default function UserManagement() {
   const [isBootstrapping, setIsBootstrapping] = useState(false);
   const [foundersError, setFoundersError] = useState<string | null>(null);
 
-  // Personal overrides (users/settings)
+  // Personal overrides (v1 config/user)
   const [userSettings, setUserSettings] = useState<UserSettings>({
     stopLossMultiplier: 0.2,
     takeProfitMultiplier: 2.0,
@@ -137,6 +137,7 @@ export default function UserManagement() {
     riskTier: "medium",
   });
   const [isUpdatingSettings, setIsUpdatingSettings] = useState(false);
+  const [settingsDegraded, setSettingsDegraded] = useState(false);
 
   // Admin cap inferred from founders count (3 max)
   const adminCapReached = founders && founders.length >= 3;
@@ -381,10 +382,20 @@ export default function UserManagement() {
   useEffect(() => {
     const fetchUserSettings = async () => {
       try {
-        const response = await apiFetch("/api/users/settings");
-        const data = await response.json();
-        if (response.ok && data.status === "success")
-          setUserSettings(data.data);
+        const response = await apiFetch("/api/v1/config/user");
+        const j = await response.json().catch(() => ({}));
+        if (response.ok) {
+          const d = j?.data || j || {};
+          if (typeof d.supabase_degraded === "boolean") setSettingsDegraded(!!d.supabase_degraded);
+          const mapped: UserSettings = {
+            stopLossMultiplier: Number(d.stopLossMultiplier ?? d.stop_loss_multiplier ?? 0.2),
+            takeProfitMultiplier: Number(d.takeProfitMultiplier ?? d.take_profit_multiplier ?? 2.0),
+            newsAnalysisEnabled: Boolean(d.newsAnalysisEnabled ?? d.news_analysis_enabled ?? true),
+            trailingStop: Number(d.trailingStop ?? d.trailing_stop ?? 0.05),
+            riskTier: (d.riskTier ?? d.risk_tier ?? "medium") as any,
+          };
+          setUserSettings(mapped);
+        }
       } catch {}
     };
     fetchUserSettings();
@@ -422,18 +433,23 @@ export default function UserManagement() {
 
     setIsUpdatingSettings(true);
     try {
-      const response = await apiFetch("/api/users/settings", {
-        method: "PATCH",
+      const payload = {
+        stopLossMultiplier: userSettings.stopLossMultiplier,
+        takeProfitMultiplier: userSettings.takeProfitMultiplier,
+        newsAnalysisEnabled: userSettings.newsAnalysisEnabled,
+        trailingStop: userSettings.trailingStop,
+        riskTier: userSettings.riskTier,
+      };
+      const response = await apiFetch("/api/v1/config/user", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userSettings),
+        body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok)
         throw new Error(data.error || "Failed to save settings");
-      toast({
-        title: "Settings Saved",
-        description: "Your trading preferences have been updated successfully.",
-      });
+      setSettingsDegraded(Boolean(data?.supabase_degraded || data?.data?.supabase_degraded));
+      toast({ title: "Settings Saved", description: "Preferences updated." });
     } catch (error) {
       toast({
         title: "Error",
