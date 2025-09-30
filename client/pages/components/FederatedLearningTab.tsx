@@ -64,21 +64,34 @@ export default function FederatedLearningTab() {
     setLoading(true);
     setError(null);
     try {
-      let r = await apiFetch("/api/federated/status");
-      if (!r.ok) r = await apiFetch("/federated/status");
+      const r = await apiFetch("/api/v1/federated/rounds");
       if (!r.ok) {
-        if (r.status !== 404) throw new Error(`HTTP ${r.status}`);
-        setData(null);
+        if (r.status === 404) {
+          setData(null);
+        } else {
+          throw new Error(`HTTP ${r.status}`);
+        }
       } else {
-        const j = await r.json().catch(() => ({}));
-        const d: FederatedStatus = (j?.data || j || {}) as any;
-        // Normalize
-        if (Array.isArray((d as any).history) && !d.rounds)
-          (d as any).rounds = (d as any).history;
-        setData(d);
+        const j = await r.json().catch(() => ([]));
+        const roundsArr: RoundInfo[] = Array.isArray(j?.data) ? j.data : Array.isArray(j) ? j : [];
+        // Normalize into status shape
+        const currentRound = roundsArr.reduce((m, rr) => Math.max(m, rr.round || 0), 0) || undefined;
+        const nodes = roundsArr.find((rr) => rr.round === currentRound)?.nodes || [];
+        const latest = roundsArr.find((rr) => rr.round === currentRound) || roundsArr[0];
+        const status: FederatedStatus = {
+          status: roundsArr.length ? "ok" : "empty",
+          currentRound,
+          totalRounds: roundsArr.length || undefined,
+          globalModel: latest ? { accuracy: latest.accuracy, loss: latest.loss, version: String(latest.round) } : undefined,
+          privacy: latest ? { epsilon: latest.epsilon, delta: latest.delta } : undefined,
+          rounds: roundsArr,
+          nodes,
+        };
+        setData(status);
       }
     } catch (e: any) {
       setError(e?.message || "Failed to load");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -115,7 +128,7 @@ export default function FederatedLearningTab() {
             </CardDescription>
           </div>
           <div className="flex items-center gap-2">
-            <HelpTip content="Displays status from /api/federated/status. Privacy budgets shown as (ε, δ)." />
+            <HelpTip content="Displays rounds from /api/v1/federated/rounds. Privacy budgets shown as (ε, δ)." />
             <Button
               variant="outline"
               size="sm"
@@ -132,6 +145,9 @@ export default function FederatedLearningTab() {
         </CardHeader>
         <CardContent>
           {error && <div className="text-sm text-destructive">{error}</div>}
+          {!data && !loading && (
+            <div className="text-sm text-muted-foreground mb-3">No dedicated federated status endpoint; showing empty state.</div>
+          )}
           <div className="grid gap-4 md:grid-cols-3">
             <div className="p-3 border rounded-md">
               <div className="text-xs text-muted-foreground">Global Model</div>
