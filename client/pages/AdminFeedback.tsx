@@ -23,6 +23,7 @@ export default function AdminFeedback() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<Array<{id:string; comment:string; submittedBy:string; submittedAt:string; status:string}>>([]);
+  const [summary, setSummary] = useState<{ totalSubmissions:number; reviewed:number; pending:number; highPriority:number; recentEntries:any[] } | null>(null);
   
   // Character limits
   const maxCharacters = 2000;
@@ -34,9 +35,16 @@ export default function AdminFeedback() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await getJson<any>('/api/admin/feedback/all', { admin: true });
-      const list = res?.data?.feedback || res?.feedback || [];
-      setFeedback(list);
+      const res = await getJson<any>('/api/v1/admin/feedback', { admin: true });
+      const sum = res?.data || res || {};
+      setSummary({
+        totalSubmissions: sum.totalSubmissions || 0,
+        reviewed: sum.reviewed || 0,
+        pending: sum.pending || 0,
+        highPriority: sum.highPriority || 0,
+        recentEntries: Array.isArray(sum.recentEntries) ? sum.recentEntries : [],
+      });
+      setFeedback((Array.isArray(sum.recentEntries) ? sum.recentEntries : []).map((e:any)=> ({ id:e.id, comment:e.comment, submittedBy:e.submittedBy, submittedAt:e.submittedAt, status:e.status })));
     } catch (e: any) {
       setLoadError(e?.message || 'Failed to load feedback');
     } finally {
@@ -216,6 +224,14 @@ export default function AdminFeedback() {
         <Card className="mt-6">
           <CardHeader>
             <CardTitle className="text-lg">Recent Feedback</CardTitle>
+            {summary && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-center text-sm">
+                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.totalSubmissions}</div><div className="text-muted-foreground">Total</div></div>
+                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.reviewed}</div><div className="text-muted-foreground">Reviewed</div></div>
+                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.pending}</div><div className="text-muted-foreground">Pending</div></div>
+                <div className="p-2 bg-muted/50 rounded"><div className="text-xl font-bold">{summary.highPriority}</div><div className="text-muted-foreground">High Priority</div></div>
+              </div>
+            )}
             {loadError && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -229,7 +245,7 @@ export default function AdminFeedback() {
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 mr-2" /> Loading…
               </div>
             ) : feedback.length === 0 ? (
-              <div className="text-sm text-muted-foreground">No feedback yet.</div>
+              <div className="text-sm text-muted-foreground">No detailed submissions available. Showing summary only.</div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
